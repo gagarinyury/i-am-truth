@@ -1,0 +1,378 @@
+{
+  "run_id": "20260827-190241-mcdonald-2026",
+  "case": "mcdonald-2026",
+  "prompt_version": "v1",
+  "location": "global",
+  "project": "merci-prod",
+  "started": "2026-08-27T19:02:41",
+  "results": [
+    {
+      "model": "gemini-3.7-flash",
+      "input": "abstract",
+      "raw": "{\n  \"findings\": [\n    {\n      \"title\": \"Immortal time bias and lack of active-comparator/new-user design\",\n      \"mechanism\": \"Classifying exposure as 'any prior or current use' without a new-user design, washout period, or time-to-event analysis creates immortal person-time and misclassifies unexposed person-time prior to drug initiation as exposed, artificially lowering the event rate in the exposed arm.\",\n      \"direction\": \"Pushes the estimate toward a protective effect (lower OR), as patients must survive event-free until their first prescription to enter the exposed cohort. The observed event rate in GLP-1 is lower (1.62% vs 2.47% full, 1.62% vs 2.31% matched).\",\n      \"evidence\": [\n        \"Exposure defined as 'Любое prior или current использование'\",\n        \"No minimum treatment duration or washout period\",\n        \"Time-to-event analysis was not performed; static logistic regression used\"\n      ],\n      \"confidence\": \"high\"\n    },\n    {\n      \"title\": \"Failure to exclude or match on prior breast cancer history and comorbidities\",\n      \"mechanism\": \"Patients with active, severe, or prior cancer are systematically less likely to be prescribed newly initiated metabolic drugs like GLP-1 agonists (contraindication or prioritization of oncology care), while the control group may include patients with past history or higher unmeasured baseline oncologic risk.\",\n      \"direction\": \"Pushes the estimate toward a protective effect for GLP-1, evidenced by the lower baseline event rate in GLP-1 users (247 / 15,264 = 1.62% vs 353 / 15,264 = 2.31% in matched controls).\",\n      \"evidence\": [\n        \"Matching explicitly omitted 'истории рака груди, коморбидности'\",\n        \"No explicit exclusion criterion for pre-existing breast cancer prior to cohort entry\"\n      ],\n      \"confidence\": \"high\"\n    },\n    {\n      \"title\": \"Biologically implausible latency period for solid tumor prevention\",\n      \"mechanism\": \"The observation window is only 3.5 years (Jan 2022 – Jun 2025) with no minimum exposure requirement. Carcinogenesis and detectable breast tumor development operate on multi-year to decadal timelines; an immediate reduction in cancer incidence reflects detection/selection dynamics rather than biological cancer prevention.\",\n      \"direction\": \"Pushes toward an exaggerated protective association (OR 0.695 in matched cohort) that cannot biologically reflect incident tumor prevention over a maximum of 3.5 years.\",\n      \"evidence\": [\n        \"Observation period: 1 января 2022 — 30 июня 2025 (3.5 years)\",\n        \"No minimum duration of GLP-1 therapy required\",\n        \"Matched OR: 0.695 (95% CI 0.590–0.819)\"\n      ],\n      \"confidence\": \"high\"\n    },\n    {\n      \"title\": \"Conditioning on post-baseline or distortive metric (Maximum BMI)\",\n      \"mechanism\": \"Matching on 'maximum BMI' rather than baseline BMI or weight trajectory can induce collider bias or misalign metabolic severity between groups, failing to control for actual obesity exposure duration and weight loss dynamics.\",\n      \"direction\": \"Unclear/residual confounding in favor of healthier or different metabolic profiles in GLP-1 users.\",\n      \"evidence\": [\n        \"Matched on 'максимальный BMI' rather than baseline BMI\",\n        \"Not matched on 'динамике веса'\"\n      ],\n      \"confidence\": \"medium\"\n    }\n  ],\n  \"computed\": {\n    \"absolute_risk_difference\": \"-0.69% (matched cohort); -0.85% (full cohort)\",\n    \"nnt\": \"144 in matched cohort (117 in full cohort)\",\n    \"arithmetic\": \"Matched cohort: Risk(GLP-1) = 247 / 15,264 = 1.618%; Risk(Control) = 353 / 15,264 = 2.313%. Absolute Risk Difference = 1.618% - 2.313% = -0.695 percentage points. NNT = 1 / (0.023126 - 0.016182) = 144.0. Full cohort: Risk(GLP-1) = 247 / 15,264 = 1.618%; Risk(Control) = 2,381 / 96,382 = 2.470%. Absolute Risk Difference = 1.618% - 2.470% = -0.852 percentage points. NNT = 1 / (0.024704 - 0.016182) = 117.3.\"\n  },\n  \"classification\": \"real_association_explained_by_selection\",\n  \"unresolvable_without_more_data\": [\n    \"Individual follow-up time, censoring dates, and exact time of drug initiation relative to cancer diagnosis (required to run a proper Cox proportional hazards model and eliminate immortal time bias).\",\n    \"Pre-baseline history of breast cancer or other malignancies across both groups.\",\n    \"Mammography screening frequency and longitudinal adherence during the 2022-2025 window for GLP-1 vs control groups.\"\n  ]\n}",
+      "parsed": {
+        "findings": [
+          {
+            "title": "Immortal time bias and lack of active-comparator/new-user design",
+            "mechanism": "Classifying exposure as 'any prior or current use' without a new-user design, washout period, or time-to-event analysis creates immortal person-time and misclassifies unexposed person-time prior to drug initiation as exposed, artificially lowering the event rate in the exposed arm.",
+            "direction": "Pushes the estimate toward a protective effect (lower OR), as patients must survive event-free until their first prescription to enter the exposed cohort. The observed event rate in GLP-1 is lower (1.62% vs 2.47% full, 1.62% vs 2.31% matched).",
+            "evidence": [
+              "Exposure defined as 'Любое prior или current использование'",
+              "No minimum treatment duration or washout period",
+              "Time-to-event analysis was not performed; static logistic regression used"
+            ],
+            "confidence": "high"
+          },
+          {
+            "title": "Failure to exclude or match on prior breast cancer history and comorbidities",
+            "mechanism": "Patients with active, severe, or prior cancer are systematically less likely to be prescribed newly initiated metabolic drugs like GLP-1 agonists (contraindication or prioritization of oncology care), while the control group may include patients with past history or higher unmeasured baseline oncologic risk.",
+            "direction": "Pushes the estimate toward a protective effect for GLP-1, evidenced by the lower baseline event rate in GLP-1 users (247 / 15,264 = 1.62% vs 353 / 15,264 = 2.31% in matched controls).",
+            "evidence": [
+              "Matching explicitly omitted 'истории рака груди, коморбидности'",
+              "No explicit exclusion criterion for pre-existing breast cancer prior to cohort entry"
+            ],
+            "confidence": "high"
+          },
+          {
+            "title": "Biologically implausible latency period for solid tumor prevention",
+            "mechanism": "The observation window is only 3.5 years (Jan 2022 – Jun 2025) with no minimum exposure requirement. Carcinogenesis and detectable breast tumor development operate on multi-year to decadal timelines; an immediate reduction in cancer incidence reflects detection/selection dynamics rather than biological cancer prevention.",
+            "direction": "Pushes toward an exaggerated protective association (OR 0.695 in matched cohort) that cannot biologically reflect incident tumor prevention over a maximum of 3.5 years.",
+            "evidence": [
+              "Observation period: 1 января 2022 — 30 июня 2025 (3.5 years)",
+              "No minimum duration of GLP-1 therapy required",
+              "Matched OR: 0.695 (95% CI 0.590–0.819)"
+            ],
+            "confidence": "high"
+          },
+          {
+            "title": "Conditioning on post-baseline or distortive metric (Maximum BMI)",
+            "mechanism": "Matching on 'maximum BMI' rather than baseline BMI or weight trajectory can induce collider bias or misalign metabolic severity between groups, failing to control for actual obesity exposure duration and weight loss dynamics.",
+            "direction": "Unclear/residual confounding in favor of healthier or different metabolic profiles in GLP-1 users.",
+            "evidence": [
+              "Matched on 'максимальный BMI' rather than baseline BMI",
+              "Not matched on 'динамике веса'"
+            ],
+            "confidence": "medium"
+          }
+        ],
+        "computed": {
+          "absolute_risk_difference": "-0.69% (matched cohort); -0.85% (full cohort)",
+          "nnt": "144 in matched cohort (117 in full cohort)",
+          "arithmetic": "Matched cohort: Risk(GLP-1) = 247 / 15,264 = 1.618%; Risk(Control) = 353 / 15,264 = 2.313%. Absolute Risk Difference = 1.618% - 2.313% = -0.695 percentage points. NNT = 1 / (0.023126 - 0.016182) = 144.0. Full cohort: Risk(GLP-1) = 247 / 15,264 = 1.618%; Risk(Control) = 2,381 / 96,382 = 2.470%. Absolute Risk Difference = 1.618% - 2.470% = -0.852 percentage points. NNT = 1 / (0.024704 - 0.016182) = 117.3."
+        },
+        "classification": "real_association_explained_by_selection",
+        "unresolvable_without_more_data": [
+          "Individual follow-up time, censoring dates, and exact time of drug initiation relative to cancer diagnosis (required to run a proper Cox proportional hazards model and eliminate immortal time bias).",
+          "Pre-baseline history of breast cancer or other malignancies across both groups.",
+          "Mammography screening frequency and longitudinal adherence during the 2022-2025 window for GLP-1 vs control groups."
+        ]
+      },
+      "parse_error": null,
+      "usage": {
+        "prompt": 1024,
+        "candidates": 1257,
+        "thoughts": 1154,
+        "total": 3435
+      },
+      "judge_model": "gemini-3.7-flash",
+      "verdict": {
+        "points": [
+          {
+            "id": "P1",
+            "score": 0.5,
+            "reason": "The auditor correctly identified that prior breast cancer was not excluded and not included in matching, and correctly deduced the direction (control group has higher baseline risk/prior history). However, it did not cite the specific cohort numbers showing the baseline imbalance (9.2% vs 5.9% full, 7.8% vs 5.9% matched).",
+            "quote": "Matching explicitly omitted 'истории рака груди, коморбидности'... Patients with active, severe, or prior cancer are systematically less likely to be prescribed newly initiated metabolic drugs like GLP-1 agonists... while the control group may include patients with past history or higher unmeasured baseline oncologic risk."
+          },
+          {
+            "id": "P2",
+            "score": 0.0,
+            "reason": "The auditor completely missed the 'sicker-yet-fewer-cancers' paradox and did not analyze the comorbidity data (Charlson >=5 19.7% vs 10.4%, heart failure, renal disease) showing GLP-1 patients were sicker.",
+            "quote": null
+          },
+          {
+            "id": "P3",
+            "score": 1.0,
+            "reason": "Accurately and comprehensively identified prevalent-user/cross-sectional exposure definition, lack of washout/new-user design, absence of time-to-event analysis, and the resulting immortal time bias.",
+            "quote": "Classifying exposure as 'any prior or current use' without a new-user design, washout period, or time-to-event analysis creates immortal person-time and misclassifies unexposed person-time prior to drug initiation as exposed... Exposure defined as 'Любое prior или current использование'... No minimum treatment duration or washout period"
+          },
+          {
+            "id": "P4",
+            "score": 0.5,
+            "reason": "The auditor identified the issue with matching on maximum BMI rather than weight trajectory, but missed the distortion of matching on diabetes (53.4% vs 17.6% in source).",
+            "quote": "Matching on 'maximum BMI' rather than baseline BMI or weight trajectory can induce collider bias or misalign metabolic severity between groups, failing to control for actual obesity exposure duration and weight loss dynamics."
+          },
+          {
+            "id": "P5",
+            "score": 1.0,
+            "reason": "The auditor explicitly calculated the absolute risk reduction (0.69 percentage points) and NNT (144 in matched cohort).",
+            "quote": "Matched cohort: Risk(GLP-1) = 247 / 15,264 = 1.618%; Risk(Control) = 353 / 15,264 = 2.313%. Absolute Risk Difference = 1.618% - 2.313% = -0.695 percentage points. NNT = 1 / (0.023126 - 0.016182) = 144.0."
+          }
+        ],
+        "extra_findings": [
+          {
+            "title": "Biologically implausible latency period for solid tumor prevention",
+            "valid": true,
+            "why": "A 3.5-year observation window with no minimum exposure duration is biologically insufficient to observe primary solid tumor prevention; an immediate drop reflects selection/detection dynamics."
+          }
+        ],
+        "classification_correct": true,
+        "notes": "The auditor correctly classified the study as 'real_association_explained_by_selection' and accurately computed ARR/NNT and immortal time biases, but missed comorbidity data details in Table 1."
+      },
+      "score": {
+        "got": 3.0,
+        "of": 5,
+        "ratio": 0.6
+      }
+    },
+    {
+      "model": "gemini-3.7-flash",
+      "input": "fulltext_no_appendix",
+      "raw": "{\n  \"findings\": [\n    {\n      \"title\": \"Conditioning on post-exposure screening mammography and selection bias\",\n      \"mechanism\": \"The study restricts the starting population exclusively to women who underwent mammography. If GLP-1 users have different healthcare-seeking behaviors, screening intervals, or indications for mammography compared to non-users, conditioning on screening creates collider or selection bias. Furthermore, screening frequency and regularity were not matched between groups.\",\n      \"direction\": \"Pushes the estimate toward a lower observed odds ratio (apparent protective effect, OR 0.695), as the GLP-1 group had a lower detection proportion among screened individuals (1.62% vs 2.31% in matched controls).\",\n      \"evidence\": [\n        \"Starting cohort defined strictly by mammography: 217,624 women\",\n        \"Screen-detected cases constituted 241/247 (97.6%) of GLP-1 cancers and 2,295/2,381 (96.4%) of control cancers\",\n        \"Mammography frequency and regularity were excluded from matching variables\"\n      ],\n      \"confidence\": \"high\"\n    },\n    {\n      \"title\": \"Immortal time bias, lack of latency period, and undefined exposure duration\",\n      \"mechanism\": \"Exposure was defined as any prior or current GLP-1 prescription before the cutoff date with no requirement for minimum therapy duration, dosage threshold, or washout period. Cancer development involves multi-year biological latency; counting any single prescription prior to diagnosis without a washout or induction window artificially misclassifies short/recent exposure as protective and allows immortal time to accrue.\",\n      \"direction\": \"Biases toward an exaggerated protective effect (OR 0.695), because patients who develop cancer quickly after baseline without starting GLP-1 or with very brief exposure are assigned to control or credited to GLP-1 without sufficient biological time for drug-mediated antineoplastic action.\",\n      \"evidence\": [\n        \"Exposure defined as 'any prior or current GLP-1 prescription; first prescription prior to cutoff date'\",\n        \"No minimum duration of therapy required, dosage not accounted for, no washout period\",\n        \"No time-to-event or hazard ratio analysis conducted; evaluated via cross-sectional 2x2 contingency tables and logistic regression\"\n      ],\n      \"confidence\": \"high\"\n    },\n    {\n      \"title\": \"Residual and intermediate confounding via maximal BMI and unadjusted weight dynamics\",\n      \"mechanism\": \"Matching used 'maximal BMI over 2017–2025' rather than baseline BMI at the time of drug initiation. Maximal BMI during the follow-up window post-exposure is a post-baseline mediator/intermediate variable affected by GLP-1 weight loss, and weight trajectories were not matched. Additionally, breast cancer history and overall comorbidity were omitted from matching.\",\n      \"direction\": \"Distorts the effect estimate in favor of an apparent protective effect (OR 0.695 in matched cohort), by inadequately adjusting for pre-treatment metabolic risk and conditioning on a post-treatment maximum BMI.\",\n      \"evidence\": [\n        \"Matching used maximal BMI (2017-2025)\",\n        \"Matching did NOT adjust for history of breast cancer, comorbidity, or weight trajectory\",\n        \"Control group was artificially enriched with diabetes (17.6% to 53.4%) during 1:1 matching to match GLP-1 group\"\n      ],\n      \"confidence\": \"high\"\n    },\n    {\n      \"title\": \"Internal reporting discrepancy in cohort accounting\",\n      \"mechanism\": \"Discrepancy in the reported baseline cohort size indicates potential data processing or record accounting errors in the study cascade.\",\n      \"direction\": \"Unclear numerical direction; reflects internal documentation inconsistency.\",\n      \"evidence\": [\n        \"Abstract reports starting cohort as 217,025\",\n        \"Results section and Figure 1 report starting cohort as 217,624 (discrepancy of 599 individuals)\"\n      ],\n      \"confidence\": \"medium\"\n    }\n  ],\n  \"computed\": {\n    \"absolute_risk_difference\": \"-0.695 percentage points (-0.00695)\",\n    \"nnt\": \"144\",\n    \"arithmetic\": \"Matched control risk = 353 / 15,264 = 2.3126% (0.023126); Matched GLP-1 risk = 247 / 15,264 = 1.6182% (0.016182); ARD = 0.016182 - 0.023126 = -0.006945 (-0.695%); NNT = 1 / (0.023126 - 0.016182) = 15,264 / 106 = 144.0\"\n  },\n  \"classification\": \"real_association_explained_by_selection\",\n  \"unresolvable_without_more_data\": [\n    \"Individual time-to-event data, person-years of follow-up, and exact calendar dates of GLP-1 initiation and cancer diagnosis to calculate hazard ratios and rule out immortal time bias\",\n    \"Cumulative dose, duration of GLP-1 exposure, and adherence patterns\",\n    \"Longitudinal weight trajectory and pre-exposure baseline BMI prior to first prescription\",\n    \"Mammography screening frequency, intervals, and indications (screening vs diagnostic) prior to and during the observation period\",\n    \"Prior history of benign or malignant breast disease and family history of breast cancer\"\n  ]\n}",
+      "parsed": {
+        "findings": [
+          {
+            "title": "Conditioning on post-exposure screening mammography and selection bias",
+            "mechanism": "The study restricts the starting population exclusively to women who underwent mammography. If GLP-1 users have different healthcare-seeking behaviors, screening intervals, or indications for mammography compared to non-users, conditioning on screening creates collider or selection bias. Furthermore, screening frequency and regularity were not matched between groups.",
+            "direction": "Pushes the estimate toward a lower observed odds ratio (apparent protective effect, OR 0.695), as the GLP-1 group had a lower detection proportion among screened individuals (1.62% vs 2.31% in matched controls).",
+            "evidence": [
+              "Starting cohort defined strictly by mammography: 217,624 women",
+              "Screen-detected cases constituted 241/247 (97.6%) of GLP-1 cancers and 2,295/2,381 (96.4%) of control cancers",
+              "Mammography frequency and regularity were excluded from matching variables"
+            ],
+            "confidence": "high"
+          },
+          {
+            "title": "Immortal time bias, lack of latency period, and undefined exposure duration",
+            "mechanism": "Exposure was defined as any prior or current GLP-1 prescription before the cutoff date with no requirement for minimum therapy duration, dosage threshold, or washout period. Cancer development involves multi-year biological latency; counting any single prescription prior to diagnosis without a washout or induction window artificially misclassifies short/recent exposure as protective and allows immortal time to accrue.",
+            "direction": "Biases toward an exaggerated protective effect (OR 0.695), because patients who develop cancer quickly after baseline without starting GLP-1 or with very brief exposure are assigned to control or credited to GLP-1 without sufficient biological time for drug-mediated antineoplastic action.",
+            "evidence": [
+              "Exposure defined as 'any prior or current GLP-1 prescription; first prescription prior to cutoff date'",
+              "No minimum duration of therapy required, dosage not accounted for, no washout period",
+              "No time-to-event or hazard ratio analysis conducted; evaluated via cross-sectional 2x2 contingency tables and logistic regression"
+            ],
+            "confidence": "high"
+          },
+          {
+            "title": "Residual and intermediate confounding via maximal BMI and unadjusted weight dynamics",
+            "mechanism": "Matching used 'maximal BMI over 2017–2025' rather than baseline BMI at the time of drug initiation. Maximal BMI during the follow-up window post-exposure is a post-baseline mediator/intermediate variable affected by GLP-1 weight loss, and weight trajectories were not matched. Additionally, breast cancer history and overall comorbidity were omitted from matching.",
+            "direction": "Distorts the effect estimate in favor of an apparent protective effect (OR 0.695 in matched cohort), by inadequately adjusting for pre-treatment metabolic risk and conditioning on a post-treatment maximum BMI.",
+            "evidence": [
+              "Matching used maximal BMI (2017-2025)",
+              "Matching did NOT adjust for history of breast cancer, comorbidity, or weight trajectory",
+              "Control group was artificially enriched with diabetes (17.6% to 53.4%) during 1:1 matching to match GLP-1 group"
+            ],
+            "confidence": "high"
+          },
+          {
+            "title": "Internal reporting discrepancy in cohort accounting",
+            "mechanism": "Discrepancy in the reported baseline cohort size indicates potential data processing or record accounting errors in the study cascade.",
+            "direction": "Unclear numerical direction; reflects internal documentation inconsistency.",
+            "evidence": [
+              "Abstract reports starting cohort as 217,025",
+              "Results section and Figure 1 report starting cohort as 217,624 (discrepancy of 599 individuals)"
+            ],
+            "confidence": "medium"
+          }
+        ],
+        "computed": {
+          "absolute_risk_difference": "-0.695 percentage points (-0.00695)",
+          "nnt": "144",
+          "arithmetic": "Matched control risk = 353 / 15,264 = 2.3126% (0.023126); Matched GLP-1 risk = 247 / 15,264 = 1.6182% (0.016182); ARD = 0.016182 - 0.023126 = -0.006945 (-0.695%); NNT = 1 / (0.023126 - 0.016182) = 15,264 / 106 = 144.0"
+        },
+        "classification": "real_association_explained_by_selection",
+        "unresolvable_without_more_data": [
+          "Individual time-to-event data, person-years of follow-up, and exact calendar dates of GLP-1 initiation and cancer diagnosis to calculate hazard ratios and rule out immortal time bias",
+          "Cumulative dose, duration of GLP-1 exposure, and adherence patterns",
+          "Longitudinal weight trajectory and pre-exposure baseline BMI prior to first prescription",
+          "Mammography screening frequency, intervals, and indications (screening vs diagnostic) prior to and during the observation period",
+          "Prior history of benign or malignant breast disease and family history of breast cancer"
+        ]
+      },
+      "parse_error": null,
+      "usage": {
+        "prompt": 1640,
+        "candidates": 1279,
+        "thoughts": 886,
+        "total": 3805
+      },
+      "judge_model": "gemini-3.7-flash",
+      "verdict": {
+        "points": [
+          {
+            "id": "P1",
+            "score": 0.5,
+            "reason": "The auditor noted that matching omitted prior breast cancer history, but missed the direction of the imbalance (control group was enriched: 7.8% vs 5.9%), the specific baseline numbers, and the fact that this ~290 excess high-risk patient difference fully accounts for the 106-cancer gap.",
+            "quote": "Matching did NOT adjust for history of breast cancer, comorbidity, or weight trajectory"
+          },
+          {
+            "id": "P2",
+            "score": 0.0,
+            "reason": "The auditor did not identify the 'sicker-yet-fewer-cancers' paradox, missing the comorbidity data (Charlson score >=5: 19.7% vs 10.4%, renal and cardiac disease elevation in GLP-1) and the fact that the effect runs counter to the expected confounding by indication gradient.",
+            "quote": null
+          },
+          {
+            "id": "P3",
+            "score": 1.0,
+            "reason": "Fully covered. The auditor identified the prevalent-user / immortal time issue, lack of minimum exposure duration or dosage accounting, absent washout/latency window, and cross-sectional logistic regression instead of time-to-event analysis.",
+            "quote": "Exposure was defined as any prior or current GLP-1 prescription before the cutoff date with no requirement for minimum therapy duration, dosage threshold, or washout period... No time-to-event or hazard ratio analysis conducted; evaluated via cross-sectional 2x2 contingency tables and logistic regression"
+          },
+          {
+            "id": "P4",
+            "score": 1.0,
+            "reason": "Fully covered. The auditor noted the matching on post-exposure maximal BMI instead of baseline weight/trajectory, and identified the artificial enrichment of diabetes in matched controls (17.6% to 53.4%).",
+            "quote": "Matching used 'maximal BMI over 2017–2025' rather than baseline BMI at the time of drug initiation. Maximal BMI during the follow-up window post-exposure is a post-baseline mediator/intermediate variable affected by GLP-1 weight loss, and weight trajectories were not matched... Control group was artificially enriched with diabetes (17.6% to 53.4%)"
+          },
+          {
+            "id": "P5",
+            "score": 1.0,
+            "reason": "Fully covered. The auditor accurately calculated and contextualized the absolute risk reduction (0.695 percentage points) from 2.31% to 1.62% and NNT of 144.",
+            "quote": "ARD = 0.016182 - 0.023126 = -0.006945 (-0.695%); NNT = 1 / (0.023126 - 0.016182) = 15,264 / 106 = 144.0"
+          }
+        ],
+        "extra_findings": [
+          {
+            "title": "Conditioning on post-exposure screening mammography / selection into cohort",
+            "valid": true,
+            "why": "Restricting the entire study cohort strictly to individuals undergoing mammography without standardizing screening intervals or indications can introduce collider/selection bias."
+          },
+          {
+            "title": "Internal reporting discrepancy in baseline cohort size (217,025 vs 217,624)",
+            "valid": true,
+            "why": "There is an actual 599-patient discrepancy between the abstract and the results section/flowchart in the manuscript."
+          }
+        ],
+        "classification_correct": true,
+        "notes": "The auditor correctly classified the study as 'real_association_explained_by_selection' and performed accurate arithmetic for ARD and NNT. However, it missed the baseline comorbidity imbalance numbers (P2) and only partially addressed breast cancer history omission without calculating the directional impact (P1)."
+      },
+      "score": {
+        "got": 3.5,
+        "of": 5,
+        "ratio": 0.7
+      }
+    },
+    {
+      "model": "gemini-3.7-flash",
+      "input": "with_appendix",
+      "raw": "{\n  \"findings\": [\n    {\n      \"title\": \"Baseline breast cancer history imbalance (Prevalent disease / Prior history confounding)\",\n      \"mechanism\": \"Patients with a prior history of breast cancer are at a substantially higher risk of a subsequent or recurrent breast cancer diagnosis. Matching explicitly omitted history of breast cancer, resulting in a higher proportion of baseline breast cancer in the control group compared to the GLP-1 group.\",\n      \"direction\": \"Pushes the odds ratio below 1.0 (spuriously favors GLP-1 / protective effect), because the control group has a higher baseline prevalence of prior breast cancer (7.8% matched, 9.2% full) compared to the GLP-1 group (5.9%).\",\n      \"evidence\": [\n        \"Matched cohort personal history of breast cancer: Control 7.8% vs GLP-1 5.9%\",\n        \"Full cohort personal history of breast cancer: Control 9.2% (8,876 women) vs GLP-1 5.9% (907 women)\",\n        \"Matching was explicitly NOT performed on breast cancer history\"\n      ],\n      \"confidence\": \"high\"\n    },\n    {\n      \"title\": \"Immortal time bias and lack of time-to-event analysis (Pervasive exposure misclassification)\",\n      \"mechanism\": \"Exposure was defined as any prior or current prescription before cutoff with no minimum duration, no dose consideration, and no washout period. Evaluating time-invariant binary exposure in logistic regression without time-to-event accounting creates immortal time bias and includes prevalent users.\",\n      \"direction\": \"Pushes the odds ratio below 1.0 (spuriously favors GLP-1 / protective effect), as patients had to survive and remain cancer-free long enough to receive a prescription, misclassifying unexposed person-time prior to GLP-1 initiation.\",\n      \"evidence\": [\n        \"Exposure defined as 'any prior or current use', first prescription before cutoff\",\n        \"No minimum duration required, dose ignored, no washout period\",\n        \"Time-to-event analysis was not performed; logistic regression evaluated binary outcome over 2022-2025\"\n      ],\n      \"confidence\": \"high\"\n    },\n    {\n      \"title\": \"Selection / Indication bias from matching on maximum BMI rather than baseline BMI\",\n      \"mechanism\": \"Matching on maximum BMI rather than pre-treatment baseline BMI or weight trajectory can induce collider bias or mask differential weight loss/gain patterns, while the GLP-1 group has substantially higher baseline multi-morbidity indicating severe metabolic indication.\",\n      \"direction\": \"Unclear net direction on incidence directly, but distorts comparative baseline risk profile between groups.\",\n      \"evidence\": [\n        \"Matching was performed on 'максимальный BMI', while matching was NOT performed on weight trajectory or comorbidity\",\n        \"Charlson Comorbidity Index >= 5: GLP-1 19.7% vs Control 10.4%\",\n        \"Cardiac pathology: GLP-1 13.0% vs Control 7.3%\",\n        \"Renal pathology: GLP-1 13.9% vs Control 7.1%\"\n      ],\n      \"confidence\": \"medium\"\n    },\n    {\n      \"title\": \"Screening and surveillance bias / Competing risks omission\",\n      \"mechanism\": \"GLP-1 patients have nearly double the rate of severe comorbidities (cardiac, renal, Charlson >= 5), which introduces competing mortality risks. Additionally, screening frequency was not matched or controlled for despite initial cohort conditioning on having had a mammography.\",\n      \"direction\": \"Pushes the odds ratio below 1.0 (spuriously favors GLP-1 / protective effect), because sicker patients may experience competing mortality or deferred routine cancer screening.\",\n      \"evidence\": [\n        \"Charlson >= 5: GLP-1 19.7% vs Control 10.4%\",\n        \"Renal pathology: GLP-1 13.9% vs Control 7.1%\",\n        \"Cardiac pathology: GLP-1 13.0% vs Control 7.3%\",\n        \"Matching explicitly NOT performed on screening frequency or comorbidity\"\n      ],\n      \"confidence\": \"high\"\n    }\n  ],\n  \"computed\": {\n    \"absolute_risk_difference\": \"-0.69%\",\n    \"nnt\": \"145\",\n    \"arithmetic\": \"Matched cohort: Risk(GLP-1) = 247 / 15,264 = 1.6182% (reported as 1.62%); Risk(Control) = 353 / 15,264 = 2.3126% (reported as 2.31%). Absolute Risk Difference (ARR) = 1.6182% - 2.3126% = -0.6944% (0.006944 risk reduction). NNT = 1 / 0.006944 ≈ 144.0 (or using reported rounded percentages: 2.31% - 1.62% = 0.69%; NNT = 1 / 0.0069 ≈ 145).\"\n  },\n  \"classification\": \"real_association_explained_by_selection\",\n  \"unresolvable_without_more_data\": [\n    \"Exact person-time and timing of cancer diagnosis relative to GLP-1 initiation to calculate incidence rate ratios and eliminate immortal time bias.\",\n    \"Exact breakdown of incident vs recurrent breast cancer cases (specifically whether events occurred among the 5.9% vs 7.8% with prior breast cancer history).\",\n    \"Screening mammography adherence and frequency during follow-up (2022-2025) across both groups.\",\n    \"Cumulative dose, duration of exposure, and active comparator data (e.g., SGLT2i or DPP-4i).\"\n  ]\n}",
+      "parsed": {
+        "findings": [
+          {
+            "title": "Baseline breast cancer history imbalance (Prevalent disease / Prior history confounding)",
+            "mechanism": "Patients with a prior history of breast cancer are at a substantially higher risk of a subsequent or recurrent breast cancer diagnosis. Matching explicitly omitted history of breast cancer, resulting in a higher proportion of baseline breast cancer in the control group compared to the GLP-1 group.",
+            "direction": "Pushes the odds ratio below 1.0 (spuriously favors GLP-1 / protective effect), because the control group has a higher baseline prevalence of prior breast cancer (7.8% matched, 9.2% full) compared to the GLP-1 group (5.9%).",
+            "evidence": [
+              "Matched cohort personal history of breast cancer: Control 7.8% vs GLP-1 5.9%",
+              "Full cohort personal history of breast cancer: Control 9.2% (8,876 women) vs GLP-1 5.9% (907 women)",
+              "Matching was explicitly NOT performed on breast cancer history"
+            ],
+            "confidence": "high"
+          },
+          {
+            "title": "Immortal time bias and lack of time-to-event analysis (Pervasive exposure misclassification)",
+            "mechanism": "Exposure was defined as any prior or current prescription before cutoff with no minimum duration, no dose consideration, and no washout period. Evaluating time-invariant binary exposure in logistic regression without time-to-event accounting creates immortal time bias and includes prevalent users.",
+            "direction": "Pushes the odds ratio below 1.0 (spuriously favors GLP-1 / protective effect), as patients had to survive and remain cancer-free long enough to receive a prescription, misclassifying unexposed person-time prior to GLP-1 initiation.",
+            "evidence": [
+              "Exposure defined as 'any prior or current use', first prescription before cutoff",
+              "No minimum duration required, dose ignored, no washout period",
+              "Time-to-event analysis was not performed; logistic regression evaluated binary outcome over 2022-2025"
+            ],
+            "confidence": "high"
+          },
+          {
+            "title": "Selection / Indication bias from matching on maximum BMI rather than baseline BMI",
+            "mechanism": "Matching on maximum BMI rather than pre-treatment baseline BMI or weight trajectory can induce collider bias or mask differential weight loss/gain patterns, while the GLP-1 group has substantially higher baseline multi-morbidity indicating severe metabolic indication.",
+            "direction": "Unclear net direction on incidence directly, but distorts comparative baseline risk profile between groups.",
+            "evidence": [
+              "Matching was performed on 'максимальный BMI', while matching was NOT performed on weight trajectory or comorbidity",
+              "Charlson Comorbidity Index >= 5: GLP-1 19.7% vs Control 10.4%",
+              "Cardiac pathology: GLP-1 13.0% vs Control 7.3%",
+              "Renal pathology: GLP-1 13.9% vs Control 7.1%"
+            ],
+            "confidence": "medium"
+          },
+          {
+            "title": "Screening and surveillance bias / Competing risks omission",
+            "mechanism": "GLP-1 patients have nearly double the rate of severe comorbidities (cardiac, renal, Charlson >= 5), which introduces competing mortality risks. Additionally, screening frequency was not matched or controlled for despite initial cohort conditioning on having had a mammography.",
+            "direction": "Pushes the odds ratio below 1.0 (spuriously favors GLP-1 / protective effect), because sicker patients may experience competing mortality or deferred routine cancer screening.",
+            "evidence": [
+              "Charlson >= 5: GLP-1 19.7% vs Control 10.4%",
+              "Renal pathology: GLP-1 13.9% vs Control 7.1%",
+              "Cardiac pathology: GLP-1 13.0% vs Control 7.3%",
+              "Matching explicitly NOT performed on screening frequency or comorbidity"
+            ],
+            "confidence": "high"
+          }
+        ],
+        "computed": {
+          "absolute_risk_difference": "-0.69%",
+          "nnt": "145",
+          "arithmetic": "Matched cohort: Risk(GLP-1) = 247 / 15,264 = 1.6182% (reported as 1.62%); Risk(Control) = 353 / 15,264 = 2.3126% (reported as 2.31%). Absolute Risk Difference (ARR) = 1.6182% - 2.3126% = -0.6944% (0.006944 risk reduction). NNT = 1 / 0.006944 ≈ 144.0 (or using reported rounded percentages: 2.31% - 1.62% = 0.69%; NNT = 1 / 0.0069 ≈ 145)."
+        },
+        "classification": "real_association_explained_by_selection",
+        "unresolvable_without_more_data": [
+          "Exact person-time and timing of cancer diagnosis relative to GLP-1 initiation to calculate incidence rate ratios and eliminate immortal time bias.",
+          "Exact breakdown of incident vs recurrent breast cancer cases (specifically whether events occurred among the 5.9% vs 7.8% with prior breast cancer history).",
+          "Screening mammography adherence and frequency during follow-up (2022-2025) across both groups.",
+          "Cumulative dose, duration of exposure, and active comparator data (e.g., SGLT2i or DPP-4i)."
+        ]
+      },
+      "parse_error": null,
+      "usage": {
+        "prompt": 1243,
+        "candidates": 1337,
+        "thoughts": null,
+        "total": 2580
+      },
+      "judge_model": "gemini-3.7-flash",
+      "verdict": {
+        "points": [
+          {
+            "id": "P1",
+            "score": 1.0,
+            "reason": "Accurately identified that personal history of breast cancer was not matched or excluded, correctly recognized that the control group was enriched (7.8% vs 5.9%), avoided the direction trap, and provided exact numbers.",
+            "quote": "Matching explicitly omitted history of breast cancer, resulting in a higher proportion of baseline breast cancer in the control group compared to the GLP-1 group... Matched cohort personal history of breast cancer: Control 7.8% vs GLP-1 5.9%... Full cohort personal history of breast cancer: Control 9.2% (8,876 women) vs GLP-1 5.9% (907 women)"
+          },
+          {
+            "id": "P2",
+            "score": 1.0,
+            "reason": "Identified that the GLP-1 group had higher comorbidity rates across Charlson >= 5, cardiac, and renal disease with accurate figures, correctly avoided claiming a 'healthy user effect', and explored competing risk/surveillance mechanisms.",
+            "quote": "GLP-1 patients have nearly double the rate of severe comorbidities (cardiac, renal, Charlson >= 5)... Charlson >= 5: GLP-1 19.7% vs Control 10.4%; Renal pathology: GLP-1 13.9% vs Control 7.1%; Cardiac pathology: GLP-1 13.0% vs Control 7.3%"
+          },
+          {
+            "id": "P3",
+            "score": 1.0,
+            "reason": "Thoroughly covered prevalent-user design issues, lack of person-time / time-to-event analysis, lack of washout, lack of minimum duration, and absence of dose consideration.",
+            "quote": "Exposure was defined as any prior or current prescription before cutoff with no minimum duration, no dose consideration, and no washout period. Evaluating time-invariant binary exposure in logistic regression without time-to-event accounting creates immortal time bias and includes prevalent users."
+          },
+          {
+            "id": "P4",
+            "score": 0.5,
+            "reason": "Identified the issue of matching on maximum BMI rather than baseline/trajectory, but did not note the distortion of diabetes prevalence in the matched control group (53.4% vs 17.6%).",
+            "quote": "Matching on maximum BMI rather than pre-treatment baseline BMI or weight trajectory can induce collider bias or mask differential weight loss/gain patterns"
+          },
+          {
+            "id": "P5",
+            "score": 1.0,
+            "reason": "Correctly computed the ARR (0.69 percentage points) and NNT (~145) from the matched cohort percentages (2.31% vs 1.62%).",
+            "quote": "Absolute Risk Difference (ARR) = 1.6182% - 2.3126% = -0.6944% (0.006944 risk reduction). NNT = 1 / 0.006944 ≈ 144.0 (or using reported rounded percentages: 2.31% - 1.62% = 0.69%; NNT = 1 / 0.0069 ≈ 145)."
+          }
+        ],
+        "extra_findings": [
+          {
+            "title": "Competing risks from severe comorbidity and unmeasured screening frequency",
+            "valid": true,
+            "why": "Given the substantial comorbidity differences (cardiac 13% vs 7.3%, renal 13.9% vs 7.1%), competing mortality risks and differential mammography surveillance are sound methodological critiques in cancer epidemiology."
+          }
+        ],
+        "classification_correct": true,
+        "notes": "Excellent audit. All major biases were identified with accurate directions, key numbers were extracted correctly, traps were avoided, and classification matched the reference."
+      },
+      "score": {
+        "got": 4.5,
+        "of": 5,
+        "ratio": 0.9
+      }
+    }
+  ],
+  "scored": "2026-08-27T19:04:38"
+}

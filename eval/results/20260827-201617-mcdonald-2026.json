@@ -1,0 +1,229 @@
+{
+  "run_id": "20260827-201617-mcdonald-2026",
+  "case": "mcdonald-2026",
+  "prompt_version": "v2",
+  "location": "global",
+  "project": "merci-prod",
+  "started": "2026-08-27T20:16:17",
+  "results": [
+    {
+      "model": "gemini-3.7-flash",
+      "input": "with_appendix",
+      "raw": "{\n  \"domains\": [\n    {\n      \"id\": 1,\n      \"name\": \"Confounding\",\n      \"risk\": \"very_high\",\n      \"direction\": \"away_from_null\",\n      \"direction_justification\": \"Personal history of breast cancer was significantly higher in controls than in GLP-1 users (7.8% vs 5.9% in the matched cohort; 9.2% vs 5.9% in the full cohort). Because prior breast cancer strongly elevates subsequent risk, this imbalance artificially inflated event rates in the control group (2.31% vs 1.62%), pushing the OR below 1.0 away from the null.\",\n      \"threatens_conclusions\": true,\n      \"findings\": [\n        {\n          \"title\": \"Unmatched baseline history of breast cancer\",\n          \"mechanism\": \"Patients with prior breast cancer have a substantially higher baseline risk of recurrence or secondary primary tumors. Failing to exclude or balance prior cancer history creates strong negative confounding.\",\n          \"evidence\": [\n            \"Matched cohort: 7.8% in control vs 5.9% in GLP-1\",\n            \"Full cohort: 9.2% (8,876 women) in control vs 5.9% (907 women) in GLP-1\"\n          ]\n        },\n        {\n          \"title\": \"Severe comorbidity imbalance\",\n          \"mechanism\": \"GLP-1 users had approximately double the burden of major systemic comorbidities compared to matched controls, introducing potential competing risks or confounding by indication/contraindication.\",\n          \"evidence\": [\n            \"Charlson Comorbidity Index >= 5: 19.7% in GLP-1 vs 10.4% in control\",\n            \"Cardiac pathology: 13.0% in GLP-1 vs 7.3% in control\",\n            \"Renal pathology: 13.9% in GLP-1 vs 7.1% in control\"\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Measurement of the exposure\",\n      \"risk\": \"high\",\n      \"direction\": \"away_from_null\",\n      \"direction_justification\": \"Defining exposure as any single prior prescription without minimum duration, cumulative dose, or washout introduces immortal time and prevalent-user bias, which systematically lowers observed event rates in the exposed arm relative to controls.\",\n      \"threatens_conclusions\": true,\n      \"findings\": [\n        {\n          \"title\": \"Crude 'ever-use' exposure definition without duration or dose\",\n          \"mechanism\": \"Patients receiving a single prescription were classified identically to long-term adherent users. Lack of a new-user design and washout period allows immortal time bias and prevalent user bias.\",\n          \"evidence\": [\n            \"Exposure defined as 'any prior or current use'\",\n            \"No minimum treatment duration required\",\n            \"Dose not accounted for\",\n            \"No washout period applied\"\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": 3,\n      \"name\": \"Selection of participants into the study\",\n      \"risk\": \"very_high\",\n      \"direction\": \"away_from_null\",\n      \"direction_justification\": \"Restricting the cohort to women who underwent mammography (217,624 screened) while failing to exclude prevalent/prior breast cancer cases (9.2% control vs 5.9% GLP-1) selected a control group enriched with cancer-prone individuals.\",\n      \"threatens_conclusions\": true,\n      \"findings\": [\n        {\n          \"title\": \"Collider/selection conditioning on screening mammography and failure to exclude prevalent cancer\",\n          \"mechanism\": \"Conditioning entry on receipt of mammography selects for health-seeking behavior or diagnostic workups, and retaining women with prior breast cancer incorporates prevalent disease rather than incident cases.\",\n          \"evidence\": [\n            \"Cohort selection cascade began with 217,624 women who underwent mammography\",\n            \"8,876 women (9.2%) in the control pool and 907 women (5.9%) in the GLP-1 group had a prior history of breast cancer\"\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": 4,\n      \"name\": \"Post-exposure interventions\",\n      \"risk\": \"no_information\",\n      \"direction\": \"no_information\",\n      \"direction_justification\": \"The passport contains no data regarding concomitant medications, treatment adherence, or subsequent screening frequency alterations during follow-up.\",\n      \"threatens_conclusions\": false,\n      \"findings\": [\n        {\n          \"title\": \"Lack of data on post-baseline co-interventions\",\n          \"mechanism\": \"Differential adherence or changes in antidiabetic/cardiovascular treatments during follow-up could confound the outcome.\",\n          \"evidence\": [\n            \"No information provided in the study passport regarding post-exposure medical management\"\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": 5,\n      \"name\": \"Missing data\",\n      \"risk\": \"no_information\",\n      \"direction\": \"no_information\",\n      \"direction_justification\": \"The passport provides no details on missing EHR covariates, attrition, or loss to follow-up across cohorts.\",\n      \"threatens_conclusions\": false,\n      \"findings\": [\n        {\n          \"title\": \"Missing covariate and follow-up data not reported\",\n          \"mechanism\": \"Differential loss to follow-up in EHR datasets can bias relative risk estimates.\",\n          \"evidence\": [\n            \"No data on missingness or censoring provided in the passport\"\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": 6,\n      \"name\": \"Measurement of the outcome\",\n      \"risk\": \"high\",\n      \"direction\": \"away_from_null\",\n      \"direction_justification\": \"With a short 3.5-year observation window (Jan 2022 - Jun 2025) and failure to distinguish recurrence from de novo primary cancer, the excess baseline cancer history in controls (7.8% vs 5.9%) directly increased outcome ascertainment in controls (353 vs 247 events).\",\n      \"threatens_conclusions\": true,\n      \"findings\": [\n        {\n          \"title\": \"Short latency window and inability to separate recurrence from incident cancer\",\n          \"mechanism\": \"Breast carcinogenesis operates over multi-year latency. In a 3.5-year study, recorded breast cancer diagnoses among patients with 7.8% vs 5.9% prior cancer history largely represent pre-existing or recurrent lesions rather than GLP-1-prevented de novo tumors.\",\n          \"evidence\": [\n            \"Observation window: January 1, 2022 to June 30, 2025 (3.5 years)\",\n            \"600 events in matched cohort (353 control vs 247 GLP-1)\"\n          ]\n        }\n      ]\n    },\n    {\n      \"id\": 7,\n      \"name\": \"Selection of the reported result\",\n      \"risk\": \"high\",\n      \"direction\": \"unpredictable\",\n      \"direction_justification\": \"Using cross-sectional logistic regression OR instead of time-to-event survival models in a longitudinal cohort obscures censoring, competing mortality (Charlson >= 5 was 19.7% vs 10.4%), and exposure timing.\",\n      \"threatens_conclusions\": true,\n      \"findings\": [\n        {\n          \"title\": \"Logistic regression chosen over time-to-event analysis\",\n          \"mechanism\": \"Odds ratios from logistic regression fail to account for variable follow-up time, competing risk of death in a heavily comorbid cohort, or timing of prescription initiation relative to cancer diagnosis.\",\n          \"evidence\": [\n            \"Method: Logistic regression, estimated via odds ratio\",\n            \"Time-to-event analysis was explicitly not performed\"\n          ]\n        }\n      ]\n    }\n  ],\n  \"overall\": {\n    \"risk\": \"very_high\",\n    \"direction\": \"away_from_null\",\n    \"threatens_conclusions\": true,\n    \"summary\": \"The reported protective association of GLP-1 agonists against breast cancer (matched OR 0.695, 95% CI 0.590-0.819) is compromised by severe confounding and selection bias. The control group had a substantially higher baseline history of breast cancer (7.8% vs 5.9% in matched; 9.2% vs 5.9% in full cohort), which directly inflated cancer event rates in controls over the brief 3.5-year follow-up. Combined with an 'ever-use' exposure definition without duration or washout requirements, substantial comorbidity differences (Charlson >= 5 in 19.7% vs 10.4%), and reliance on logistic regression without time-to-event modeling, the findings reflect methodological artifacts rather than a true protective pharmacological effect.\"\n  },\n  \"computed\": {\n    \"absolute_risk_difference\": \"-0.69% (matched cohort: 1.62% vs 2.31%)\",\n    \"nnt\": \"144\",\n    \"arithmetic\": \"Matched cohort: Risk_GLP1 = 247 / 15,264 = 1.6182%; Risk_Control = 353 / 15,264 = 2.3126%. Absolute Risk Difference (ARD) = 1.6182% - 2.3126% = -0.6944 percentage points. Absolute Risk Reduction (ARR) = 0.006944. NNT = 1 / 0.006944 = 144.0.\"\n  },\n  \"classification\": \"real_association_explained_by_selection\",\n  \"unresolvable_without_more_data\": [\n    \"Exact follow-up person-time per patient and time from first GLP-1 prescription to cancer diagnosis (requires time-to-event survival dataset).\",\n    \"Distribution of incident de novo primary breast cancer versus recurrent breast cancer (requires pathology/oncology staging records).\",\n    \"Screening mammography frequency during the 2022-2025 follow-up period across arms (requires longitudinal imaging logs).\",\n    \"Adherence, cumulative dose, and duration of GLP-1 therapy (requires pharmacy dispensing records).\"\n  ]\n}",
+      "parsed": {
+        "domains": [
+          {
+            "id": 1,
+            "name": "Confounding",
+            "risk": "very_high",
+            "direction": "away_from_null",
+            "direction_justification": "Personal history of breast cancer was significantly higher in controls than in GLP-1 users (7.8% vs 5.9% in the matched cohort; 9.2% vs 5.9% in the full cohort). Because prior breast cancer strongly elevates subsequent risk, this imbalance artificially inflated event rates in the control group (2.31% vs 1.62%), pushing the OR below 1.0 away from the null.",
+            "threatens_conclusions": true,
+            "findings": [
+              {
+                "title": "Unmatched baseline history of breast cancer",
+                "mechanism": "Patients with prior breast cancer have a substantially higher baseline risk of recurrence or secondary primary tumors. Failing to exclude or balance prior cancer history creates strong negative confounding.",
+                "evidence": [
+                  "Matched cohort: 7.8% in control vs 5.9% in GLP-1",
+                  "Full cohort: 9.2% (8,876 women) in control vs 5.9% (907 women) in GLP-1"
+                ]
+              },
+              {
+                "title": "Severe comorbidity imbalance",
+                "mechanism": "GLP-1 users had approximately double the burden of major systemic comorbidities compared to matched controls, introducing potential competing risks or confounding by indication/contraindication.",
+                "evidence": [
+                  "Charlson Comorbidity Index >= 5: 19.7% in GLP-1 vs 10.4% in control",
+                  "Cardiac pathology: 13.0% in GLP-1 vs 7.3% in control",
+                  "Renal pathology: 13.9% in GLP-1 vs 7.1% in control"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "name": "Measurement of the exposure",
+            "risk": "high",
+            "direction": "away_from_null",
+            "direction_justification": "Defining exposure as any single prior prescription without minimum duration, cumulative dose, or washout introduces immortal time and prevalent-user bias, which systematically lowers observed event rates in the exposed arm relative to controls.",
+            "threatens_conclusions": true,
+            "findings": [
+              {
+                "title": "Crude 'ever-use' exposure definition without duration or dose",
+                "mechanism": "Patients receiving a single prescription were classified identically to long-term adherent users. Lack of a new-user design and washout period allows immortal time bias and prevalent user bias.",
+                "evidence": [
+                  "Exposure defined as 'any prior or current use'",
+                  "No minimum treatment duration required",
+                  "Dose not accounted for",
+                  "No washout period applied"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "Selection of participants into the study",
+            "risk": "very_high",
+            "direction": "away_from_null",
+            "direction_justification": "Restricting the cohort to women who underwent mammography (217,624 screened) while failing to exclude prevalent/prior breast cancer cases (9.2% control vs 5.9% GLP-1) selected a control group enriched with cancer-prone individuals.",
+            "threatens_conclusions": true,
+            "findings": [
+              {
+                "title": "Collider/selection conditioning on screening mammography and failure to exclude prevalent cancer",
+                "mechanism": "Conditioning entry on receipt of mammography selects for health-seeking behavior or diagnostic workups, and retaining women with prior breast cancer incorporates prevalent disease rather than incident cases.",
+                "evidence": [
+                  "Cohort selection cascade began with 217,624 women who underwent mammography",
+                  "8,876 women (9.2%) in the control pool and 907 women (5.9%) in the GLP-1 group had a prior history of breast cancer"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "name": "Post-exposure interventions",
+            "risk": "no_information",
+            "direction": "no_information",
+            "direction_justification": "The passport contains no data regarding concomitant medications, treatment adherence, or subsequent screening frequency alterations during follow-up.",
+            "threatens_conclusions": false,
+            "findings": [
+              {
+                "title": "Lack of data on post-baseline co-interventions",
+                "mechanism": "Differential adherence or changes in antidiabetic/cardiovascular treatments during follow-up could confound the outcome.",
+                "evidence": [
+                  "No information provided in the study passport regarding post-exposure medical management"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "name": "Missing data",
+            "risk": "no_information",
+            "direction": "no_information",
+            "direction_justification": "The passport provides no details on missing EHR covariates, attrition, or loss to follow-up across cohorts.",
+            "threatens_conclusions": false,
+            "findings": [
+              {
+                "title": "Missing covariate and follow-up data not reported",
+                "mechanism": "Differential loss to follow-up in EHR datasets can bias relative risk estimates.",
+                "evidence": [
+                  "No data on missingness or censoring provided in the passport"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "name": "Measurement of the outcome",
+            "risk": "high",
+            "direction": "away_from_null",
+            "direction_justification": "With a short 3.5-year observation window (Jan 2022 - Jun 2025) and failure to distinguish recurrence from de novo primary cancer, the excess baseline cancer history in controls (7.8% vs 5.9%) directly increased outcome ascertainment in controls (353 vs 247 events).",
+            "threatens_conclusions": true,
+            "findings": [
+              {
+                "title": "Short latency window and inability to separate recurrence from incident cancer",
+                "mechanism": "Breast carcinogenesis operates over multi-year latency. In a 3.5-year study, recorded breast cancer diagnoses among patients with 7.8% vs 5.9% prior cancer history largely represent pre-existing or recurrent lesions rather than GLP-1-prevented de novo tumors.",
+                "evidence": [
+                  "Observation window: January 1, 2022 to June 30, 2025 (3.5 years)",
+                  "600 events in matched cohort (353 control vs 247 GLP-1)"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 7,
+            "name": "Selection of the reported result",
+            "risk": "high",
+            "direction": "unpredictable",
+            "direction_justification": "Using cross-sectional logistic regression OR instead of time-to-event survival models in a longitudinal cohort obscures censoring, competing mortality (Charlson >= 5 was 19.7% vs 10.4%), and exposure timing.",
+            "threatens_conclusions": true,
+            "findings": [
+              {
+                "title": "Logistic regression chosen over time-to-event analysis",
+                "mechanism": "Odds ratios from logistic regression fail to account for variable follow-up time, competing risk of death in a heavily comorbid cohort, or timing of prescription initiation relative to cancer diagnosis.",
+                "evidence": [
+                  "Method: Logistic regression, estimated via odds ratio",
+                  "Time-to-event analysis was explicitly not performed"
+                ]
+              }
+            ]
+          }
+        ],
+        "overall": {
+          "risk": "very_high",
+          "direction": "away_from_null",
+          "threatens_conclusions": true,
+          "summary": "The reported protective association of GLP-1 agonists against breast cancer (matched OR 0.695, 95% CI 0.590-0.819) is compromised by severe confounding and selection bias. The control group had a substantially higher baseline history of breast cancer (7.8% vs 5.9% in matched; 9.2% vs 5.9% in full cohort), which directly inflated cancer event rates in controls over the brief 3.5-year follow-up. Combined with an 'ever-use' exposure definition without duration or washout requirements, substantial comorbidity differences (Charlson >= 5 in 19.7% vs 10.4%), and reliance on logistic regression without time-to-event modeling, the findings reflect methodological artifacts rather than a true protective pharmacological effect."
+        },
+        "computed": {
+          "absolute_risk_difference": "-0.69% (matched cohort: 1.62% vs 2.31%)",
+          "nnt": "144",
+          "arithmetic": "Matched cohort: Risk_GLP1 = 247 / 15,264 = 1.6182%; Risk_Control = 353 / 15,264 = 2.3126%. Absolute Risk Difference (ARD) = 1.6182% - 2.3126% = -0.6944 percentage points. Absolute Risk Reduction (ARR) = 0.006944. NNT = 1 / 0.006944 = 144.0."
+        },
+        "classification": "real_association_explained_by_selection",
+        "unresolvable_without_more_data": [
+          "Exact follow-up person-time per patient and time from first GLP-1 prescription to cancer diagnosis (requires time-to-event survival dataset).",
+          "Distribution of incident de novo primary breast cancer versus recurrent breast cancer (requires pathology/oncology staging records).",
+          "Screening mammography frequency during the 2022-2025 follow-up period across arms (requires longitudinal imaging logs).",
+          "Adherence, cumulative dose, and duration of GLP-1 therapy (requires pharmacy dispensing records)."
+        ]
+      },
+      "parse_error": null,
+      "usage": {
+        "prompt": 1563,
+        "candidates": 2390,
+        "thoughts": 1802,
+        "total": 5755
+      },
+      "judge_model": "gemini-3.7-flash",
+      "verdict": {
+        "points": [
+          {
+            "id": "P1",
+            "score": 1.0,
+            "reason": "Accurately identified that baseline breast cancer history was not excluded and remained imbalanced after matching, correctly identifying the direction (higher in controls: 7.8% vs 5.9% matched, 9.2% vs 5.9% full) without falling into the inversion trap.",
+            "quote": "Personal history of breast cancer was significantly higher in controls than in GLP-1 users (7.8% vs 5.9% in the matched cohort; 9.2% vs 5.9% in the full cohort). Because prior breast cancer strongly elevates subsequent risk, this imbalance artificially inflated event rates in the control group (2.31% vs 1.62%), pushing the OR below 1.0 away from the null."
+          },
+          {
+            "id": "P2",
+            "score": 1.0,
+            "reason": "Correctly identified that GLP-1 users were significantly more comorbid (Charlson >=5: 19.7% vs 10.4%; cardiac: 13.0% vs 7.3%; renal: 13.9% vs 7.1%), avoided the 'healthy user' trap, and noted the role of competing risks and confounding by indication.",
+            "quote": "Charlson Comorbidity Index >= 5: 19.7% in GLP-1 vs 10.4% in control; Cardiac pathology: 13.0% in GLP-1 vs 7.3% in control; Renal pathology: 13.9% in GLP-1 vs 7.1% in control"
+          },
+          {
+            "id": "P3",
+            "score": 1.0,
+            "reason": "Completely covered the prevalent-user / immortal time issues, noting the lack of minimum duration, washout, cumulative dose, and the use of logistic regression rather than time-to-event analysis.",
+            "quote": "Defining exposure as any single prior prescription without minimum duration, cumulative dose, or washout introduces immortal time and prevalent-user bias, which systematically lowers observed event rates in the exposed arm relative to controls."
+          },
+          {
+            "id": "P4",
+            "score": 0.0,
+            "reason": "Did not discuss the distortion introduced by matching on T2D (53.4% in matched control vs 17.6% source) nor the issue of matching on maximum BMI rather than weight trajectory.",
+            "quote": ""
+          },
+          {
+            "id": "P5",
+            "score": 1.0,
+            "reason": "Accurately computed the absolute risk reduction (-0.69 percentage points, from 2.31% to 1.62%) and NNT (~144-145).",
+            "quote": "Absolute Risk Difference (ARD) = 1.6182% - 2.3126% = -0.6944 percentage points. Absolute Risk Reduction (ARR) = 0.006944. NNT = 1 / 0.006944 = 144.0."
+          }
+        ],
+        "extra_findings": [
+          {
+            "title": "Short latency window (3.5 years) biologically implausible for primary breast cancer prevention",
+            "valid": true,
+            "why": "Breast carcinogenesis typically requires many years; observing a protective signal within a 3.5-year window strongly suggests recurrent or pre-existing cases rather than incident tumor prevention."
+          }
+        ],
+        "classification_correct": true,
+        "notes": "Strong critique that hit 4 out of 5 reference points with exact supporting numbers and correct bias directions, correctly classifying the study as a real association explained by selection/confounding."
+      },
+      "score": {
+        "got": 4.0,
+        "of": 5,
+        "ratio": 0.8
+      }
+    }
+  ],
+  "scored": "2026-08-27T20:17:08"
+}

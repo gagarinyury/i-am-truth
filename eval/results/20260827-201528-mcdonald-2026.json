@@ -1,0 +1,232 @@
+{
+  "run_id": "20260827-201528-mcdonald-2026",
+  "case": "mcdonald-2026",
+  "prompt_version": "v2",
+  "location": "global",
+  "project": "merci-prod",
+  "started": "2026-08-27T20:15:28",
+  "results": [
+    {
+      "model": "gemini-3.7-flash",
+      "input": "with_appendix",
+      "raw": "{\n  \"domains\": [\n    {\n      \"id\": 1,\n      \"name\": \"Confounding\",\n      \"risk\": \"very_high\",\n      \"direction\": \"away_from_null\",\n      \"direction_justification\": \"In the matched cohort, personal history of breast cancer was 7.8% in controls vs 5.9% in the GLP-1 group (and 9.2% vs 5.9% in the full cohort). Higher baseline personal history increases subsequent event risk in the control group, artificially driving the odds ratio below 1.0 (OR 0.695).\",\n      \"threatens_conclusions\": true,\n      \"findings\": [\n        {\n          \"title\": \"Unmatched baseline history of breast cancer\",\n          \"mechanism\": \"Control group had a 32% higher relative prevalence of prior breast cancer (7.8% vs 5.9% in matched cohort), directly inflating event rates in controls.\",\n          \"evidence\": [\"Matched cohort history of breast cancer: control 7.8% vs GLP-1 5.9%\", \"Full cohort: control 9.2% (8,876) vs GLP-1 5.9% (907)\"]\n        },\n        {\n          \"title\": \"Severe unadjusted comorbidity imbalance and competing risk\",\n          \"mechanism\": \"GLP-1 users had nearly double the rate of severe comorbidity, predisposing them to competing mortality before breast cancer diagnosis.\",\n          \"evidence\": [\"Charlson Index >= 5: GLP-1 19.7% vs control 10.4%\", \"Cardiac disease: GLP-1 13.0% vs control 7.3%\", \"Renal disease: GLP-1 13.9% vs control 7.1%\"]\n        }\n      ]\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Measurement of the exposure\",\n      \"risk\": \"high\",\n      \"direction\": \"away_from_null\",\n      \"direction_justification\": \"Defining exposure as any single prior or current prescription without minimum duration, cumulative dose, or washout period, while requiring first prescription before cutoff, introduces immortal time bias and includes non-adherent patients as exposed, skewing results away from null.\",\n      \"threatens_conclusions\": true,\n      \"findings\": [\n        {\n          \"title\": \"Crude exposure definition and immortal time bias\",\n          \"mechanism\": \"Patients with a single prescription are classified as exposed without verifying continuation or dose; observation window (2022-2025) is too short (3.5 years) for solid tumor biology without strict induction/lag windows.\",\n          \"evidence\": [\"Any prior or current GLP-1 prescription\", \"No minimum treatment duration required\", \"No dose tracking\", \"No washout period\"]\n        }\n      ]\n    },\n    {\n      \"id\": 3,\n      \"name\": \"Selection of participants into the study\",\n      \"risk\": \"high\",\n      \"direction\": \"away_from_null\",\n      \"direction_justification\": \"Conditioning inclusion entirely on undergoing mammography (217,624 women screened) creates collider/selection bias, as screening behavior correlates with health-seeking status and socioeconomic factors.\",\n      \"threatens_conclusions\": true,\n      \"findings\": [\n        {\n          \"title\": \"Restriction to mammography attendees\",\n          \"mechanism\": \"Selection filter requires prior mammogram, introducing selection bias regarding who gets screened and who is subsequently prescribed GLP-1.\",\n          \"evidence\": [\"Cohort restricted to women undergoing mammography (217,624 -> 111,646)\"]\n        }\n      ]\n    },\n    {\n      \"id\": 4,\n      \"name\": \"Post-exposure interventions\",\n      \"risk\": \"no_information\",\n      \"direction\": \"no_information\",\n      \"direction_justification\": \"No data are provided on concomitant medications, weight loss interventions, or cancer preventive therapies during follow-up.\",\n      \"threatens_conclusions\": false,\n      \"findings\": [\n        {\n          \"title\": \"Missing data on co-interventions\",\n          \"mechanism\": \"Cannot assess differential use of post-exposure treatments without pharmacological tracking.\",\n          \"evidence\": [\"No post-exposure co-intervention data reported\"]\n        }\n      ]\n    },\n    {\n      \"id\": 5,\n      \"name\": \"Missing data\",\n      \"risk\": \"no_information\",\n      \"direction\": \"no_information\",\n      \"direction_justification\": \"The passport contains no reporting on missing EHR records, variable completeness, or loss to follow-up.\",\n      \"threatens_conclusions\": false,\n      \"findings\": [\n        {\n          \"title\": \"Absence of missingness reporting\",\n          \"mechanism\": \"Unknown extent of missing covariates or incomplete follow-up in EHR.\",\n          \"evidence\": [\"No missing data statistics provided\"]\n        }\n      ]\n    },\n    {\n      \"id\": 6,\n      \"name\": \"Measurement of the outcome\",\n      \"risk\": \"some_concerns\",\n      \"direction\": \"unpredictable\",\n      \"direction_justification\": \"Screening frequency was explicitly not matched between groups, making it impossible to determine if breast cancer detection was systematically higher or lower in GLP-1 users.\",\n      \"threatens_conclusions\": false,\n      \"findings\": [\n        {\n          \"title\": \"Unmatched screening frequency and surveillance bias\",\n          \"mechanism\": \"Differential routine mammogram adherence between groups can cause detection bias in either direction.\",\n          \"evidence\": [\"Matching NOT conducted on screening frequency\"]\n        }\n      ]\n    },\n    {\n      \"id\": 7,\n      \"name\": \"Selection of the reported result\",\n      \"risk\": \"high\",\n      \"direction\": \"away_from_null\",\n      \"direction_justification\": \"Logistic regression without time-to-event modeling ignores censoring and competing mortality (Charlson >= 5 was 19.7% in GLP-1 vs 10.4% in controls), artificially decreasing observed GLP-1 odds (OR 0.695).\",\n      \"threatens_conclusions\": true,\n      \"findings\": [\n        {\n          \"title\": \"Failure to perform time-to-event and competing risk analysis\",\n          \"mechanism\": \"Binary logistic regression treats all follow-up as static and ignores differential death/censoring risks in a heavily comorbid GLP-1 cohort.\",\n          \"evidence\": [\"Logistic regression used; time-to-event analysis not performed\", \"Follow-up period: 1 Jan 2022 - 30 Jun 2025\"]\n        }\n      ]\n    }\n  ],\n  \"overall\": {\n    \"risk\": \"very_high\",\n    \"direction\": \"away_from_null\",\n    \"threatens_conclusions\": true,\n    \"summary\": \"The study exhibits a critical risk of bias driven by unadjusted baseline confounding (controls had significantly higher baseline breast cancer history, 7.8% vs 5.9% in matched cohort), immortal time bias from a permissive exposure definition, selection on mammography attendance, and failure to account for competing mortality in logistic regression despite GLP-1 patients having nearly double the rate of high comorbidity (19.7% vs 10.4% Charlson >= 5). These biases systematically push the effect estimate away from the null towards an apparent protective effect (matched OR 0.695).\"\n  },\n  \"computed\": {\n    \"absolute_risk_difference\": \"-0.69%\",\n    \"nnt\": \"144\",\n    \"arithmetic\": \"Matched cohort: Risk(GLP-1) = 247 / 15,264 = 1.618%; Risk(Control) = 353 / 15,264 = 2.313%; ARD = 1.618% - 2.313% = -0.694% (-0.006944); ARR = 0.694%; NNT = 1 / 0.006944 = 144.0\"\n  },\n  \"classification\": \"real_association_explained_by_selection\",\n  \"unresolvable_without_more_data\": [\n    \"Data on post-exposure co-interventions and adjuvant therapies across both arms.\",\n    \"Data on EHR completeness, missingness proportion, and patient loss to follow-up.\",\n    \"Exact mammography screening frequency per patient during follow-up to settle direction of surveillance bias.\",\n    \"Time-to-event data with competing risks of death (Fine-Gray / cause-specific hazards).\"\n  ]\n}",
+      "parsed": {
+        "domains": [
+          {
+            "id": 1,
+            "name": "Confounding",
+            "risk": "very_high",
+            "direction": "away_from_null",
+            "direction_justification": "In the matched cohort, personal history of breast cancer was 7.8% in controls vs 5.9% in the GLP-1 group (and 9.2% vs 5.9% in the full cohort). Higher baseline personal history increases subsequent event risk in the control group, artificially driving the odds ratio below 1.0 (OR 0.695).",
+            "threatens_conclusions": true,
+            "findings": [
+              {
+                "title": "Unmatched baseline history of breast cancer",
+                "mechanism": "Control group had a 32% higher relative prevalence of prior breast cancer (7.8% vs 5.9% in matched cohort), directly inflating event rates in controls.",
+                "evidence": [
+                  "Matched cohort history of breast cancer: control 7.8% vs GLP-1 5.9%",
+                  "Full cohort: control 9.2% (8,876) vs GLP-1 5.9% (907)"
+                ]
+              },
+              {
+                "title": "Severe unadjusted comorbidity imbalance and competing risk",
+                "mechanism": "GLP-1 users had nearly double the rate of severe comorbidity, predisposing them to competing mortality before breast cancer diagnosis.",
+                "evidence": [
+                  "Charlson Index >= 5: GLP-1 19.7% vs control 10.4%",
+                  "Cardiac disease: GLP-1 13.0% vs control 7.3%",
+                  "Renal disease: GLP-1 13.9% vs control 7.1%"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "name": "Measurement of the exposure",
+            "risk": "high",
+            "direction": "away_from_null",
+            "direction_justification": "Defining exposure as any single prior or current prescription without minimum duration, cumulative dose, or washout period, while requiring first prescription before cutoff, introduces immortal time bias and includes non-adherent patients as exposed, skewing results away from null.",
+            "threatens_conclusions": true,
+            "findings": [
+              {
+                "title": "Crude exposure definition and immortal time bias",
+                "mechanism": "Patients with a single prescription are classified as exposed without verifying continuation or dose; observation window (2022-2025) is too short (3.5 years) for solid tumor biology without strict induction/lag windows.",
+                "evidence": [
+                  "Any prior or current GLP-1 prescription",
+                  "No minimum treatment duration required",
+                  "No dose tracking",
+                  "No washout period"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "name": "Selection of participants into the study",
+            "risk": "high",
+            "direction": "away_from_null",
+            "direction_justification": "Conditioning inclusion entirely on undergoing mammography (217,624 women screened) creates collider/selection bias, as screening behavior correlates with health-seeking status and socioeconomic factors.",
+            "threatens_conclusions": true,
+            "findings": [
+              {
+                "title": "Restriction to mammography attendees",
+                "mechanism": "Selection filter requires prior mammogram, introducing selection bias regarding who gets screened and who is subsequently prescribed GLP-1.",
+                "evidence": [
+                  "Cohort restricted to women undergoing mammography (217,624 -> 111,646)"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "name": "Post-exposure interventions",
+            "risk": "no_information",
+            "direction": "no_information",
+            "direction_justification": "No data are provided on concomitant medications, weight loss interventions, or cancer preventive therapies during follow-up.",
+            "threatens_conclusions": false,
+            "findings": [
+              {
+                "title": "Missing data on co-interventions",
+                "mechanism": "Cannot assess differential use of post-exposure treatments without pharmacological tracking.",
+                "evidence": [
+                  "No post-exposure co-intervention data reported"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "name": "Missing data",
+            "risk": "no_information",
+            "direction": "no_information",
+            "direction_justification": "The passport contains no reporting on missing EHR records, variable completeness, or loss to follow-up.",
+            "threatens_conclusions": false,
+            "findings": [
+              {
+                "title": "Absence of missingness reporting",
+                "mechanism": "Unknown extent of missing covariates or incomplete follow-up in EHR.",
+                "evidence": [
+                  "No missing data statistics provided"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "name": "Measurement of the outcome",
+            "risk": "some_concerns",
+            "direction": "unpredictable",
+            "direction_justification": "Screening frequency was explicitly not matched between groups, making it impossible to determine if breast cancer detection was systematically higher or lower in GLP-1 users.",
+            "threatens_conclusions": false,
+            "findings": [
+              {
+                "title": "Unmatched screening frequency and surveillance bias",
+                "mechanism": "Differential routine mammogram adherence between groups can cause detection bias in either direction.",
+                "evidence": [
+                  "Matching NOT conducted on screening frequency"
+                ]
+              }
+            ]
+          },
+          {
+            "id": 7,
+            "name": "Selection of the reported result",
+            "risk": "high",
+            "direction": "away_from_null",
+            "direction_justification": "Logistic regression without time-to-event modeling ignores censoring and competing mortality (Charlson >= 5 was 19.7% in GLP-1 vs 10.4% in controls), artificially decreasing observed GLP-1 odds (OR 0.695).",
+            "threatens_conclusions": true,
+            "findings": [
+              {
+                "title": "Failure to perform time-to-event and competing risk analysis",
+                "mechanism": "Binary logistic regression treats all follow-up as static and ignores differential death/censoring risks in a heavily comorbid GLP-1 cohort.",
+                "evidence": [
+                  "Logistic regression used; time-to-event analysis not performed",
+                  "Follow-up period: 1 Jan 2022 - 30 Jun 2025"
+                ]
+              }
+            ]
+          }
+        ],
+        "overall": {
+          "risk": "very_high",
+          "direction": "away_from_null",
+          "threatens_conclusions": true,
+          "summary": "The study exhibits a critical risk of bias driven by unadjusted baseline confounding (controls had significantly higher baseline breast cancer history, 7.8% vs 5.9% in matched cohort), immortal time bias from a permissive exposure definition, selection on mammography attendance, and failure to account for competing mortality in logistic regression despite GLP-1 patients having nearly double the rate of high comorbidity (19.7% vs 10.4% Charlson >= 5). These biases systematically push the effect estimate away from the null towards an apparent protective effect (matched OR 0.695)."
+        },
+        "computed": {
+          "absolute_risk_difference": "-0.69%",
+          "nnt": "144",
+          "arithmetic": "Matched cohort: Risk(GLP-1) = 247 / 15,264 = 1.618%; Risk(Control) = 353 / 15,264 = 2.313%; ARD = 1.618% - 2.313% = -0.694% (-0.006944); ARR = 0.694%; NNT = 1 / 0.006944 = 144.0"
+        },
+        "classification": "real_association_explained_by_selection",
+        "unresolvable_without_more_data": [
+          "Data on post-exposure co-interventions and adjuvant therapies across both arms.",
+          "Data on EHR completeness, missingness proportion, and patient loss to follow-up.",
+          "Exact mammography screening frequency per patient during follow-up to settle direction of surveillance bias.",
+          "Time-to-event data with competing risks of death (Fine-Gray / cause-specific hazards)."
+        ]
+      },
+      "parse_error": null,
+      "usage": {
+        "prompt": 1563,
+        "candidates": 1992,
+        "thoughts": 2090,
+        "total": 5645
+      },
+      "judge_model": "gemini-3.7-flash",
+      "verdict": {
+        "points": [
+          {
+            "id": "P1",
+            "score": 1.0,
+            "reason": "The auditor accurately identified the unadjusted baseline history of breast cancer imbalance with exact numbers (7.8% vs 5.9% matched, 9.2% vs 5.9% full cohort) and correctly identified the direction of bias (higher risk in controls explaining the apparent protective effect).",
+            "quote": "In the matched cohort, personal history of breast cancer was 7.8% in controls vs 5.9% in the GLP-1 group (and 9.2% vs 5.9% in the full cohort). Higher baseline personal history increases subsequent event risk in the control group, artificially driving the odds ratio below 1.0 (OR 0.695)."
+          },
+          {
+            "id": "P2",
+            "score": 1.0,
+            "reason": "The auditor correctly recognized that the GLP-1 cohort was significantly sicker across comorbidity indices (Charlson >=5 19.7% vs 10.4%, cardiac 13.0% vs 7.3%, renal 13.9% vs 7.1%) and avoided the healthy user effect trap, framing it as competing risk / selection against null.",
+            "quote": "Charlson Index >= 5: GLP-1 19.7% vs control 10.4%; Cardiac disease: GLP-1 13.0% vs control 7.3%; Renal disease: GLP-1 13.9% vs control 7.1%"
+          },
+          {
+            "id": "P3",
+            "score": 1.0,
+            "reason": "The auditor explicitly identified the prevalent-user / crude exposure definition, lack of washout, lack of minimum duration, lack of dose tracking, immortal time bias, and the failure to use time-to-event analysis instead of binary logistic regression.",
+            "quote": "Defining exposure as any single prior or current prescription without minimum duration, cumulative dose, or washout period... introduces immortal time bias... Binary logistic regression treats all follow-up as static and ignores differential death/censoring risks"
+          },
+          {
+            "id": "P4",
+            "score": 0.0,
+            "reason": "The auditor completely missed the issue regarding matching on maximum BMI rather than weight trajectory and the artificial enrichment of diabetes in the matched control group (53.4% vs 17.6%).",
+            "quote": ""
+          },
+          {
+            "id": "P5",
+            "score": 1.0,
+            "reason": "The auditor accurately calculated the absolute risk difference (ARR 0.69% / 2.31% to 1.62%) and NNT (~144).",
+            "quote": "Matched cohort: Risk(GLP-1) = 247 / 15,264 = 1.618%; Risk(Control) = 353 / 15,264 = 2.313%; ARD = 1.618% - 2.313% = -0.694% (-0.006944); ARR = 0.694%; NNT = 1 / 0.006944 = 144.0"
+          }
+        ],
+        "extra_findings": [
+          {
+            "title": "Restriction to mammography attendees as collider/selection bias",
+            "valid": true,
+            "why": "Restricting the cohort strictly to women who underwent mammography introduces selection on health-seeking behavior and screening adherence."
+          },
+          {
+            "title": "Unmatched screening frequency during follow-up",
+            "valid": true,
+            "why": "Follow-up screening frequency was not matched, leaving potential for detection/surveillance bias."
+          }
+        ],
+        "classification_correct": true,
+        "notes": "The auditor provided an exceptionally strong quantitative analysis, catching 4 out of 5 reference points with exact figures and avoiding all traps. It only omitted the specific critique of matching on maximum baseline BMI vs weight trajectory and diabetes comparator composition (P4)."
+      },
+      "score": {
+        "got": 4.0,
+        "of": 5,
+        "ratio": 0.8
+      }
+    }
+  ],
+  "scored": "2026-08-27T20:16:16"
+}
