@@ -21,6 +21,7 @@ from pydantic import BaseModel
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from truth import __version__, critic, pipeline, retrieval   # noqa: E402
+from truth.batch import BUCKET                                # noqa: E402
 
 PROMPT = (pathlib.Path(__file__).resolve().parent.parent
           / "truth" / "prompt_robins_e.md").read_text()
@@ -77,3 +78,32 @@ def analyze(req: AnalyzeRequest):
         return pipeline.run(doi=req.doi, text=req.text, prompt=PROMPT)
     except Exception as e:                                   # noqa: BLE001
         raise HTTPException(500, f"{type(e).__name__}: {e}"[:500])
+
+
+@app.get("/runs")
+def runs():
+    """Батч-прогоны, выполненные Cloud Run Job."""
+    try:
+        from google.cloud import storage
+        b = storage.Client().bucket(BUCKET)
+        ids = sorted({n.name.split("/")[0] for n in b.list_blobs()
+                      if n.name.endswith("summary.json")}, reverse=True)
+        return {"bucket": BUCKET, "runs": ids}
+    except Exception as e:                                   # noqa: BLE001
+        raise HTTPException(503, f"хранилище недоступно: {type(e).__name__}")
+
+
+@app.get("/runs/{run_id}")
+def run_summary(run_id: str):
+    """Сводка одного батч-прогона: распределение по уровням и статистика сверки."""
+    import json as _json
+    try:
+        from google.cloud import storage
+        blob = storage.Client().bucket(BUCKET).blob(f"{run_id}/summary.json")
+        if not blob.exists():
+            raise HTTPException(404, f"прогон {run_id} не найден")
+        return _json.loads(blob.download_as_text())
+    except HTTPException:
+        raise
+    except Exception as e:                                   # noqa: BLE001
+        raise HTTPException(503, f"хранилище недоступно: {type(e).__name__}")

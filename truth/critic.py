@@ -8,6 +8,7 @@ Layer 2/3 — вызов модели с промптом критика.
 import json
 import os
 import re
+import threading
 import time
 
 from google import genai
@@ -18,14 +19,19 @@ LOCATION = os.environ.get("VERTEX_LOCATION", "global")
 MODEL = os.environ.get("TRUTH_MODEL", "gemini-3.7-flash")
 MAX_OUTPUT_TOKENS = 32000     # F-02: thinking-токены считаются сюда же
 
-_client = None
+# Клиент — на поток, а не один на процесс.
+# Батч гоняет статьи в ThreadPoolExecutor, и общий клиент там разваливается:
+# «RuntimeError: Cannot send a request, as the client has been closed» —
+# поймано на первом облачном прогоне Cloud Run Job 27.08, 2 статьи из 8.
+_local = threading.local()
 
 
 def client() -> genai.Client:
-    global _client
-    if _client is None:
-        _client = genai.Client(vertexai=True, project=PROJECT, location=LOCATION)
-    return _client
+    c = getattr(_local, "client", None)
+    if c is None:
+        c = genai.Client(vertexai=True, project=PROJECT, location=LOCATION)
+        _local.client = c
+    return c
 
 
 def parse_json_answer(raw: str):
