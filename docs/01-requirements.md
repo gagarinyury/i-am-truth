@@ -16,9 +16,9 @@
 |---|---|---|---|
 | R1 | «Gemini **3.5 or newer** accessed through Gemini API or Vertex AI» | ✅ **технически закрыто** | `gemini-3.7-flash` (Vertex, global) отвечает — F-01, F-02, F-09. Остаётся Q-00: держит ли качество |
 | R2 | «at least one Google Agent Framework: Google ADK, GenAI SDK, Antigravity SDK or GenKit» | ✅ **закрыто минимально** | `google-genai` 1.56.0 работает с Vertex (F-09). ADK — апгрейд ради 30% за архитектуру, не необходимость |
-| R3 | «at least one Google Cloud infrastructure service (Cloud Run, Cloud SQL, Firestore, GKE, Pub/Sub)» | 🔲 | кандидат: Cloud Run + Firestore |
-| R4 | «Must demonstrate the backend is running on Google Cloud» (Cloud Console, Cloud Run dashboard, Vertex AI logs, URL вида `.run`) | 🔲 | пруф в видео |
-| R5 | «a next-generation, autonomous AI Agent leveraging Gemini 3.5 that operates beyond standard chat loops» | 🔲 | асинхронный батч-разбор корпуса |
+| R3 | «at least one Google Cloud infrastructure service (Cloud Run, Cloud SQL, Firestore, GKE, Pub/Sub)» | ✅ **закрыто** | Cloud Run, сервис `i-am-truth` развёрнут и отвечает (F-36) |
+| R4 | «Must demonstrate the backend is running on Google Cloud» (Cloud Console, Cloud Run dashboard, Vertex AI logs, URL вида `.run`) | ✅ **закрыто** | `https://i-am-truth-242136767009.us-central1.run.app` (F-36); в видео показать дашборд |
+| R5 | «a next-generation, autonomous AI Agent leveraging Gemini 3.5 that operates beyond standard chat loops» | 🟡 частично | пайплайн из шести слоёв с retrieval и верификацией работает; батч по корпусу не собран |
 
 ⚠️ **R1 — самая опасная строка.** Проверенный результат проекта (3.5/5 → 4.5/5)
 получен на Gemini **2.5 Pro**, которая порог не проходит. Pro-линейка на Vertex
@@ -33,8 +33,8 @@
 | S3 | README со spin-up-инструкцией | обязательно | 🔲 |
 | S4 | **Архитектурная диаграмма** | «system visualization» | 🔲 |
 | S5 | Текстовое описание | features, technologies, data sources, learnings | 🔲 |
-| S6 | Hosted project URL | «encouraged but not strictly required for judging» | 🔲 |
-| S7 | Пруф деплоя на Google Cloud | в видео и/или репо (= R4) | 🔲 |
+| S6 | Hosted project URL | «encouraged but not strictly required for judging» | ✅ `https://i-am-truth-242136767009.us-central1.run.app` |
+| S7 | Пруф деплоя на Google Cloud | в видео и/или репо (= R4) | 🟡 сервис есть, снять на видео |
 
 ## Правило новизны кода
 
