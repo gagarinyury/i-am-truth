@@ -38,17 +38,28 @@ def _storage():
     return storage.Client()
 
 
-def save(path: str, obj: dict):
+# Отказы записи в хранилище копятся здесь и обязаны попасть в сводку:
+# в Cloud Run Job локальная файловая система умирает вместе с задачей, и
+# «успешный» прогон без единого сохранённого результата выглядел бы как успешный.
+STORAGE_FAILURES = []
+
+
+def save(path: str, obj: dict) -> bool:
+    """Возвращает True, если запись реально ушла в облако."""
     data = json.dumps(obj, ensure_ascii=False, indent=2)
     try:
         _storage().bucket(BUCKET).blob(path).upload_from_string(
             data, content_type="application/json")
+        return True
     except Exception as e:                                   # noqa: BLE001
         out = pathlib.Path("batch_out") / path
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(data)
-        print(f"  (GCS недоступен: {type(e).__name__}; записано локально в {out})",
+        STORAGE_FAILURES.append({"path": path, "error": f"{type(e).__name__}: {e}"[:200]})
+        print(f"  ⚠️  GCS недоступен ({type(e).__name__}), записано во временную "
+              f"файловую систему {out} — в Cloud Run Job она исчезнет вместе с задачей",
               file=sys.stderr)
+        return False
 
 
 def search_dois(query: str, limit: int) -> list:
@@ -110,8 +121,15 @@ def run_batch(dois: list, run_id: str = None) -> dict:
         "numbers_checked": sum((r["verification"] or {}).get("total", 0) for r in ok),
         "numbers_unverified": sum((r["verification"] or {}).get("unverified", 0)
                                   for r in ok),
+        "storage_ok": not STORAGE_FAILURES,
+        "storage_failures": STORAGE_FAILURES[:20],
         "papers": rows,
     }
+    if STORAGE_FAILURES:
+        summary["warning"] = (
+            f"{len(STORAGE_FAILURES)} результатов не сохранились в облако — "
+            f"прогон нельзя считать состоявшимся, данные потеряны вместе с задачей")
+        print("\n" + summary["warning"], file=sys.stderr)
     save(f"{run_id}/summary.json", summary)
     print(json.dumps({k: v for k, v in summary.items() if k != "papers"},
                      ensure_ascii=False, indent=2))

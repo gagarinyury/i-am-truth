@@ -14,7 +14,9 @@ Layer 0 — оркестратор. Сквозной путь от DOI или т
 ошибка направления confounding держалась на обоих нижних уровнях.
 """
 import io
+import os
 import re
+import tempfile
 import zipfile
 
 from . import critic, retrieval
@@ -61,15 +63,21 @@ def _tables_from_supplementary(blob: bytes) -> list:
     for name in z.namelist():
         if not name.lower().endswith(".docx"):
             continue
-        tmp = io.BytesIO(z.read(name))
-        with open("/tmp/_suppl.docx", "wb") as f:
-            f.write(tmp.getvalue())
+        # Файл обязан быть уникальным: батч гоняет статьи в несколько потоков,
+        # а фиксированный путь означает, что таблицы одной статьи попадут в разбор
+        # другой — молча, без ошибки. Это ровно тот класс подмены, который продукт
+        # создан ловить у чужих работ, и нарушение D-14 внутри себя.
+        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as fh:
+            fh.write(z.read(name))
+            tmp_path = fh.name
         try:
-            for t in extract_docx("/tmp/_suppl.docx"):
+            for t in extract_docx(tmp_path):
                 t["source_file"] = name
                 tables.append(t)
         except Exception:                                    # noqa: BLE001
             continue
+        finally:
+            os.unlink(tmp_path)
     return tables
 
 
@@ -87,12 +95,15 @@ def gather(doi: str = None, text: str = None) -> dict:
 
     if meta.get("in_epmc") and meta.get("pmcid"):
         xml = retrieval.fetch_fulltext(meta["pmcid"])
-        with open("/tmp/_ft.xml", "wb") as f:
-            f.write(xml)
+        with tempfile.NamedTemporaryFile(suffix=".xml", delete=False) as fh:
+            fh.write(xml)
+            ft_path = fh.name
         try:
-            jats = parse_tables("/tmp/_ft.xml")
+            jats = parse_tables(ft_path)
         except Exception:                                    # noqa: BLE001
             jats = []
+        finally:
+            os.unlink(ft_path)
         source_text = re.sub(r"<[^>]+>", " ", xml.decode("utf-8", "replace"))
         if meta.get("has_supplementary"):
             try:
