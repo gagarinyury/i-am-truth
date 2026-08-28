@@ -226,7 +226,26 @@ def tables_as_text(gathered: dict, limit: int = 40) -> str:
 
 
 def verify_findings(findings: dict, source_text: str) -> dict:
-    """Шаг 4 — D-14: каждое число из разбора сверяется с первоисточником."""
+    """Шаг 4 — D-14: каждое число из разбора сверяется с первоисточником.
+
+    Меткой числа служит **самодостаточное утверждение**, а не путь в JSON.
+
+    Так было до 28.08: меткой шёл путь по структуре ответа — `domains ·
+    direction_justification`, `subagents · baseline_comparability ·
+    characteristics · exposed`. Слова `domains` и `characteristics` в научной
+    статье не встречаются никогда, поэтому `check_label` почти всегда не находил
+    метку рядом с числом: статуса VERIFIED удостаивались 3-8 чисел из четырёхсот.
+    Хуже того, имя поля `exposed` принималось за заявленную группу, и
+    `check_group` объявлял инверсию там, где модель аккуратно положила значение
+    в нужное поле — ложное обвинение в ошибке класса F-12.
+
+    Приём взят у SAFE (google-deepmind/long-form-factuality): их конвейер
+    отдельным шагом переписывает каждый атомарный факт так, чтобы он был
+    самодостаточным, и только потом проверяет. Здесь то же самое собирается из
+    соседних полей объекта: для `{"name": "History of breast cancer",
+    "exposed": "907 (5.9%)", "unexposed": "1,197 (7.8%)"}` числа получают меткой
+    имя характеристики, а не слово `exposed`.
+    """
     claims = []
 
     # Ветка computed — это РЕЗУЛЬТАТЫ арифметики (ARR, NNT, проценты). Их в
@@ -234,25 +253,43 @@ def verify_findings(findings: dict, source_text: str) -> dict:
     # а не поиск по тексту. Поймано на первом же сквозном прогоне 27.08.
     SKIP_BRANCHES = {"computed", "arithmetic"}
 
-    def walk(node, label="", root=""):
+    # Поля, чьё значение описывает СОСЕДНИЕ числа того же объекта: из них и
+    # собирается самодостаточная метка. Порядок не важен, важен смысл — это
+    # подпись строки таблицы, а не имя поля схемы.
+    NAMING = ("name", "characteristic", "title", "label", "table", "source_table",
+              "why", "mechanism", "statement")
+    NUM = re.compile(r"\d{1,3}(?:[  ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+")
+
+    def self_contained(node, obj_context, path):
+        """Метка для чисел внутри строки node: подпись объекта + сам текст."""
+        parts = [p for p in (obj_context, node.strip()) if p]
+        lab = " — ".join(parts)
+        # если описания нет вовсе, честнее оставить путь, чем пустую метку
+        return lab[:300] if lab else path
+
+    def walk(node, path="", root="", obj_context=""):
         if isinstance(node, dict):
+            # подпись объекта: короткие текстовые поля, называющие его содержимое
+            own = [str(node[k]) for k in NAMING
+                   if isinstance(node.get(k), str) and 0 < len(node[k]) <= 200]
+            ctx = " ".join(own) or obj_context
             for k, v in node.items():
                 if not root and k in SKIP_BRANCHES:
                     continue
-                walk(v, k if not label else f"{label} · {k}", root or k)
+                walk(v, k if not path else f"{path} · {k}", root or k, ctx)
         elif isinstance(node, list):
             for v in node:
-                walk(v, label, root)
+                walk(v, path, root, obj_context)
         elif isinstance(node, str):
             # Число целиком, вместе с разделителями разрядов: «3,609» и «151 691» —
             # иначе regex рвёт их на куски и они не находятся в источнике.
             # Ведущая точка тоже часть числа: в статьях сплошь «P < .0001», и без
             # этой альтернативы из него выдёргивалось «0001», которого в тексте нет
             # как отдельного числа, — модель получала UNVERIFIED за точную цитату.
-            for raw in re.findall(
-                    r"\d{1,3}(?:[  ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+", node):
+            for raw in NUM.findall(node):
                 num = raw.replace(",", "").replace(" ", "").replace("\u00a0", "")
-                claims.append({"value": num, "label": label or node[:60]})
+                claims.append({"value": num,
+                               "label": self_contained(node, obj_context, path)})
     walk(findings or {})
     # дубликаты одного и того же числа с одной меткой не проверяем дважды
     seen, uniq = set(), []
