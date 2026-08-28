@@ -89,10 +89,38 @@ def find_number(num: str, source: str) -> dict:
 
 
 # Группы сравнения и их написания. Настраивается под предметную область.
+# Маркеры групп сравнения — регулярные выражения, а не подстроки.
+#
+# Подстрока «control» ловила «glycemic control», «blood pressure control», «disease
+# control» и объявляла числа принадлежащими контрольной группе. Отсюда шли все
+# ложные инверсии, какие удалось поднять: 13 случаев на трёх прогонах Cheng, и во
+# всех тринадцати метка содержала «glycemic control», а в контексте не было ни
+# одного упоминания контрольной группы вообще (замер 29.08, F-56). Записанное в
+# F-51 объяснение про три группы оказалось неверным — механизм другой.
+#
+# Отсюда правило: слово «control» считается названием группы, только если рядом
+# стоит слово, обозначающее руку исследования, либо оно употреблено во
+# множественном числе («matched controls»). Это не подобранный порог, а свойство
+# языка: одиночное «control» в медицинском тексте почти всегда про контроль
+# показателя, а не про группу.
+ARM = r"(?:group|arm|cohort|patients|subjects|participants|users)"
 DEFAULT_GROUPS = {
-    "exposed": ["glp-1", "glp1", "exposed", "экспон", "группа glp"],
-    "control": ["контрол", "control", "comparator", "сравнени", "без glp"],
+    "exposed": [rf"\bglp[-\s]?1\b", rf"\bexposed\b", rf"\bexposure\s+{ARM}\b",
+                rf"\btreated\s+{ARM}\b", rf"\bintervention\s+{ARM}\b",
+                r"\bэкспон", r"\bгруппа\s+glp"],
+    "control": [rf"\bcontrol\s+{ARM}\b", r"\bcontrols\b", r"\bcomparator\b",
+                rf"\bcomparison\s+{ARM}\b", rf"\bunexposed\b",
+                r"\bконтрольн", r"\bгруппа\s+сравнени"],
 }
+_COMPILED = {}
+
+
+def _patterns(groups):
+    """Компиляция с памятью: verify зовёт это на каждое число."""
+    key = id(groups)
+    if key not in _COMPILED:
+        _COMPILED[key] = {g: [re.compile(a) for a in al] for g, al in groups.items()}
+    return _COMPILED[key]
 
 
 def check_label(label: str, context: str, min_words: int = 1) -> bool:
@@ -121,11 +149,12 @@ def check_group(claim: dict, context: str, matched: str, groups=None) -> str:
     Возвращает: "ok" | "mismatch" | "unknown" (группа не заявлена или не распознана).
     """
     groups = groups or DEFAULT_GROUPS
+    pats = _patterns(groups)
     want = (claim.get("group") or "").lower().strip()
     if not want:
         # группа не задана явно — пробуем вытащить из метки
         lab = (claim.get("label") or "").lower()
-        hits = [g for g, al in groups.items() if any(a in lab for a in al)]
+        hits = [g for g, al in pats.items() if any(a.search(lab) for a in al)]
         if len(hits) != 1:
             return "unknown"
         want = hits[0]
@@ -137,19 +166,26 @@ def check_group(claim: dict, context: str, matched: str, groups=None) -> str:
     if pos < 0:
         return "unknown"
 
-    # ближайший к числу маркер группы решает, чьё это число
-    nearest, best = None, 10 ** 9
-    for g, aliases in groups.items():
+    # Ближайший к числу маркер группы решает, чьё это число. Обвинение в инверсии
+    # выносится только тогда, когда чужой маркер действительно ближе: если маркеров
+    # заявленной группы в контексте нет вовсе, это не доказательство обратного —
+    # это отсутствие сведений.
+    dist = {}
+    for g, aliases in pats.items():
         for a in aliases:
-            start = 0
-            while (i := ctx.find(a, start)) != -1:
-                d = abs(i - pos)
-                if d < best:
-                    best, nearest = d, g
-                start = i + 1
-    if nearest is None:
+            for m in a.finditer(ctx):
+                d = abs(m.start() - pos)
+                if d < dist.get(g, 10 ** 9):
+                    dist[g] = d
+    if not dist:
         return "unknown"
-    return "ok" if nearest == want else "mismatch"
+    nearest = min(dist, key=dist.get)
+    if nearest == want:
+        return "ok"
+    if want not in dist:
+        # Маркера заявленной группы рядом нет. Спорить не с чем — молчим.
+        return "unknown"
+    return "mismatch"
 
 
 def verify(claims: list, source_text: str) -> dict:

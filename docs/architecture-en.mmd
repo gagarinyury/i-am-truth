@@ -48,10 +48,15 @@ flowchart LR
 
     L4["<b>L4 · verify_numbers.py</b><br/>every number goes back<br/>to the source; labels and<br/>groups are checked<br/>→ GROUP_MISMATCH"]
     L4 --> L5
-    L5["<b>L5 · stats_tool.py</b><br/>E-value, ARR, NNT, RR CI<br/><i>computed,<br/>not generated</i>"]
+    L5["<b>L5 · stats_tool.py + recompute.py</b><br/>E-value, ARR, NNT, RR CI<br/><i>computed by a function,<br/>the model's own figures<br/>compared against it</i>"]
+    L4 --> L5D
+    L5D["<b>L5b · direction.py</b><br/>domains counted by direction<br/>against the model's own verdict<br/>→ consistent / contradicts"]
     L5 --> OUT
-    OUT["<b>Report</b><br/>evidence level<br/>+ findings across 7 domains<br/>+ number-verification log"]
+    L5D --> OUT
+    OUT["<b>Report</b><br/>evidence level<br/>+ findings across 7 domains<br/>+ number-verification log<br/>+ recomputation and direction tally"]
 
+    OUT --> STORE
+    STORE["<b>store.py + brief.py</b><br/>permanent audit id<br/><code>/audits/{id}</code><br/>one-page brief"]
     OUT --> SVC
     OUT --> JOB
 
@@ -71,3 +76,5 @@ flowchart LR
     style SUB2 fill:#e8f0fe,stroke:#4285f4,stroke-width:2px
     style L4 fill:#fce8e6,stroke:#ea4335,stroke-width:3px
     style L5 fill:#e6f4ea,stroke:#34a853,stroke-width:2px
+    style L5D fill:#e6f4ea,stroke:#34a853,stroke-width:2px
+    style STORE fill:#fef7e0,stroke:#fbbc04,stroke-width:2px

@@ -76,6 +76,14 @@ last the seven ROBINS-E domains.
 That order is the design. A conclusion should not be readable before the thing that backs
 it — which is precisely the failure this tool looks for in other people's papers.
 
+Two more things come out with the report, for the same reason. Every audit is written to
+Cloud Storage under a permanent id and can be opened again at `/audits/<id>`, unchanged —
+an audit nobody can reopen is an audit nobody can check, and the tool has no standing to
+demand reproducibility of other people's papers while producing none of its own. And the
+same report is downloadable as a one-page Markdown brief at `/audits/<id>/brief.md`, in
+the same order as the page: what the audit stands on, where the bias points by a count of
+domains, what the function recomputed, and only then the prose.
+
 ![Verification block: 389 numbers confirmed with their label, 2 not found, 0 group inversions](docs/img/ui-verification.jpg)
 
 The same audit is available over HTTP:
@@ -256,10 +264,12 @@ Full diagram with rationale: `docs/07-architecture.md`.
 | 2 | `truth/jats_tables.py`, `truth/docx_tables.py`, `truth/pdf_tables.py` | structural table parsing — colspan/rowspan, compound headers, PDF tables via pdfplumber |
 | 3 | `truth/critic.py`, `truth/subagents.py` | three parallel passes: ROBINS-E across seven domains, baseline comparability, and temporal structure |
 | 4 | `truth/verify_numbers.py` | every reported number checked back against the source |
-| 5 | `truth/stats_tool.py` | E-value, ARR, NNT, RR with CI — computed, never generated |
-| 6 | `app/main.py`, `truth/batch.py` | Cloud Run service and Cloud Run Job |
+| 5 | `truth/stats_tool.py`, `truth/recompute.py` | E-value, ARR, NNT, RR with CI — computed, never generated, and compared against what the model claimed |
+| 6 | `truth/direction.py` | the model's overall direction of bias counted against its own seven domains |
+| 7 | `truth/store.py`, `truth/brief.py` | every audit kept under a permanent id, and readable as a one-page brief |
+| 8 | `app/main.py`, `truth/batch.py` | Cloud Run service and Cloud Run Job |
 
-Two design decisions carry the project:
+Four design decisions carry the project:
 
 **The number verifier sits after the model, not inside it.** Asking a model to check
 itself is asking the same process for a second opinion. Layer 4 takes each number the
@@ -276,9 +286,19 @@ and an external one from 67 points to 4.5. The remaining five ROBINS-E domains h
 sub-agent, because no failure has been measured on them — and adding agents without a
 measurement is exactly what this project avoids.
 
-**Statistics are computed, never generated.** E-value, absolute risk reduction, NNT and
-confidence intervals come from `stats_tool.py`, which self-tests on import. The model is
-never asked to do arithmetic.
+**Statistics are computed, never generated — and the claim is now enforced.** E-value,
+absolute risk reduction, NNT and confidence intervals come from `stats_tool.py`, which
+self-tests on import. The model is asked only for the four raw counts of the 2×2 table,
+copied out of the paper; those four numbers go through the same source check as every
+other number, the function does the arithmetic, and the model's own figures are shown
+beside the function's with a match/mismatch verdict.
+
+This paragraph used to be a claim rather than a fact. Until 29.08 `stats_tool` was
+imported by the pipeline and never called on the default path: the arithmetic on screen
+was the model's, under a heading that said otherwise. It was found by comparing an
+outside review of the project against the code, and it is written up in full as F-55 —
+including the correction of a number this README's own fact file had transcribed wrong.
+A tool built to catch unbacked claims has no business keeping one.
 
 **Two orchestrations, and we publish the comparison.** The default path orchestrates in
 plain code. `truth/adk_agent.py` expresses the same audit as a Google ADK

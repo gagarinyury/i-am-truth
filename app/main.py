@@ -11,18 +11,21 @@ HTTP-сервис «Я Правда».
                     engine="direct" (по умолчанию) или "adk"
   POST /analyze/upload  разбор принесённых файлов (.pdf/.docx) — путь B
   GET  /levels      описание уровней доказательности с измеренными ценами
+  GET  /audits      сохранённые одиночные разборы, новые первыми
+  GET  /audits/{id} сохранённый разбор целиком
+  GET  /audits/{id}/brief.md  одностраничный бриф в Markdown
 """
 import os
 import pathlib
 import sys
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from truth import __version__, critic, pipeline, retrieval   # noqa: E402
+from truth import __version__, brief, critic, pipeline, retrieval, store  # noqa: E402
 from truth.batch import BUCKET                                # noqa: E402
 
 PROMPT = (pathlib.Path(__file__).resolve().parent.parent
@@ -89,13 +92,39 @@ def levels():
     }
 
 
+def _persist(report: dict) -> dict:
+    """Сохранить разбор и вернуть его же с меткой хранения.
+
+    Ошибка записи не отменяет ответ: разбор уже сделан и стоил вызовов Vertex.
+    Но и молчать о ней нельзя — исход записи виден в поле `stored`, иначе отчёт,
+    которого нет в хранилище, выглядел бы неотличимо от сохранённого.
+    """
+    # Идентификатор проставляется ДО записи. Иначе сохранённая копия не знает
+    # собственного имени: показанный отчёт нёс `audit_id`, а лежащий в хранилище —
+    # нет, и по поднятому файлу нельзя было сказать, тот ли он самый. Поймано
+    # сверкой показанного отчёта с поднятым по ссылке.
+    try:
+        audit_id = store.new_id(report)
+        report["audit_id"] = audit_id
+        r = store.put(report, audit_id=audit_id)
+    except Exception as e:                                   # noqa: BLE001
+        r = {"id": report.get("audit_id"), "stored": "none",
+             "error": f"{type(e).__name__}: {e}"[:200]}
+    # `stored` и `store_error` описывают запись, а не разбор, поэтому живут только
+    # в ответе: внутри сохранённого файла поле «сохранено» было бы тавтологией.
+    report["stored"] = r["stored"]
+    if r.get("error"):
+        report["store_error"] = r["error"]
+    return report
+
+
 @app.post("/analyze")
 def analyze(req: AnalyzeRequest):
     if not req.doi and not req.text:
         raise HTTPException(400, "нужен doi или text")
     try:
-        return pipeline.run(doi=req.doi, text=req.text, prompt=PROMPT,
-                            engine=req.engine)
+        return _persist(pipeline.run(doi=req.doi, text=req.text, prompt=PROMPT,
+                                     engine=req.engine))
     except Exception as e:                                   # noqa: BLE001
         raise HTTPException(500, f"{type(e).__name__}: {e}"[:500])
 
@@ -133,9 +162,38 @@ async def analyze_upload(files: list[UploadFile] = File(...),
     if not uploads:
         raise HTTPException(400, "нужен хотя бы один файл")
     try:
-        return pipeline.run(doi=doi, prompt=PROMPT, uploads=uploads, engine=engine)
+        return _persist(pipeline.run(doi=doi, prompt=PROMPT, uploads=uploads,
+                                     engine=engine))
     except Exception as e:                                   # noqa: BLE001
         raise HTTPException(500, f"{type(e).__name__}: {e}"[:500])
+
+
+@app.get("/audits")
+def audits(limit: int = 50):
+    """Сохранённые одиночные разборы. Отдельно от батча: `/runs` — прогоны Job."""
+    return {"bucket": store.BUCKET, "prefix": store.PREFIX,
+            "audits": store.list_ids(limit)}
+
+
+@app.get("/audits/{audit_id}")
+def audit(audit_id: str):
+    r = store.get(audit_id)
+    if r is None:
+        raise HTTPException(404, f"разбор {audit_id} не найден")
+    return r
+
+
+@app.get("/audits/{audit_id}/brief.md", response_class=PlainTextResponse)
+def audit_brief(audit_id: str):
+    """Одностраничный бриф. Отдаётся файлом: его прикладывают к письму, а не читают
+    с экрана — за этим он и заведён."""
+    r = store.get(audit_id)
+    if r is None:
+        raise HTTPException(404, f"разбор {audit_id} не найден")
+    return PlainTextResponse(
+        brief.render(r), media_type="text/markdown; charset=utf-8",
+        headers={"content-disposition":
+                 f'attachment; filename="{audit_id}-brief.md"'})
 
 
 @app.get("/runs")

@@ -26,7 +26,8 @@ from .jats_tables import parse_tables, to_claims
 from .pdf_tables import extract as extract_pdf
 from .pdf_tables import extract_text as pdf_text
 from .pdf_tables import has_text_layer, is_appendix
-from .stats_tool import TwoByTwo
+from .direction import summarise as direction_summary
+from .recompute import recompute
 from .verify_numbers import verify
 
 
@@ -292,6 +293,34 @@ def verify_findings(findings: dict, source_text: str) -> dict:
                 claims.append({"value": num,
                                "label": self_contained(node, obj_context, path)})
     walk(findings or {})
+
+    # Четыре числа таблицы 2×2 лежат в пропущенной ветке `computed`, но проверять
+    # их надо: это не результат арифметики, а выписка из документа, и на неё
+    # опирается весь пересчёт. Отдельным проходом ещё и потому, что walk достаёт
+    # числа только из строк, а counts приходят целыми.
+    COUNT_LABEL = {
+        "exposed_events": "2×2 table used for the absolute risk — events in the exposed arm",
+        "exposed_total": "2×2 table used for the absolute risk — size of the exposed arm",
+        "control_events": "2×2 table used for the absolute risk — events in the control arm",
+        "control_total": "2×2 table used for the absolute risk — size of the control arm",
+    }
+    cnt = ((findings or {}).get("computed") or {}).get("counts") or {}
+    # Совпадающие размеры рук — норма для сопоставления 1:1, и метка «руки
+    # экспозиции» на числе, которое принадлежит обеим, даёт ложную инверсию:
+    # проверка группы ищет ближайший маркер и находит соседнюю руку. Поэтому одно
+    # число на две руки и метку получает одну, без принадлежности.
+    matched = cnt.get("exposed_total") and cnt.get("exposed_total") == cnt.get("control_total")
+    for k, lab in COUNT_LABEL.items():
+        v = cnt.get(k)
+        if not isinstance(v, (int, float)) or v <= 0:
+            continue
+        if matched and k in ("exposed_total", "control_total"):
+            if k == "control_total":
+                continue
+            lab = ("2×2 table used for the absolute risk — size of each arm, "
+                   "matched 1:1")
+        claims.append({"value": str(int(v)), "label": lab})
+
     # дубликаты одного и того же числа с одной меткой не проверяем дважды
     seen, uniq = set(), []
     for c in claims:
@@ -319,6 +348,13 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
     src = gathered["source_text"]
     tbl_text = tables_as_text(gathered, limit=200)
     ver = verify_findings(findings, f"{src}\n\n{tbl_text}") if findings else None
+    # Пересчёт заявленной арифметики функцией. Раздел отчёта называется
+    # «посчитано функцией, а не моделью» — до 29.08 это было неправдой на прямом
+    # пути: `stats_tool` там не вызывался ни разу (F-55).
+    recalc = recompute((findings or {}).get("computed"))
+    # Свод направлений: общее направление модели сверяется с её же доменами.
+    dirs = direction_summary(findings)
+
     lvl = gathered["level"]["level"]
     out = {
         "meta": gathered["meta"],
@@ -326,6 +362,8 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
         "tables": {"main": len(gathered["jats_tables"]),
                    "appendix": len(gathered["appendix_tables"])},
         "findings": findings,
+        "recomputed": recalc,
+        "direction_summary": dirs,
         "parse_error": parse_error,
         "verification": ver["summary"] if ver else None,
         "unverified_numbers": [c for c in (ver["claims"] if ver else [])

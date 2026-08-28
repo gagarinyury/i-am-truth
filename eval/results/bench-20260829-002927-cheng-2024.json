@@ -1,0 +1,878 @@
+{
+  "case": "cheng-2024",
+  "engine": "direct",
+  "ground_truth_version": 1,
+  "seconds": 28.3,
+  "level": "L1",
+  "tables": {
+    "main": 1,
+    "appendix": 7
+  },
+  "agents": [
+    "critic_robins_e",
+    "subagent_baseline_comparability",
+    "subagent_time_related_biases"
+  ],
+  "tool_calls": null,
+  "engine_note": null,
+  "verification": {
+    "total": 411,
+    "verified": 299,
+    "unverified": 13,
+    "group_mismatch": 3,
+    "found_but_label_mismatch": 21
+  },
+  "unverified_numbers": [
+    {
+      "value": "90.5",
+      "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "91.8",
+      "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "24.1",
+      "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "33.0",
+      "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "90.5",
+      "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%): exposed 90.52% missing HbA1c vs unexpo",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "91.8",
+      "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%): exposed 90.52% missing HbA1c vs unexpo",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "24.1",
+      "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%): exposed 90.52% missing HbA1c vs unexpo",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "33.0",
+      "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%): exposed 90.52% missing HbA1c vs unexpo",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "362000",
+      "label": "Massive exclusion of eligible population Over 362,000 patients were excluded for missing prescription data and 177,381 for missing IDs out of 985,278 candidates without evaluation of whether exclusions differed by clinical severity. — Over 362,000 patients were excluded for missing prescription data",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "90.5",
+      "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "91.8",
+      "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "24.1",
+      "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "33.0",
+      "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "90.52",
+      "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — 90.52% missing HbA1c",
+      "status": "GROUP_MISMATCH",
+      "group_check": "mismatch",
+      "matched_as": "90.52",
+      "context": "fferent groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of the HbA1c were 90.52%, 91.79%, and 90.45% among GLP-1 RAs, insulin only and metformin onl y groups, r"
+    },
+    {
+      "value": "91.79",
+      "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Insulin: 91.79%; Metformin: 90.45% missing HbA1c",
+      "status": "GROUP_MISMATCH",
+      "group_check": "mismatch",
+      "matched_as": "91.79",
+      "context": "groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of the HbA1c were 90.52%, 91.79%, and 90.45% among GLP-1 RAs, insulin only and metformin onl y groups, respectiv"
+    },
+    {
+      "value": "90.45",
+      "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Insulin: 91.79%; Metformin: 90.45% missing HbA1c",
+      "status": "GROUP_MISMATCH",
+      "group_check": "mismatch",
+      "matched_as": "90.45",
+      "context": "missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of the HbA1c were 90.52%, 91.79%, and 90.45% among GLP-1 RAs, insulin only and metformin onl y groups, respectively."
+    }
+  ],
+  "judge": {
+    "points": {
+      "C1": 1.0,
+      "C2": 1.0,
+      "C3": 0.0,
+      "C4": 1.0
+    },
+    "score": 3.0,
+    "of": 4,
+    "ratio": 0.75,
+    "detail": [
+      {
+        "id": "C1",
+        "score": 1.0,
+        "reason": "The auditor identified the predominant-user design (noting the requirement of <6 months of other antidiabetic drugs over follow-up) and the lack of a pre-baseline washout period leading to prevalent user bias.",
+        "quote": "Without a prior lookback/washout period to ensure incident, new-user status, prevalent users are mixed with incident users, confounding initial baseline risk."
+      },
+      {
+        "id": "C2",
+        "score": 1.0,
+        "reason": "The auditor clearly stated that the absence of a lag period captures pre-existing disease brought to light upon initiating treatment (detection/surveillance bias).",
+        "quote": "Outcomes like thyroid cancer and leukemia were counted starting immediately from cohort entry without a lag window, capturing undiagnosed pre-existing disease brought to light by initiating new treatment."
+      },
+      {
+        "id": "C3",
+        "score": 0.0,
+        "reason": "The auditor did not identify the reverse causal duration gradient (<12 vs ≥12 months). Instead, it incorrectly concluded that risk 'rises_with_exposure'.",
+        "quote": "\"direction\": \"rises_with_exposure\", \"interpretation\": \"Estimates are higher in the ≥12 months strata...\""
+      },
+      {
+        "id": "C4",
+        "score": 1.0,
+        "reason": "The auditor identified that the mean follow-up of ~24 months (23.7 GLP-1 RA vs 24.8 metformin) is far too short compared to biological cancer latency.",
+        "quote": "Mean follow-up was 23.7 months (GLP-1 RAs) and 24.8 months (metformin), whereas biological latency for solid tumors such as thyroid cancer and hematologic malignancies typically spans several years to decades."
+      }
+    ],
+    "extra_findings": [
+      {
+        "title": "Severe missingness and matching on missing indicator categories (HbA1c >90%, BMI ~33%)",
+        "valid": true,
+        "why": "Table 1 and Table 3S confirm massive missingness in key laboratory and metabolic confounders, leading to residual confounding."
+      },
+      {
+        "title": "Modeling minor acute side effects as competing risks terminating time at risk",
+        "valid": true,
+        "why": "Section 2.3 of the study defined competing events using transient symptoms (dizziness, acne, diarrhea), which inappropriately censors patients."
+      }
+    ],
+    "traps": null
+  },
+  "report": {
+    "meta": {
+      "found": true,
+      "doi": "10.1111/1753-0407.70013",
+      "pmid": "39435881",
+      "pmcid": "PMC11494487",
+      "title": "The potential adverse effects of hypodermic glucagon-like peptide -1 receptor agonist on patients with type 2 diabetes: A population-based study.",
+      "journal": "Journal of diabetes",
+      "open_access": true,
+      "in_epmc": true,
+      "has_supplementary": true,
+      "abstract": "<h4>Background</h4>Glucagon-like peptide-1 receptor agonists (GLP-1 RAs), a class of injectable antidiabetic drugs, have shown significant efficacies in improving glycemic and weight control in patients with type 2 diabetes (T2D). However, the long-term safety of GLP-1 RAs remains insufficiently studied. This study aimed to provide real-world evidence on potential adverse outcomes associated with GLP-1 RAs use in T2D patients without major chronic diseases including impaired cardiac or renal function.<h4>Methods</h4>We conducted a retrospective cohort study involving 7746 T2D patients on GLP-1 RAs in Shenzhen, China. They were compared with 124 371 metformin-only users and 36 146 insulin-only users, forming two therapy control groups. GLP-1 RAs users were also further 1:2 paired with the control groups. Competing risk survival analyses were conducted to assess the incidence risks, presenting subdistributional hazard ratios (sHRs) with 95% confidence intervals (CIs) for various adverse outcomes associated with GLP-1 RAs use.<h4>Results</h4>Compared with metformin-only users, GLP-1 RAs use was associated with increased risks of various adverse outcomes (sHRs with 95% CIs), including pancreatitis (2.01, 1.24-3.24), acute nephritis (3.20, 2.17-4.70), kidney failure (3.73, 2.74-5.08), thyroid cancer (2.25, 1.23-4.10), and thyroid dysfunction (1.27, 1.00-1.63), respectively; Similar results were also found when compared with insulin-only users. Importantly, long-term (≥12 months) GLP-1 RAs use may further elevate the incidence risks of pancreatitis, acute nephritis, thyroid cancer, and thyroid dysfunction.<h4>Conclusion</h4>Compared with traditional T2D treatments, GLP-1 RAs use may be associated with increased risks of various adverse outcomes in a Chinese population. Cautions were strongly warranted in the use of GLP-1 RAs. Further validation is crucial across diverse populations."
+    },
+    "level": {
+      "level": "L1",
+      "name": "full text + appendix tables",
+      "max_confidence": "CONFIRMED",
+      "measured_score": "5.0-6.0 / 6 (median 6.0)"
+    },
+    "tables": {
+      "main": 1,
+      "appendix": 7
+    },
+    "findings": {
+      "domains": [
+        {
+          "id": 1,
+          "name": "Confounding",
+          "risk": "high",
+          "direction": "away_from_null",
+          "direction_justification": "Before matching, GLP-1 RA users had higher obesity rates (BMI 30.0-39.9 kg/m2: 13.21% vs 4.87% in metformin users and 3.04% in insulin users; Table 3S), which predisposes to pancreatitis, renal disease, and cancer. Crucial confounders were either not measured or had severe missingness (HbA1c missing >90%, BMI missing ~33%), leaving substantial residual confounding that inflates risk estimates away from the null.",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Severe missingness of key clinical confounders",
+              "mechanism": "HbA1c was missing in 91.27% of matched participants and FPG was missing in 33.22%, preventing adequate adjustment for glycemic severity and diabetes progression.",
+              "evidence": [
+                "HbA1c missing rate 91.27% in matched population (Table 1 footnote)",
+                "FPG missing rate 33.22% in matched population (Table 1 footnote)"
+              ]
+            },
+            {
+              "title": "Matching on missingness categories rather than true covariate values",
+              "mechanism": "Propensity score matching included large 'unspecified' indicator categories for BMI (32.49% to 33.81%), education (32.31% to 33.62%), and age (~20%), meaning matched pairs were not actually balanced on true physiological and socioeconomic risk factors.",
+              "evidence": [
+                "BMI unspecified: 33.81% in GLP-1 RA vs 36.08% in insulin and 32.49% vs 32.71% in metformin (Table 1)"
+              ]
+            },
+            {
+              "title": "Not matched on and imbalanced: Baseline renal function (eGFR / Serum Creatinine / Proteinuria)",
+              "mechanism": "Major predictors of acute nephritis and renal failure outcomes were not measured or matched at baseline.",
+              "evidence": [
+                "Baseline renal function (eGFR / Serum Creatinine / Proteinuria): exposed Not reported vs unexposed Not reported"
+              ],
+              "found_by": "subagent:baseline_comparability"
+            },
+            {
+              "title": "Not matched on and imbalanced: Diabetes duration",
+              "mechanism": "GLP-1 RA users often receive second- or third-line intensification, potentially reflecting longer diabetes duration and greater microvascular risk.",
+              "evidence": [
+                "Diabetes duration: exposed Not reported vs unexposed Not reported"
+              ],
+              "found_by": "subagent:baseline_comparability"
+            },
+            {
+              "title": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+              "mechanism": "Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity.",
+              "evidence": [
+                "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%): exposed 90.52% missing HbA1c vs unexposed Insulin: 91.79%; Metformin: 90.45% missing HbA1c"
+              ],
+              "found_by": "subagent:baseline_comparability"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "Measurement of the exposure",
+          "risk": "low",
+          "direction": "towards_null",
+          "direction_justification": "Exposure was determined via electronic health system prescription records; non-adherence or primary non-compliance in real-world outpatient settings would introduce non-differential misclassification of exposure duration, attenuating true pharmacological effects towards the null.",
+          "threatens_conclusions": false,
+          "findings": [
+            {
+              "title": "Objective prescription records utilized",
+              "mechanism": "Prescription coverage was tracked longitudinally across registered health institutions in Shenzhen.",
+              "evidence": [
+                "GLP-1 RA group defined by cumulative prescription coverage in Health Information Database from 2016 to 2022"
+              ]
+            },
+            {
+              "title": "Post-baseline exposure classification and immortal time bias",
+              "mechanism": "Classifying exposure based on cumulative therapy from baseline through the entire follow-up period conditions cohort entry on future treatment patterns and survival.",
+              "evidence": [
+                "The GLP-1 RAs group was defined as any T2D patients who mainly prescribed GLP-1 RAs lasting from the baseline date to the last follow-up while the accumulative prescription period of any other antidiabetic medication <6 months."
+              ],
+              "found_by": "subagent:time_related_biases"
+            },
+            {
+              "title": "Absence of lag period for latent outcomes",
+              "mechanism": "Outcomes like thyroid cancer and leukemia were counted starting immediately from cohort entry without a lag window, capturing undiagnosed pre-existing disease brought to light by initiating new treatment.",
+              "evidence": [
+                "All incidence duration/survival times for outcomes of interest were operationalized as the number of months from the initial outpatient date at baseline to the occurrence of the first recorded hospitalization/outpatient events, whichever came first."
+              ],
+              "found_by": "subagent:time_related_biases"
+            },
+            {
+              "title": "No washout period reported",
+              "mechanism": "Without a prior lookback/washout period to ensure incident, new-user status, prevalent users are mixed with incident users, confounding initial baseline risk.",
+              "evidence": [
+                "Data of this study population originated from the Health Information Database of Shenzhen city in China, from the date of the first medical record included on January 1, 2016 to the last database update on September 1, 2022."
+              ],
+              "found_by": "subagent:time_related_biases"
+            }
+          ],
+          "disagreement": {
+            "main_critic": "towards_null",
+            "subagent_time": "away_from_null",
+            "note": "два прохода дали разное направление; не сведено намеренно"
+          }
+        },
+        {
+          "id": 3,
+          "name": "Selection of participants into the study",
+          "risk": "high",
+          "direction": "away_from_null",
+          "direction_justification": "Exclusion of patients who switched or added therapies (<6 months cumulative other antidiabetic prescriptions across the entire follow-up) selects for long-term tolerant continuous users vs discontinuers, conditioning on post-baseline survival and treatment trajectories, exaggerating relative risk differences.",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Conditioning on post-baseline treatment persistence",
+              "mechanism": "Cohort eligibility required participants to maintain monotherapy/predominant therapy throughout follow-up (other antidiabetic prescriptions <6 months from baseline to last follow-up), creating selection bias and immortal time/continuation artifacts.",
+              "evidence": [
+                "Participants restricted to those whose accumulative prescription period of any other antidiabetic medication was <6 months across entire follow-up (Section 2.1)"
+              ]
+            },
+            {
+              "title": "Massive exclusion of eligible population",
+              "mechanism": "Over 362,000 patients were excluded for missing prescription data and 177,381 for missing IDs out of 985,278 candidates without evaluation of whether exclusions differed by clinical severity.",
+              "evidence": [
+                "177,381 excluded for missing IDs and 362,035 excluded for missing prescription data (Figure 1)"
+              ]
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "Post-exposure interventions",
+          "risk": "some_concerns",
+          "direction": "unpredictable",
+          "direction_justification": "Treating transient side effects (e.g., nausea, vomiting, dizziness) as competing events in survival models removes individuals experiencing early side effects from subsequent risk sets for major chronic outcomes, which can distort the hazard rates in unpredictable directions.",
+          "threatens_conclusions": false,
+          "findings": [
+            {
+              "title": "Competing risk definition based on minor side effects",
+              "mechanism": "Acute symptoms like diarrhea, acne, and dizziness were modeled as competing risks terminating time at risk.",
+              "evidence": [
+                "Potential competing events defined as a binomial variable activated by diarrhea/emesis, dermatitis tetter, acne, dizziness, arrhythmia (Section 2.3)"
+              ]
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "Missing data",
+          "risk": "high",
+          "direction": "unpredictable",
+          "direction_justification": "Over 90% missingness in HbA1c (91.27% in Table 1) and ~33% in BMI and FPG precludes meaningful adjustment or imputation of the strongest clinical predictors of diabetic complications and metabolic outcomes.",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Critical laboratory variables predominantly missing",
+              "mechanism": "Missingness was handled by creating an 'unspecified' category rather than valid imputation or complete-case sensitivity analyses, allowing unmeasured confounding to persist.",
+              "evidence": [
+                "HbA1c missing rate: 90.52% in GLP-1 RAs, 91.79% in insulin, 90.45% in metformin (Table 3S footnote)",
+                "BMI missing rate: 32.31% in GLP-1 RAs, 32.78% in insulin, 24.01% in metformin (Table 3S)"
+              ]
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "name": "Measurement of the outcome",
+          "risk": "high",
+          "direction": "away_from_null",
+          "direction_justification": "Surveillance and diagnostic workup bias: patients prescribed novel injectable agents like GLP-1 RAs with known black-box warnings and GI symptoms undergo more frequent thyroid ultrasounds, serum lipase/amylase testing, and renal panels than patients on stable generic metformin, inflating detection of subclinical thyroid cancer (sHR 2.25), thyroid dysfunction (sHR 1.27), and acute pancreatitis (sHR 2.01).",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Surveillance and ascertainment bias for labeled adverse events",
+              "mechanism": "Outcomes were identified via ICD-10 and keyword matching in EHR without adjudication or standardized screening intervals across comparator arms, leading to higher detection rates in closely monitored GLP-1 RA patients.",
+              "evidence": [
+                "Outcomes identified by ICD-10 codes, discharge diagnoses, imaging diagnoses, and regular expressions in outpatient/hospitalization texts (Table 2S)",
+                "Marked elevation in highly screen-sensitive outcomes: thyroid cancer sHR 2.25 (95% CI 1.23-4.10) and thyroid dysfunction sHR 1.27 (95% CI 1.00-1.63) vs metformin"
+              ]
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "name": "Selection of the reported result",
+          "risk": "some_concerns",
+          "direction": "away_from_null",
+          "direction_justification": "Multiple testing of dozens of secondary outcomes (e.g. leukemia sHR 15.09, 95% CI 4.65-48.98) across drug sub-types and durations without pre-specified registered analytical protocols increases the likelihood of reporting extreme spuriously elevated hazard ratios.",
+          "threatens_conclusions": false,
+          "findings": [
+            {
+              "title": "Multiple testing across multiple disease endpoints and sub-agents",
+              "mechanism": "Numerous disease endpoints across six organ systems were tested simultaneously without adjustment for multiple comparisons.",
+              "evidence": [
+                "Leukemia reported with sHR 15.09 (95% CI 4.65-48.98) after >=12 months GLP-1 RA usage vs metformin, acknowledged as a sparse-event finding"
+              ]
+            }
+          ]
+        }
+      ],
+      "overall": {
+        "risk": "high",
+        "direction": "away_from_null",
+        "threatens_conclusions": true,
+        "summary": "The study possesses a high risk of bias driven by severe unmeasured confounding (HbA1c missing in >90% of participants, BMI missing in ~33%), selection bias from defining cohorts based on longitudinal treatment continuation over entire follow-up, and diagnostic/surveillance bias where patients on GLP-1 RAs receive greater clinical monitoring and diagnostic workup for thyroid, renal, and pancreatic symptoms. These biases systematically push effect estimates away from the null, creating spurious associations with diverse adverse outcomes such as thyroid cancer, renal failure, and leukemia."
+      },
+      "computed": {
+        "counts": null,
+        "absolute_risk_difference": null,
+        "nnt": null,
+        "arithmetic": null
+      },
+      "classification": "real_association_explained_by_selection",
+      "unresolvable_without_more_data": [
+        "Exact raw event counts and person-time per outcome in each propensity-matched cohort (figures provide only hazard ratios and confidence intervals)",
+        "Completeness and values of missing clinical parameters (HbA1c, baseline eGFR, microalbuminuria, exact BMI)",
+        "Frequency of diagnostic imaging (e.g., thyroid ultrasound, pancreatic imaging) across treatment groups to quantify surveillance bias"
+      ],
+      "subagents": {
+        "baseline_comparability": {
+          "baseline_table_found": true,
+          "source_tables": [
+            "Table 1",
+            "Table 3S"
+          ],
+          "characteristics": [
+            {
+              "name": "Sex: Men, n (%)",
+              "exposed": "4,389 (56.66)",
+              "unexposed": "Insulin: 19,869 (54.97); Metformin: 68,533 (55.10)",
+              "exposed_matched": "vs Insulin: 4190 (56.75); vs Metformin: 4362 (56.80)",
+              "unexposed_matched": "vs Insulin: 7859 (56.84); vs Metformin: 8618 (56.84)",
+              "table": "Table 1, Table 3S",
+              "favours": "neutral",
+              "why": "Proportion of male sex is nearly identical across groups both before and after matching."
+            },
+            {
+              "name": "Sex: Women, n (%)",
+              "exposed": "3,344 (43.17)",
+              "unexposed": "Insulin: 16,206 (44.83); Metformin: 55,680 (44.77)",
+              "exposed_matched": "vs Insulin: 3188 (43.18); vs Metformin: 3312 (43.13)",
+              "unexposed_matched": "vs Insulin: 5960 (43.10); vs Metformin: 6536 (43.10)",
+              "table": "Table 1, Table 3S",
+              "favours": "neutral",
+              "why": "Proportions of female sex are very similar across groups."
+            },
+            {
+              "name": "Age: <30 years, n (%)",
+              "exposed": "391 (5.05)",
+              "unexposed": "Insulin: 1,458 (4.03); Metformin: 1,008 (0.81)",
+              "exposed_matched": "vs Insulin: 302 (4.09); vs Metformin: 353 (4.60)",
+              "unexposed_matched": "vs Insulin: 499 (3.61); vs Metformin: 564 (3.72)",
+              "table": "Table 1, Table 3S",
+              "favours": "unexposed",
+              "why": "Younger age carries lower baseline risk of renal failure, cancers, and pancreatitis."
+            },
+            {
+              "name": "Age: 30~ years, n (%)",
+              "exposed": "2,834 (36.59)",
+              "unexposed": "Insulin: 9,699 (26.83); Metformin: 30,926 (24.87)",
+              "exposed_matched": "vs Insulin: 2600 (35.22); vs Metformin: 2816 (36.67)",
+              "unexposed_matched": "vs Insulin: 4538 (32.82); vs Metformin: 5586 (36.84)",
+              "table": "Table 1, Table 3S",
+              "favours": "unexposed",
+              "why": "Higher proportion of younger adults in GLP-1 RA group reduces baseline propensity for major organ failures and neoplasms."
+            },
+            {
+              "name": "Age: 50~ years, n (%)",
+              "exposed": "2,561 (33.06)",
+              "unexposed": "Insulin: 14,933 (41.31); Metformin: 58,669 (47.17)",
+              "exposed_matched": "vs Insulin: 2529 (34.25); vs Metformin: 2555 (33.27)",
+              "unexposed_matched": "vs Insulin: 4899 (35.43); vs Metformin: 5104 (33.66)",
+              "table": "Table 1, Table 3S",
+              "favours": "exposed",
+              "why": "Lower proportion of middle-aged/older adults in GLP-1 RA users indicates a generally younger cohort than controls."
+            },
+            {
+              "name": "Age: ≥70 years, n (%)",
+              "exposed": "443 (5.72)",
+              "unexposed": "Insulin: 3,737 (10.34); Metformin: 11,103 (8.93)",
+              "exposed_matched": "vs Insulin: 436 (5.91); vs Metformin: 440 (5.73)",
+              "unexposed_matched": "vs Insulin: 859 (6.21); vs Metformin: 877 (5.78)",
+              "table": "Table 1, Table 3S",
+              "favours": "unexposed",
+              "why": "Significantly lower proportion of elderly patients in the GLP-1 RA cohort at baseline lowers baseline risk for adverse outcomes."
+            },
+            {
+              "name": "Education: Undergraduate and above, n (%)",
+              "exposed": "2019 (26.07)",
+              "unexposed": "Insulin: 5,656 (15.65); Metformin: 14,852 (11.94)",
+              "exposed_matched": "vs Insulin: 1760 (23.84); vs Metformin: 1981 (25.80)",
+              "unexposed_matched": "vs Insulin: 2941 (21.27); vs Metformin: 3837 (25.31)",
+              "table": "Table 1, Table 3S",
+              "favours": "exposed",
+              "why": "Higher socioeconomic status may lead to greater healthcare utilization, surveillance, and detection of clinical diagnoses."
+            },
+            {
+              "name": "Health insurance: Citizen health insurance, n (%)",
+              "exposed": "5,850 (75.60)",
+              "unexposed": "Insulin: 21,525 (59.60); Metformin: 68,326 (54.96)",
+              "exposed_matched": "vs Insulin: 5542 (75.06); vs Metformin: 5809 (75.64)",
+              "unexposed_matched": "vs Insulin: 10 273 (74.30); vs Metformin: 11 466 (75.62)",
+              "table": "Table 1, Table 3S",
+              "favours": "exposed",
+              "why": "Substantially higher medical insurance coverage at baseline increases healthcare access, testing, and detection of adverse diagnoses."
+            },
+            {
+              "name": "BMI: 18.5~24.9 kg/m2, n (%)",
+              "exposed": "1,857 (23.97)",
+              "unexposed": "Insulin: 15,762 (43.61); Metformin: 51,772 (41.63)",
+              "exposed_matched": "vs Insulin: 1850 (25.06); vs Metformin: 1854 (24.14)",
+              "unexposed_matched": "vs Insulin: 3686 (26.66); vs Metformin: 3696 (24.38)",
+              "table": "Table 1, Table 3S",
+              "favours": "exposed",
+              "why": "Lower proportion of normal weight patients indicates greater obesity burden in GLP-1 RA users."
+            },
+            {
+              "name": "BMI: 30.0~39.9 kg/m2 (Obese), n (%)",
+              "exposed": "1,023 (13.21)",
+              "unexposed": "Insulin: 1,100 (3.04); Metformin: 6,053 (4.87)",
+              "exposed_matched": "vs Insulin: 710 (9.62); vs Metformin: 979 (12.75)",
+              "unexposed_matched": "vs Insulin: 925 (6.69); vs Metformin: 1852 (12.21)",
+              "table": "Table 1, Table 3S",
+              "favours": "exposed",
+              "why": "Higher obesity burden increases the baseline risk of pancreatitis, nephropathy, and metabolic/malignant complications."
+            },
+            {
+              "name": "Fasting plasma glucose (mmol/L), mean ± SD",
+              "exposed": "7.27 ± 2.51",
+              "unexposed": "Insulin: 7.59 ± 2.79; Metformin: 7.68 ± 2.63",
+              "exposed_matched": "vs Insulin: 7.29 ± 2.53; vs Metformin: 7.27 ± 2.50",
+              "unexposed_matched": "vs Insulin: 7.49 ± 2.65; vs Metformin: 7.57 ± 2.54",
+              "table": "Table 1, Table 3S",
+              "favours": "unexposed",
+              "why": "Lower baseline fasting plasma glucose indicates slightly better glycemic control, which reduces diabetes complication risks."
+            },
+            {
+              "name": "Hemoglobin A1c (%), mean ± SD",
+              "exposed": "6.82 ± 6.35",
+              "unexposed": "Insulin: 6.33 ± 4.27; Metformin: 6.69 ± 5.30",
+              "exposed_matched": "vs Insulin: 6.79 ± 5.44; vs Metformin: 6.82 ± 5.37",
+              "unexposed_matched": "vs Insulin: 6.55 ± 4.67; vs Metformin: 6.41 ± 4.67",
+              "table": "Table 1, Table 3S",
+              "favours": "exposed",
+              "why": "Higher baseline HbA1c and substantial standard deviation reflect greater glycemia variance/severity, though missing in >90% of subjects."
+            }
+          ],
+          "matching": {
+            "used": true,
+            "matched_on": [
+              "age",
+              "sex",
+              "education",
+              "marital status",
+              "BMI"
+            ],
+            "not_matched_but_imbalanced": [
+              {
+                "name": "Baseline renal function (eGFR / Serum Creatinine / Proteinuria)",
+                "exposed": "Not reported",
+                "unexposed": "Not reported",
+                "direction": "unpredictable",
+                "why": "Major predictors of acute nephritis and renal failure outcomes were not measured or matched at baseline."
+              },
+              {
+                "name": "Diabetes duration",
+                "exposed": "Not reported",
+                "unexposed": "Not reported",
+                "direction": "away_from_null",
+                "why": "GLP-1 RA users often receive second- or third-line intensification, potentially reflecting longer diabetes duration and greater microvascular risk."
+              },
+              {
+                "name": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+                "exposed": "90.52% missing HbA1c",
+                "unexposed": "Insulin: 91.79%; Metformin: 90.45% missing HbA1c",
+                "direction": "unpredictable",
+                "why": "Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity."
+              }
+            ]
+          },
+          "contradiction": {
+            "present": false,
+            "statement": "No obvious directional paradox exists between baseline characteristics and the reported safety outcomes.",
+            "supporting_characteristics": [
+              "BMI 30.0-39.9 kg/m2: GLP-1 RAs 13.21% vs Insulin 3.04% vs Metformin 4.87% (Table 3S)",
+              "Hemoglobin A1c (%): GLP-1 RAs 6.82 ± 6.35 vs Insulin 6.33 ± 4.27 vs Metformin 6.69 ± 5.30 (Table 3S)",
+              "Health insurance (citizen insurance): GLP-1 RAs 75.60% vs Insulin 59.60% vs Metformin 54.96% (Table 3S)"
+            ],
+            "reported_result": "Compared with metformin-only users, GLP-1 RAs use was associated with increased risks of various adverse outcomes (sHRs with 95% CIs), including pancreatitis (2.01, 1.24–3.24), acute nephritis (3.20, 2.17–4.70), kidney failure (3.73, 2.74–5.08), thyroid cancer (2.25, 1.23–4.10), and thyroid dysfunction (1.27, 1.00–1.63)",
+            "candidate_mechanisms": [
+              "Detection bias due to higher health insurance coverage and education in GLP-1 RA users leading to increased diagnostic ascertainment",
+              "Confounding by indication and residual obesity confounding",
+              "Unmeasured baseline renal status and diabetes duration"
+            ]
+          },
+          "direction_of_baseline_imbalance": "away_from_null",
+          "summary": "At baseline, GLP-1 RA users had significantly higher obesity rates (BMI 30-39.9: 13.21% vs 4.87% in metformin) and higher insurance coverage (75.60% vs 54.96%), predisposing them to both higher true risk and increased diagnostic surveillance for adverse outcomes. Key clinical confounders including baseline eGFR, proteinuria, and diabetes duration were unmeasured, and HbA1c was missing for over 90% of participants.",
+          "_usage": {
+            "prompt": 39492,
+            "output": 3447,
+            "thoughts": 736,
+            "total": 43675
+          }
+        },
+        "time_related_biases": {
+          "timeline": {
+            "study_period": "January 1, 2016 to September 1, 2022",
+            "follow_up": "23.7 ± 18.5 months for GLP-1 RAs, 23.2 ± 18.3 months for insulin-only, and 24.8 ± 18.6 months for metformin-only",
+            "exposure_definition": "any T2D patients who mainly prescribed GLP-1 RAs lasting from the baseline date to the last follow-up while the accumulative prescription period of any other antidiabetic medication <6 months",
+            "cohort_entry_rule": "number of months from the initial outpatient date at baseline to the occurrence of the first recorded hospitalization/outpatient events, whichever came first",
+            "washout": "not reported",
+            "lag_period": "not reported",
+            "comparator": "active comparator"
+          },
+          "design": {
+            "type": "predominant_user",
+            "why": "The GLP-1 RAs group was defined as any T2D patients who mainly prescribed GLP-1 RAs lasting from the baseline date to the last follow-up while the accumulative prescription period of any other antidiabetic medication <6 months.",
+            "selects_for": "Survivors and continuous users who maintained single-class predominant therapy throughout follow-up without switching or early discontinuation due to treatment failure or early intolerance."
+          },
+          "immortal_time": {
+            "present": true,
+            "which_group": "GLP-1 RAs, insulin-only, and metformin-only groups",
+            "duration": "Variable period required to establish predominant therapy over entire follow-up",
+            "why": "Exposure groups were defined conditionally on treatment received across the entire duration of follow-up (lasting from baseline to last follow-up), requiring patients to survive and remain on therapy to fulfill the cohort definition."
+          },
+          "lag_and_latency": {
+            "lag_applied": false,
+            "follow_up_vs_latency": "Mean follow-up was 23.7 months (GLP-1 RAs) and 24.8 months (metformin), whereas biological latency for solid tumors such as thyroid cancer and hematologic malignancies typically spans several years to decades.",
+            "verdict": "too_short"
+          },
+          "duration_gradient": {
+            "reported": true,
+            "strata": [
+              {
+                "stratum": "GLP-1 RAs vs Metformin: Thyroid cancer < 12 months",
+                "estimate": "sHR: 2.25, 95% CI: 1.23–4.10"
+              },
+              {
+                "stratum": "GLP-1 RAs vs Metformin: Thyroid cancer ≥ 12 months",
+                "estimate": "sHR: 3.43, 95% CI: 1.30–9.03"
+              },
+              {
+                "stratum": "GLP-1 RAs vs Metformin: Leukemia ≥ 12 months",
+                "estimate": "sHR: 15.09, 95% CI: 4.65–48.98"
+              }
+            ],
+            "direction": "rises_with_exposure",
+            "interpretation": "Estimates are higher in the ≥12 months strata, but the maximum observation window (mean follow-up ~24 months) remains far shorter than standard cancer latency, indicating that protopathic bias and surveillance bias cannot be distinguished from true causal effects."
+          },
+          "findings": [
+            {
+              "title": "Post-baseline exposure classification and immortal time bias",
+              "mechanism": "Classifying exposure based on cumulative therapy from baseline through the entire follow-up period conditions cohort entry on future treatment patterns and survival.",
+              "evidence": [
+                "The GLP-1 RAs group was defined as any T2D patients who mainly prescribed GLP-1 RAs lasting from the baseline date to the last follow-up while the accumulative prescription period of any other antidiabetic medication <6 months."
+              ],
+              "direction": "unpredictable"
+            },
+            {
+              "title": "Absence of lag period for latent outcomes",
+              "mechanism": "Outcomes like thyroid cancer and leukemia were counted starting immediately from cohort entry without a lag window, capturing undiagnosed pre-existing disease brought to light by initiating new treatment.",
+              "evidence": [
+                "All incidence duration/survival times for outcomes of interest were operationalized as the number of months from the initial outpatient date at baseline to the occurrence of the first recorded hospitalization/outpatient events, whichever came first."
+              ],
+              "direction": "away_from_null"
+            },
+            {
+              "title": "No washout period reported",
+              "mechanism": "Without a prior lookback/washout period to ensure incident, new-user status, prevalent users are mixed with incident users, confounding initial baseline risk.",
+              "evidence": [
+                "Data of this study population originated from the Health Information Database of Shenzhen city in China, from the date of the first medical record included on January 1, 2016 to the last database update on September 1, 2022."
+              ],
+              "direction": "unpredictable"
+            }
+          ],
+          "direction_of_time_related_bias": "away_from_null",
+          "summary": "The study defines exposure groups based on predominant treatment patterns across the entirety of follow-up rather than at cohort entry, introducing immortal time bias and prevalent-user selection. Furthermore, no lag period was applied for chronic outcomes such as thyroid cancer and leukemia despite a mean follow-up of only ~24 months, heavily biasing risk estimates away from the null through surveillance and reverse causation.",
+          "_usage": {
+            "prompt": 39693,
+            "output": 1326,
+            "thoughts": 1273,
+            "total": 42292
+          }
+        }
+      }
+    },
+    "recomputed": {
+      "basis": "none",
+      "note": "the 2×2 table could not be assembled from the model's output, so nothing was recomputed"
+    },
+    "parse_error": null,
+    "verification": {
+      "total": 411,
+      "verified": 299,
+      "unverified": 13,
+      "group_mismatch": 3,
+      "found_but_label_mismatch": 21
+    },
+    "unverified_numbers": [
+      {
+        "value": "90.5",
+        "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "91.8",
+        "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "24.1",
+        "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "33.0",
+        "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "90.5",
+        "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%): exposed 90.52% missing HbA1c vs unexpo",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "91.8",
+        "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%): exposed 90.52% missing HbA1c vs unexpo",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "24.1",
+        "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%): exposed 90.52% missing HbA1c vs unexpo",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "33.0",
+        "label": "Not matched on and imbalanced: Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%): exposed 90.52% missing HbA1c vs unexpo",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "362000",
+        "label": "Massive exclusion of eligible population Over 362,000 patients were excluded for missing prescription data and 177,381 for missing IDs out of 985,278 candidates without evaluation of whether exclusions differed by clinical severity. — Over 362,000 patients were excluded for missing prescription data",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "90.5",
+        "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "91.8",
+        "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "24.1",
+        "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "33.0",
+        "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%)",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "90.52",
+        "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — 90.52% missing HbA1c",
+        "status": "GROUP_MISMATCH",
+        "group_check": "mismatch",
+        "matched_as": "90.52",
+        "context": "fferent groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of the HbA1c were 90.52%, 91.79%, and 90.45% among GLP-1 RAs, insulin only and metformin onl y groups, r"
+      },
+      {
+        "value": "91.79",
+        "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Insulin: 91.79%; Metformin: 90.45% missing HbA1c",
+        "status": "GROUP_MISMATCH",
+        "group_check": "mismatch",
+        "matched_as": "91.79",
+        "context": "groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of the HbA1c were 90.52%, 91.79%, and 90.45% among GLP-1 RAs, insulin only and metformin onl y groups, respectiv"
+      },
+      {
+        "value": "90.45",
+        "label": "Missingness of HbA1c (90.5-91.8%) and FPG (24.1-33.0%) Extremely high missingness of baseline glycemic control parameters prevents reliable adjustment for disease severity. — Insulin: 91.79%; Metformin: 90.45% missing HbA1c",
+        "status": "GROUP_MISMATCH",
+        "group_check": "mismatch",
+        "matched_as": "90.45",
+        "context": "missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of the HbA1c were 90.52%, 91.79%, and 90.45% among GLP-1 RAs, insulin only and metformin onl y groups, respectively."
+      }
+    ],
+    "max_confidence": "CONFIRMED",
+    "caveat": null,
+    "usage": {
+      "prompt": 39104,
+      "output": 2443,
+      "thoughts": 1715,
+      "total": 43262
+    },
+    "engine": "direct",
+    "agents": {
+      "critic_robins_e": {
+        "prompt": 39104,
+        "output": 2443,
+        "thoughts": 1715,
+        "total": 43262
+      },
+      "subagent_baseline_comparability": {
+        "prompt": 39492,
+        "output": 3447,
+        "thoughts": 736,
+        "total": 43675
+      },
+      "subagent_time_related_biases": {
+        "prompt": 39693,
+        "output": 1326,
+        "thoughts": 1273,
+        "total": 42292
+      }
+    }
+  }
+}

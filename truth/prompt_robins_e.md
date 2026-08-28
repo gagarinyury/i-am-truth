@@ -31,7 +31,11 @@ Rules:
 - If a domain cannot be assessed from the given data, mark its risk as
   `no_information` and say exactly which data would settle it. Do not guess.
 - Compute absolute measures (absolute risk difference, NNT) wherever the data allow, and
-  show the arithmetic.
+  show the arithmetic. **Also report the four raw counts of the 2×2 table you used**
+  (events and totals in each arm), copied from the document. They are checked against the
+  source and the absolute measures are recomputed from them by a function; your own
+  arithmetic is compared against that recomputation. If no 2×2 table can be formed from
+  the reported data, set `counts` to null rather than inventing plausible numbers.
 - Distinguish clearly between fabrication, statistical noise, and a real association
   explained by selection. Do not accuse without evidence.
 
@@ -62,6 +66,10 @@ Return ONLY a JSON object, no prose and no markdown fences:
     "summary": "one paragraph"
   },
   "computed": {
+    "counts": {
+      "exposed_events": 0, "exposed_total": 0,
+      "control_events": 0, "control_total": 0
+    },
     "absolute_risk_difference": "value with units, or null",
     "nnt": "value, or null",
     "arithmetic": "the calculation performed, or null"

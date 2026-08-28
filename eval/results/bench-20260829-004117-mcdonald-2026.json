@@ -1,0 +1,898 @@
+{
+  "case": "mcdonald-2026",
+  "engine": "direct",
+  "ground_truth_version": 2,
+  "seconds": 48.4,
+  "level": "L1",
+  "tables": {
+    "main": 9,
+    "appendix": 6
+  },
+  "agents": [
+    "critic_robins_e",
+    "subagent_baseline_comparability",
+    "subagent_time_related_biases"
+  ],
+  "tool_calls": null,
+  "engine_note": null,
+  "verification": {
+    "total": 455,
+    "verified": 316,
+    "unverified": 5,
+    "group_mismatch": 0,
+    "found_but_label_mismatch": 13
+  },
+  "unverified_numbers": [
+    {
+      "value": "3.5",
+      "label": "Biologically implausible rapid effect / latency window — Solid tumor carcinogenesis occurs over years to decades; finding a 30.5% odds reduction within a 3.5-year observation window (2022-2025) strongly points to detection and selection dynamics rather than true biological prevention of de novo canc",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "3.5",
+      "label": "Biologically implausible rapid effect / latency window — Study timeframe: January 1, 2022 to June 30, 2025 (3.5 years total)",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "3.5",
+      "label": "This retrospective EHR-based cohort study reports an odds ratio of 0.695 for breast cancer detection associated with GLP-1 agonist use in a propensity-score-matched sample of women undergoing breast imaging. The study is at high overall risk of bias, predominantly due to confounding (residual imbala",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "3.5",
+      "label": "The entire study window was 3.5 years [derived: 42 months between January 1, 2022, and June 30, 2025], with no minimum exposure duration required and no lag applied. Solid tumor breast cancer latency typically requires 5 to 10 or more years, vastly exceeding the available study observation window.",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    },
+    {
+      "value": "3.5",
+      "label": "The study uses an encounter-anchored prevalent-user design with zero lag time and a total study window of only 3.5 years, which is substantially shorter than the biological latency of breast cancer. These temporal defects artificially inflate the apparent protective association of GLP-1 agonists.",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    }
+  ],
+  "judge": {
+    "points": {
+      "P1": 1.0,
+      "P2": 1.0,
+      "P3": 1.0,
+      "P4": 0.5,
+      "P5": 1.0,
+      "P6": 1.0
+    },
+    "score": 5.5,
+    "of": 6,
+    "ratio": 0.917,
+    "detail": [
+      {
+        "id": "P1",
+        "score": 1.0,
+        "reason": "The auditor accurately identified the unbalanced prior breast cancer history favoring the GLP-1 group, noted the exact percentages in both unmatched and matched cohorts (7.8% vs 5.9%), correctly identified the direction of bias (away from null), and avoided the trap.",
+        "quote": "In the matched dataset (Table A2), matched non-GLP-1 controls had a higher prevalence of prior breast cancer history (1,197 [7.8%]) compared to GLP-1 users (907 [5.9%]), which directly increases the baseline cancer detection rate in controls and artificially exaggerates the apparent protective effect of GLP-1 agonists."
+      },
+      {
+        "id": "P2",
+        "score": 1.0,
+        "reason": "The auditor correctly identified the 'sicker-yet-fewer-cancers' contradiction with exact comorbidity numbers (Charlson >=5 19.7% vs 10.4%, heart disease 13.0% vs 7.3%, renal 13.9% vs 7.1%) and avoided the 'healthy user effect' trap.",
+        "quote": "The GLP-1 exposed cohort had markedly higher rates of class 3 obesity (39.8% vs 12.7%), type 2 diabetes (53.4% vs 17.6%), Charlson score ≥5 (19.7% vs 10.4%), heart disease (13.0% vs 7.3%), and renal disease (13.9% vs 7.1%), yet demonstrated a significantly lower odds of breast cancer detection"
+      },
+      {
+        "id": "P3",
+        "score": 1.0,
+        "reason": "The auditor identified the prevalent-user / ever-use design without washout or minimum exposure duration, specifically citing immortal time bias, latency mismatch, and the authors' concession on lack of duration requirement.",
+        "quote": "Defining exposure as any single prescription before the imaging date without requiring a minimum duration of therapy or accounting for latency creates immortal time bias and includes transient users, inflating the apparent protective effect."
+      },
+      {
+        "id": "P4",
+        "score": 0.5,
+        "reason": "The auditor captured the numbers for diabetes matching (53.4% vs 17.6%) and noted matching on highest BMI retrospectively, but missed the deeper methodological point that matching on maximum BMI fails to capture weight loss trajectories (conflating the drug molecule with weight loss itself).",
+        "quote": "Choices regarding matching variables, BMI window definitions (2017-2025 maximum BMI), and subgroup selections were made retrospectively."
+      },
+      {
+        "id": "P5",
+        "score": 1.0,
+        "reason": "The auditor computed the exact absolute risk reduction (0.69 percentage points, 2.31% vs 1.62%) and the corresponding NNT of 144.",
+        "quote": "Risk in exposed = 247 / 15,264 = 1.6182% (1.62%); Risk in control = 353 / 15,264 = 2.3126% (2.31%); Absolute Risk Reduction (ARR) = 2.3126% - 1.6182% = 0.6944% (~0.69 percentage points); NNT = 1 / 0.006944 = 144.0"
+      },
+      {
+        "id": "P6",
+        "score": 1.0,
+        "reason": "The auditor recognized the detection/selection bias and collider effect resulting from conditioning cohort entry entirely on undergoing breast imaging, as well as the differential healthcare surveillance.",
+        "quote": "Conditioning cohort inclusion entirely on having undergone breast imaging between 2022 and 2025 introduces collider/selection bias, as indications for screening vs diagnostic workup differ substantially between GLP-1 users undergoing frequent clinical monitoring and non-users."
+      }
+    ],
+    "extra_findings": [
+      {
+        "title": "Unmeasured reproductive and lifestyle risk factors for breast cancer",
+        "valid": true,
+        "why": "EHR data typically lack parity, age at menarche/menopause, HRT use, and alcohol intake, which are major breast cancer determinants."
+      },
+      {
+        "title": "Potential exposure misclassification via outside/compounding pharmacies",
+        "valid": true,
+        "why": "The authors acknowledge in discussion that GLP-1 agonists acquired outside health system EHRs would lead to unexposed misclassification."
+      }
+    ],
+    "traps": null
+  },
+  "report": {
+    "meta": {
+      "found": true,
+      "doi": "10.1200/OP-26-00485",
+      "pmid": "42227662",
+      "pmcid": null,
+      "title": "GLP-1 Agonists Are Associated With a Significant Reduction in Breast Cancer Incidence in Women.",
+      "journal": "JCO oncology practice",
+      "open_access": false,
+      "in_epmc": false,
+      "has_supplementary": false,
+      "abstract": "<h4>Purpose</h4>Excess weight is a key modifiable risk factor for breast cancer. Glucagon-like peptide-1 receptor agonists (GLP-1) promote weight loss and improve metabolic health, but their effect on breast cancer risk remains unclear.<h4>Methods</h4>We conducted a retrospective cohort study from January 1, 2022, to June 30, 2025, using electronic health records. We identified 217,624 unique women who underwent breast imaging; restricting to ages 45-80 years with a BMI ≥25 and a documented imaging outcome (n = 111,646; median age 61 years). The primary outcome was breast cancer detection. GLP-1 use was defined as a first prescription before the examination date and assessed in relation to race, ethnicity, age, and type 2 diabetes. To address potential confounding between these covariates and GLP-1 exposure, we performed one-to-one, case-control matching using propensity scores on the basis of age, race, ethnicity, highest BMI, breast density, and history of type 2 diabetes. The propensity matching to the GLP-1 use group was performed using the greedy nearest neighbor approach.<h4>Results</h4>GLP-1 exposure was associated with a lower incidence of breast cancer (odds ratio [OR], 0.649 [95% CI, 0.569 to 0.741]; <i>P</i> < .0001). In the matched logistic regression (30,528 observations; 600 cancer cases), GLP-1 exposure was associated with a lower breast cancer incidence (OR, 0.695 [95% CI, 0.590 to 0.819]; <i>P</i> < .0001).<h4>Conclusion</h4>In this large observational study of women undergoing breast imaging at a major academic center and affiliated sites, GLP-1 treatment was associated with a lower incidence of breast cancer, independent of age, race, ethnicity, BMI, breast density, and diabetes. The findings support the need for prospective trials investigating GLP-1 agonists for breast cancer prevention."
+    },
+    "level": {
+      "level": "L1",
+      "name": "full text + appendix tables",
+      "max_confidence": "CONFIRMED",
+      "measured_score": "5.0-6.0 / 6 (median 6.0)",
+      "source": "файлы пользователя (путь B)"
+    },
+    "tables": {
+      "main": 9,
+      "appendix": 6
+    },
+    "findings": {
+      "domains": [
+        {
+          "id": 1,
+          "name": "Confounding",
+          "risk": "high",
+          "direction": "away_from_null",
+          "direction_justification": "In the matched dataset (Table A2), matched non-GLP-1 controls had a higher prevalence of prior breast cancer history (1,197 [7.8%]) compared to GLP-1 users (907 [5.9%]), which directly increases the baseline cancer detection rate in controls and artificially exaggerates the apparent protective effect of GLP-1 agonists.",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Residual confounding from unbalanced prior breast cancer history",
+              "mechanism": "Prior history of breast cancer is a major determinant of future breast malignancy. Because propensity score matching did not balance prior breast cancer history, controls had higher baseline risk.",
+              "evidence": [
+                "Table A2: History of breast cancer was 7.8% (1,197/15,264) in controls vs 5.9% (907/15,264) in GLP-1 exposed."
+              ]
+            },
+            {
+              "title": "Unmeasured lifestyle and reproductive confounders",
+              "mechanism": "Key breast cancer risk factors such as family history, parity, age at menarche/menopause, hormone replacement therapy, physical activity, and alcohol intake were not captured or adjusted for.",
+              "evidence": [
+                "Propensity score matching covariates were restricted to age, race, ethnicity, highest BMI, breast density, and type 2 diabetes."
+              ]
+            },
+            {
+              "title": "Baseline paradox: worse starting position, better outcome",
+              "mechanism": "selection bias from restricting the study population to women undergoing breast imaging; unmeasured confounding related to prior breast cancer history (which was higher in controls); reverse causation or differential timing of drug initiation relative to screening exam; immortal time bias and lack of minimum duration of exposure",
+              "evidence": [
+                "The GLP-1 exposed cohort had markedly higher rates of class 3 obesity (39.8% vs 12.7%), type 2 diabetes (53.4% vs 17.6%), Charlson score ≥5 (19.7% vs 10.4%), heart disease (13.0% vs 7.3%), and renal disease (13.9% vs 7.1%), yet demonstrated a significantly lower odds of breast cancer detection (OR 0.649 [95% CI, 0.569 to 0.741]; matched OR 0.695 [95% CI, 0.590 to 0.819]).",
+                "BMI class Obese class 3: 39.8% GLP-1 vs 12.7% No GLP-1 (Full analysis set)",
+                "BMI class Obese class 2: 26.9% GLP-1 vs 15.7% No GLP-1 (Full analysis set)",
+                "HxType2 diabetes Yes: 53.4% GLP-1 vs 17.6% No GLP-1 (Full analysis set)",
+                "Charlson Risk Score 5+ very high: 19.7% GLP-1 vs 10.4% No GLP-1 (Full set; 19.7% vs 17.3% Matched set)",
+                "Charlson Risk Score 3-4 high: 21.3% GLP-1 vs 13.6% No GLP-1 (Full set; 21.3% vs 17.7% Matched set)",
+                "Heart disease (CHF/MI) Yes: 13.0% GLP-1 vs 7.3% No GLP-1 (Full set; 13.0% vs 11.7% Matched set)",
+                "Renal disease Yes: 13.9% GLP-1 vs 7.1% No GLP-1 (Full set; 13.9% vs 10.7% Matched set)",
+                "Liver disease Mild: 20.6% GLP-1 vs 11.2% No GLP-1 (Full set; 20.6% vs 15.1% Matched set)"
+              ],
+              "found_by": "subagent:baseline_comparability"
+            },
+            {
+              "title": "Not matched on and imbalanced: History of breast cancer",
+              "mechanism": "Unmatched control group retained more patients with a prior history of breast cancer (7.8% vs 5.9%), biasing the study towards observing higher cancer detection in non-users.",
+              "evidence": [
+                "History of breast cancer: exposed 907 (5.9%) vs unexposed 1,197 (7.8%)"
+              ],
+              "found_by": "subagent:baseline_comparability"
+            },
+            {
+              "title": "Not matched on and imbalanced: Charlson Risk Score: 5+ very high",
+              "mechanism": "Higher residual comorbidity burden in the exposed group could increase screening scrutiny and cancer detection.",
+              "evidence": [
+                "Charlson Risk Score: 5+ very high: exposed 3,008 (19.7%) vs unexposed 2,638 (17.3%)"
+              ],
+              "found_by": "subagent:baseline_comparability"
+            },
+            {
+              "title": "Not matched on and imbalanced: Renal disease",
+              "mechanism": "Residual imbalance in chronic disease increases healthcare contact among exposed patients.",
+              "evidence": [
+                "Renal disease: exposed 2,122 (13.9%) vs unexposed 1,639 (10.7%)"
+              ],
+              "found_by": "subagent:baseline_comparability"
+            },
+            {
+              "title": "Not matched on and imbalanced: Liver disease: Mild",
+              "mechanism": "Residual metabolic dysfunction remains more prevalent in the exposed group.",
+              "evidence": [
+                "Liver disease: Mild: exposed 3,147 (20.6%) vs unexposed 2,311 (15.1%)"
+              ],
+              "found_by": "subagent:baseline_comparability"
+            }
+          ],
+          "disagreement": {
+            "main_critic": "away_from_null",
+            "subagent_baseline": "unpredictable",
+            "note": "два независимых прохода дали разное направление; не сведено намеренно — расхождение само по себе сигнал"
+          }
+        },
+        {
+          "id": 2,
+          "name": "Measurement of the exposure",
+          "risk": "high",
+          "direction": "away_from_null",
+          "direction_justification": "Defining exposure as any single prescription before the imaging date without requiring a minimum duration of therapy or accounting for latency creates immortal time bias and includes transient users, inflating the apparent protective effect.",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Crude exposure definition and lack of duration/dose requirement",
+              "mechanism": "Exposure was defined merely as any first prescription before the imaging exam date, without tracking cumulative dose, adherence, or duration.",
+              "evidence": [
+                "Methods states: 'GLP-1 agonist use was defined as a first prescription before the examination date'",
+                "Authors acknowledge in Discussion: 'did not specifically examine the impact of exposure duration or drug dosage on cancer development. We also did not require a minimum duration of therapy'"
+              ]
+            },
+            {
+              "title": "Potential exposure misclassification from outside prescriptions",
+              "mechanism": "Patients obtaining GLP-1 medications outside the health system or via compounding pharmacies would be misclassified as unexposed.",
+              "evidence": [
+                "Discussion acknowledges: 'patients on GLP-1 agonists who obtained these drugs outside of our health system, including non-FDA-approved doses and formulations at compounding pharmacies'"
+              ]
+            },
+            {
+              "title": "Absence of Lag Period and Insufficient Latency Window",
+              "mechanism": "Breast cancers diagnosed within months of starting a drug were biologically present prior to drug initiation; counting these without a multi-year lag assigns existing tumors to unexposed or baseline-exposed states erroneously and cannot reflect genuine cancer prevention.",
+              "evidence": [
+                "We also did not require a minimum duration of therapy",
+                "we did not specifically examine the impact of exposure duration or drug dosage on cancer development",
+                "retrospective cohort study from January 1, 2022, to June 30, 2025"
+              ],
+              "found_by": "subagent:time_related_biases"
+            },
+            {
+              "title": "Prevalent and Ever-Use Exposure Misclassification",
+              "mechanism": "Defining exposure as any prescription prior to the imaging examination without a washout period or new-user inception cohort introduces prevalent-user bias and conflates short-term new users with long-term adherents.",
+              "evidence": [
+                "GLP-1 agonist use was defined as a first prescription before the examination date",
+                "associated with any prior or current use of GLP-1 agonist"
+              ],
+              "found_by": "subagent:time_related_biases"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "name": "Selection of participants into the study",
+          "risk": "high",
+          "direction": "away_from_null",
+          "direction_justification": "Conditioning cohort inclusion entirely on having undergone breast imaging between 2022 and 2025 introduces collider/selection bias, as indications for screening vs diagnostic workup differ substantially between GLP-1 users undergoing frequent clinical monitoring and non-users.",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Conditioning on breast imaging examination",
+              "mechanism": "Restricting the entire cohort to women with documented breast imaging (n=111,646 out of 217,624 screened) selects for health-care-seeking behavior and imaging indication rather than the target population at risk.",
+              "evidence": [
+                "Figure 1: Initial population restricted to 'Unique women who underwent breast imaging (n = 217,624)' with documented imaging outcome"
+              ]
+            },
+            {
+              "title": "Biologically implausible rapid effect / latency window",
+              "mechanism": "Solid tumor carcinogenesis occurs over years to decades; finding a 30.5% odds reduction within a 3.5-year observation window (2022-2025) strongly points to detection and selection dynamics rather than true biological prevention of de novo cancer.",
+              "evidence": [
+                "Study timeframe: January 1, 2022 to June 30, 2025 (3.5 years total)"
+              ]
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "Post-exposure interventions",
+          "risk": "low",
+          "direction": "towards_null",
+          "direction_justification": "No specific co-interventions were systematically differentially applied after exposure initiation that would explain a large cancer reduction, although differential diagnostic follow-up is possible.",
+          "threatens_conclusions": false,
+          "findings": [
+            {
+              "title": "Standard of care diagnostic procedures",
+              "mechanism": "Diagnostic mammography and biopsy procedures followed standard clinical practice across both cohorts.",
+              "evidence": [
+                "Table 1 and Table 2 show comparable false positive rates (2.7% GLP-1 vs 3.0% control in matched cohort)."
+              ]
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "Missing data",
+          "risk": "some_concerns",
+          "direction": "unpredictable",
+          "direction_justification": "Exclusion of 54,799 women due to BMI < 25 or missing BMI data could introduce selection bias depending on whether missingness was related to health status.",
+          "threatens_conclusions": false,
+          "findings": [
+            {
+              "title": "Exclusion of patients without recorded qualifying BMI",
+              "mechanism": "Patients without recorded BMI or with BMI <25 between 2017 and 2025 were excluded from the analysis.",
+              "evidence": [
+                "Figure 1: Excluded BMI < 25 (n = 54,799) from 166,445 age-eligible women."
+              ]
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "name": "Measurement of the outcome",
+          "risk": "low",
+          "direction": "towards_null",
+          "direction_justification": "The primary outcome was based on histological diagnosis (malignant breast pathology), which is objective and uniformly recorded in the EHR.",
+          "threatens_conclusions": false,
+          "findings": [
+            {
+              "title": "Histologically confirmed cancer diagnosis",
+              "mechanism": "Outcome was defined as a documented malignant breast pathology diagnosis during the study period.",
+              "evidence": [
+                "Methods states: 'The primary outcome was a malignant breast pathology diagnosis during the study period.'"
+              ]
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "name": "Selection of the reported result",
+          "risk": "some_concerns",
+          "direction": "unpredictable",
+          "direction_justification": "No pre-registered protocol is cited, and multiple subgroups and comorbidity categories were analyzed retrospectively.",
+          "threatens_conclusions": false,
+          "findings": [
+            {
+              "title": "Retrospective analytic design without pre-registered protocol",
+              "mechanism": "Choices regarding matching variables, BMI window definitions (2017-2025 maximum BMI), and subgroup selections were made retrospectively.",
+              "evidence": [
+                "EHR study covering 2022-2025 with retrospective BMI maximum defined from 2017 to 2025."
+              ]
+            }
+          ]
+        }
+      ],
+      "overall": {
+        "risk": "high",
+        "direction": "away_from_null",
+        "threatens_conclusions": true,
+        "summary": "This retrospective EHR-based cohort study reports an odds ratio of 0.695 for breast cancer detection associated with GLP-1 agonist use in a propensity-score-matched sample of women undergoing breast imaging. The study is at high overall risk of bias, predominantly due to confounding (residual imbalance in prior breast cancer history: 7.8% in controls vs 5.9% in exposed), selection bias (conditioning cohort entry on breast imaging), and exposure misclassification / immortal time bias (any single prescription prior to exam date without duration or latency requirements). Given the short 3.5-year study timeframe, a ~30% reduction in cancer incidence is biologically implausible for primary prevention and is far more likely explained by selection, baseline risk disparities, and screening indication differences."
+      },
+      "computed": {
+        "counts": {
+          "exposed_events": 247,
+          "exposed_total": 15264,
+          "control_events": 353,
+          "control_total": 15264
+        },
+        "absolute_risk_difference": "-0.69%",
+        "nnt": 144,
+        "arithmetic": "Risk in exposed = 247 / 15,264 = 1.6182% (1.62%); Risk in control = 353 / 15,264 = 2.3126% (2.31%); Absolute Risk Reduction (ARR) = 2.3126% - 1.6182% = 0.6944% (~0.69 percentage points); NNT = 1 / 0.006944 = 144.0 (15,264 / 106 = 144)."
+      },
+      "classification": "real_association_explained_by_selection",
+      "unresolvable_without_more_data": [
+        "Duration, cumulative dose, and adherence of GLP-1 agonist therapy prior to breast cancer diagnosis.",
+        "Indication for breast imaging (routine screening vs diagnostic evaluation of palpable mass/symptoms).",
+        "Adjustment for established breast cancer risk factors (family history, parity, age at first birth, exogenous hormone use, alcohol consumption)."
+      ],
+      "subagents": {
+        "baseline_comparability": {
+          "baseline_table_found": true,
+          "source_tables": [
+            "Table 1",
+            "Table 2",
+            "Appendix Table A1",
+            "Appendix Table A2"
+          ],
+          "characteristics": [
+            {
+              "name": "Breast density: Almost entirely fatty",
+              "exposed": "2,083 (13.6)",
+              "unexposed": "7,076 (7.3)",
+              "exposed_matched": "2,083 (13.6)",
+              "unexposed_matched": "2,029 (13.3)",
+              "table": "Table 1, Table 2",
+              "favours": "exposed",
+              "why": "Lower breast density is associated with lower baseline breast cancer risk."
+            },
+            {
+              "name": "Breast density: Scattered fibroglandular density",
+              "exposed": "8,954 (58.7)",
+              "unexposed": "49,334 (51.2)",
+              "exposed_matched": "8,954 (58.7)",
+              "unexposed_matched": "8,369 (54.8)",
+              "table": "Table 1, Table 2",
+              "favours": "exposed",
+              "why": "Non-dense tissue category confers lower risk than heterogeneously or extremely dense tissue."
+            },
+            {
+              "name": "Breast density: Heterogeneously dense",
+              "exposed": "2,305 (15.1)",
+              "unexposed": "23,933 (24.8)",
+              "exposed_matched": "2,305 (15.1)",
+              "unexposed_matched": "2,554 (16.7)",
+              "table": "Table 1, Table 2",
+              "favours": "exposed",
+              "why": "Lower prevalence of dense breast tissue in exposed reduces baseline breast cancer risk."
+            },
+            {
+              "name": "Breast density: Extremely dense",
+              "exposed": "75 (0.5)",
+              "unexposed": "1,435 (1.5)",
+              "exposed_matched": "75 (0.5)",
+              "unexposed_matched": "100 (0.7)",
+              "table": "Table 1, Table 2",
+              "favours": "exposed",
+              "why": "Extremely dense breasts strongly increase cancer risk; exposed group has lower prevalence."
+            },
+            {
+              "name": "Breast density: Not applicable",
+              "exposed": "1,847 (12.1)",
+              "unexposed": "14,604 (15.2)",
+              "exposed_matched": "1,847 (12.1)",
+              "unexposed_matched": "2,212 (14.5)",
+              "table": "Table 1, Table 2",
+              "favours": "neutral",
+              "why": "Corresponds to ultrasound or MRI imaging modality without clear directional risk implication."
+            },
+            {
+              "name": "BMI class: Overweight: BMI <30",
+              "exposed": "1,295 (8.5)",
+              "unexposed": "40,537 (42.1)",
+              "exposed_matched": "1,295 (8.5)",
+              "unexposed_matched": "1,755 (11.5)",
+              "table": "Table 1, Table 2",
+              "favours": "unexposed",
+              "why": "Lower BMI category is associated with lower postmenopausal breast cancer risk."
+            },
+            {
+              "name": "BMI class: Obese class 1: BMI ≥30, <35",
+              "exposed": "3,790 (24.8)",
+              "unexposed": "28,466 (29.5)",
+              "exposed_matched": "3,790 (24.8)",
+              "unexposed_matched": "3,709 (24.3)",
+              "table": "Table 1, Table 2",
+              "favours": "exposed",
+              "why": "Slightly lower proportion in exposed cohort relative to moderate obesity."
+            },
+            {
+              "name": "BMI class: Obese class 2: BMI ≥35, <40",
+              "exposed": "4,107 (26.9)",
+              "unexposed": "15,095 (15.7)",
+              "exposed_matched": "4,107 (26.9)",
+              "unexposed_matched": "3,896 (25.5)",
+              "table": "Table 1, Table 2",
+              "favours": "unexposed",
+              "why": "Higher obesity class increases circulating estrogens and postmenopausal breast cancer risk."
+            },
+            {
+              "name": "BMI class: Obese class 3: BMI ≥40 (or 40+)",
+              "exposed": "6,072 (39.8)",
+              "unexposed": "12,284 (12.7)",
+              "exposed_matched": "6,072 (39.8)",
+              "unexposed_matched": "5,904 (38.7)",
+              "table": "Table 1, Table 2",
+              "favours": "unexposed",
+              "why": "Severe obesity substantially increases baseline postmenopausal breast cancer risk."
+            },
+            {
+              "name": "Age group: 45-50",
+              "exposed": "3,083 (20.2)",
+              "unexposed": "17,253 (17.9)",
+              "exposed_matched": "3,083 (20.2)",
+              "unexposed_matched": "3,531 (23.1)",
+              "table": "Table 1, Table 2",
+              "favours": "exposed",
+              "why": "Younger age group is associated with lower absolute incidence of breast cancer."
+            },
+            {
+              "name": "Age group: 51-60",
+              "exposed": "5,804 (38.0)",
+              "unexposed": "28,395 (29.5)",
+              "exposed_matched": "5,804 (38.0)",
+              "unexposed_matched": "5,446 (35.7)",
+              "table": "Table 1, Table 2",
+              "favours": "unexposed",
+              "why": "Older age increases cumulative breast cancer incidence."
+            },
+            {
+              "name": "Age group: 61-70",
+              "exposed": "4,532 (29.7)",
+              "unexposed": "29,407 (30.5)",
+              "exposed_matched": "4,532 (29.7)",
+              "unexposed_matched": "4,279 (28.0)",
+              "table": "Table 1, Table 2",
+              "favours": "unexposed",
+              "why": "Higher age bracket increases baseline cancer risk."
+            },
+            {
+              "name": "Age group: 71-80",
+              "exposed": "1,845 (12.1)",
+              "unexposed": "21,327 (22.1)",
+              "exposed_matched": "1,845 (12.1)",
+              "unexposed_matched": "2,008 (13.2)",
+              "table": "Table 1, Table 2",
+              "favours": "exposed",
+              "why": "Substantially fewer elderly patients in the exposed group reduces background cancer risk."
+            },
+            {
+              "name": "Race: Black or African American",
+              "exposed": "6,152 (40.3)",
+              "unexposed": "26,199 (27.2)",
+              "exposed_matched": "6,152 (40.3)",
+              "unexposed_matched": "6,116 (40.1)",
+              "table": "Table 1, Table 2",
+              "favours": "unclear",
+              "why": "Complex differences in breast cancer incidence vs mortality across racial groups."
+            },
+            {
+              "name": "Race: White",
+              "exposed": "7,787 (51.0)",
+              "unexposed": "59,572 (61.8)",
+              "exposed_matched": "7,787 (51.0)",
+              "unexposed_matched": "8,012 (52.5)",
+              "table": "Table 1, Table 2",
+              "favours": "exposed",
+              "why": "White women have historically higher age-adjusted breast cancer incidence."
+            },
+            {
+              "name": "HxType2 diabetes: Yes",
+              "exposed": "8,155 (53.4)",
+              "unexposed": "17,007 (17.6)",
+              "exposed_matched": "8,155 (53.4)",
+              "unexposed_matched": "8,155 (53.4)",
+              "table": "Table 1, Table 2",
+              "favours": "unexposed",
+              "why": "Type 2 diabetes and hyperinsulinemia increase baseline risk for breast cancer."
+            },
+            {
+              "name": "History of breast cancer: Yes",
+              "exposed": "907 (5.9)",
+              "unexposed": "8,876 (9.2)",
+              "exposed_matched": "907 (5.9)",
+              "unexposed_matched": "1,197 (7.8)",
+              "table": "Appendix Table A1, Appendix Table A2",
+              "favours": "exposed",
+              "why": "Prior personal history of breast cancer strongly elevates risk of recurrent/second primary breast cancer."
+            },
+            {
+              "name": "Charlson Risk Score: 5+ very high",
+              "exposed": "3,008 (19.7)",
+              "unexposed": "10,005 (10.4)",
+              "exposed_matched": "3,008 (19.7)",
+              "unexposed_matched": "2,638 (17.3)",
+              "table": "Appendix Table A1, Appendix Table A2",
+              "favours": "unexposed",
+              "why": "High general comorbidity reflects a sicker population with more frequent clinical surveillance."
+            },
+            {
+              "name": "Charlson Risk Score: 3-4 high",
+              "exposed": "3,246 (21.3)",
+              "unexposed": "13,079 (13.6)",
+              "exposed_matched": "3,246 (21.3)",
+              "unexposed_matched": "2,704 (17.7)",
+              "table": "Appendix Table A1, Appendix Table A2",
+              "favours": "unexposed",
+              "why": "Higher comorbidity score reflects poorer overall health and increased medical encounters."
+            },
+            {
+              "name": "Heart disease (CHF/MI): Yes",
+              "exposed": "1,977 (13.0)",
+              "unexposed": "7,011 (7.3)",
+              "exposed_matched": "1,977 (13.0)",
+              "unexposed_matched": "1,780 (11.7)",
+              "table": "Appendix Table A1, Appendix Table A2",
+              "favours": "unexposed",
+              "why": "Elevated cardiovascular comorbidity indicates a sicker baseline population with higher healthcare contact."
+            },
+            {
+              "name": "Renal disease: Yes",
+              "exposed": "2,122 (13.9)",
+              "unexposed": "6,866 (7.1)",
+              "exposed_matched": "2,122 (13.9)",
+              "unexposed_matched": "1,639 (10.7)",
+              "table": "Appendix Table A1, Appendix Table A2",
+              "favours": "unexposed",
+              "why": "Renal disease indicates significant end-organ diabetic/vascular damage and increased surveillance."
+            },
+            {
+              "name": "Liver disease: Mild",
+              "exposed": "3,147 (20.6)",
+              "unexposed": "10,813 (11.2)",
+              "exposed_matched": "3,147 (20.6)",
+              "unexposed_matched": "2,311 (15.1)",
+              "table": "Appendix Table A1, Appendix Table A2",
+              "favours": "unexposed",
+              "why": "Hepatic steatosis/liver disease correlates with metabolic syndrome and systemic morbidity."
+            }
+          ],
+          "matching": {
+            "used": true,
+            "matched_on": [
+              "race",
+              "ethnicity",
+              "breast density",
+              "history of type 2 diabetes",
+              "age",
+              "highest BMI"
+            ],
+            "not_matched_but_imbalanced": [
+              {
+                "name": "History of breast cancer",
+                "exposed": "907 (5.9%)",
+                "unexposed": "1,197 (7.8%)",
+                "direction": "away_from_null",
+                "why": "Unmatched control group retained more patients with a prior history of breast cancer (7.8% vs 5.9%), biasing the study towards observing higher cancer detection in non-users."
+              },
+              {
+                "name": "Charlson Risk Score: 5+ very high",
+                "exposed": "3,008 (19.7%)",
+                "unexposed": "2,638 (17.3%)",
+                "direction": "towards_null",
+                "why": "Higher residual comorbidity burden in the exposed group could increase screening scrutiny and cancer detection."
+              },
+              {
+                "name": "Renal disease",
+                "exposed": "2,122 (13.9%)",
+                "unexposed": "1,639 (10.7%)",
+                "direction": "towards_null",
+                "why": "Residual imbalance in chronic disease increases healthcare contact among exposed patients."
+              },
+              {
+                "name": "Liver disease: Mild",
+                "exposed": "3,147 (20.6%)",
+                "unexposed": "2,311 (15.1%)",
+                "direction": "towards_null",
+                "why": "Residual metabolic dysfunction remains more prevalent in the exposed group."
+              }
+            ]
+          },
+          "contradiction": {
+            "present": true,
+            "statement": "The GLP-1 exposed cohort had markedly higher rates of class 3 obesity (39.8% vs 12.7%), type 2 diabetes (53.4% vs 17.6%), Charlson score ≥5 (19.7% vs 10.4%), heart disease (13.0% vs 7.3%), and renal disease (13.9% vs 7.1%), yet demonstrated a significantly lower odds of breast cancer detection (OR 0.649 [95% CI, 0.569 to 0.741]; matched OR 0.695 [95% CI, 0.590 to 0.819]).",
+            "supporting_characteristics": [
+              "BMI class Obese class 3: 39.8% GLP-1 vs 12.7% No GLP-1 (Full analysis set)",
+              "BMI class Obese class 2: 26.9% GLP-1 vs 15.7% No GLP-1 (Full analysis set)",
+              "HxType2 diabetes Yes: 53.4% GLP-1 vs 17.6% No GLP-1 (Full analysis set)",
+              "Charlson Risk Score 5+ very high: 19.7% GLP-1 vs 10.4% No GLP-1 (Full set; 19.7% vs 17.3% Matched set)",
+              "Charlson Risk Score 3-4 high: 21.3% GLP-1 vs 13.6% No GLP-1 (Full set; 21.3% vs 17.7% Matched set)",
+              "Heart disease (CHF/MI) Yes: 13.0% GLP-1 vs 7.3% No GLP-1 (Full set; 13.0% vs 11.7% Matched set)",
+              "Renal disease Yes: 13.9% GLP-1 vs 7.1% No GLP-1 (Full set; 13.9% vs 10.7% Matched set)",
+              "Liver disease Mild: 20.6% GLP-1 vs 11.2% No GLP-1 (Full set; 20.6% vs 15.1% Matched set)"
+            ],
+            "reported_result": "In the matched logistic regression (30,528 observations; 600 cancer cases), GLP-1 exposure was associated with a lower breast cancer incidence (OR, 0.695 [95% CI, 0.590 to 0.819]; P < .0001).",
+            "candidate_mechanisms": [
+              "selection bias from restricting the study population to women undergoing breast imaging",
+              "unmeasured confounding related to prior breast cancer history (which was higher in controls)",
+              "reverse causation or differential timing of drug initiation relative to screening exam",
+              "immortal time bias and lack of minimum duration of exposure"
+            ]
+          },
+          "direction_of_baseline_imbalance": "unpredictable",
+          "summary": "While the GLP-1 exposed cohort exhibited substantially greater general comorbidity, diabetes, and severe obesity, the unexposed cohort had higher baseline breast density and a higher prevalence of prior breast cancer history. Propensity score matching eliminated differences in demographic and metabolic covariates but left residual imbalances in prior breast cancer history (7.8% vs 5.9%) and major organ comorbidities.",
+          "_usage": {
+            "prompt": 23763,
+            "output": 4389,
+            "thoughts": 1966,
+            "total": 30118
+          }
+        },
+        "time_related_biases": {
+          "timeline": {
+            "study_period": "January 1, 2022, to June 30, 2025",
+            "follow_up": "not reported",
+            "exposure_definition": "GLP-1 agonist use was defined as a first prescription before the examination date",
+            "cohort_entry_rule": "Cohort defined by breast imaging examination date between January 1, 2022, and June 30, 2025; exposure evaluated retrospectively prior to examination date",
+            "washout": "not reported",
+            "lag_period": "not reported",
+            "comparator": "non-use"
+          },
+          "design": {
+            "type": "prevalent_user",
+            "why": "GLP-1 agonist use was defined as a first prescription before the examination date and assessed the reduction in breast cancer diagnoses within the study group associated with any prior or current use of GLP-1 agonist.",
+            "selects_for": "Survivors and long-term tolerant users of GLP-1 agonists, as well as patients initiating therapy immediately prior to imaging without requiring a new-user baseline or treatment duration."
+          },
+          "immortal_time": {
+            "present": true,
+            "which_group": "GLP-1 agonist group",
+            "duration": "Variable interval between first prescription and the date of breast imaging examination during the 2022-2025 study period",
+            "why": "Patients were classified as GLP-1 exposed if they had a prescription prior to their breast imaging examination; to be included and imaged as an exposed subject, they had to survive and remain under care from the prescription date until the imaging date without prior disqualifying events."
+          },
+          "lag_and_latency": {
+            "lag_applied": false,
+            "follow_up_vs_latency": "The entire study window was 3.5 years [derived: 42 months between January 1, 2022, and June 30, 2025], with no minimum exposure duration required and no lag applied. Solid tumor breast cancer latency typically requires 5 to 10 or more years, vastly exceeding the available study observation window.",
+            "verdict": "too_short"
+          },
+          "duration_gradient": {
+            "reported": false,
+            "strata": [],
+            "direction": "not_reported",
+            "interpretation": "The authors explicitly state they 'did not specifically examine the impact of exposure duration or drug dosage on cancer development' and 'did not require a minimum duration of therapy', making it impossible to distinguish a causal biological effect from reverse causation or detection bias."
+          },
+          "findings": [
+            {
+              "title": "Absence of Lag Period and Insufficient Latency Window",
+              "mechanism": "Breast cancers diagnosed within months of starting a drug were biologically present prior to drug initiation; counting these without a multi-year lag assigns existing tumors to unexposed or baseline-exposed states erroneously and cannot reflect genuine cancer prevention.",
+              "evidence": [
+                "We also did not require a minimum duration of therapy",
+                "we did not specifically examine the impact of exposure duration or drug dosage on cancer development",
+                "retrospective cohort study from January 1, 2022, to June 30, 2025"
+              ],
+              "direction": "away_from_null"
+            },
+            {
+              "title": "Prevalent and Ever-Use Exposure Misclassification",
+              "mechanism": "Defining exposure as any prescription prior to the imaging examination without a washout period or new-user inception cohort introduces prevalent-user bias and conflates short-term new users with long-term adherents.",
+              "evidence": [
+                "GLP-1 agonist use was defined as a first prescription before the examination date",
+                "associated with any prior or current use of GLP-1 agonist"
+              ],
+              "direction": "away_from_null"
+            }
+          ],
+          "direction_of_time_related_bias": "away_from_null",
+          "summary": "The study uses an encounter-anchored prevalent-user design with zero lag time and a total study window of only 3.5 years, which is substantially shorter than the biological latency of breast cancer. These temporal defects artificially inflate the apparent protective association of GLP-1 agonists.",
+          "_usage": {
+            "prompt": 23964,
+            "output": 984,
+            "thoughts": 1036,
+            "total": 25984
+          }
+        }
+      }
+    },
+    "recomputed": {
+      "basis": "reported",
+      "counts": {
+        "exposed_events": 247,
+        "exposed_total": 15264,
+        "control_events": 353,
+        "control_total": 15264
+      },
+      "absolute_risk_difference_pp": -0.6944,
+      "nnt": 144.0,
+      "risk_exposed": 0.016182,
+      "risk_control": 0.023126,
+      "rr": 0.6997,
+      "rr_ci95": [
+        0.5956,
+        0.822
+      ],
+      "odds_ratio": 0.6948,
+      "e_value_point": 2.212,
+      "e_value_ci": 1.73,
+      "model_said": {
+        "absolute_risk_difference": -0.69,
+        "nnt": 144.0
+      },
+      "agreement": {
+        "absolute_risk_difference": "match",
+        "nnt": "match"
+      },
+      "independent": true
+    },
+    "direction_summary": {
+      "counts": {
+        "away_from_null": 3,
+        "towards_null": 2,
+        "unpredictable": 2,
+        "no_information": 0
+      },
+      "unclassified": 0,
+      "domains_by_direction": {
+        "away_from_null": [
+          "Confounding",
+          "Measurement of the exposure",
+          "Selection of participants into the study"
+        ],
+        "towards_null": [
+          "Post-exposure interventions",
+          "Measurement of the outcome"
+        ],
+        "unpredictable": [
+          "Missing data",
+          "Selection of the reported result"
+        ]
+      },
+      "dominant_by_count": "away_from_null",
+      "model_overall": "away_from_null",
+      "agreement": "consistent",
+      "note": "A count of domains, not a weighted verdict: the domains are not commensurable and no weights exist to make them so."
+    },
+    "parse_error": null,
+    "verification": {
+      "total": 455,
+      "verified": 316,
+      "unverified": 5,
+      "group_mismatch": 0,
+      "found_but_label_mismatch": 13
+    },
+    "unverified_numbers": [
+      {
+        "value": "3.5",
+        "label": "Biologically implausible rapid effect / latency window — Solid tumor carcinogenesis occurs over years to decades; finding a 30.5% odds reduction within a 3.5-year observation window (2022-2025) strongly points to detection and selection dynamics rather than true biological prevention of de novo canc",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "3.5",
+        "label": "Biologically implausible rapid effect / latency window — Study timeframe: January 1, 2022 to June 30, 2025 (3.5 years total)",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "3.5",
+        "label": "This retrospective EHR-based cohort study reports an odds ratio of 0.695 for breast cancer detection associated with GLP-1 agonist use in a propensity-score-matched sample of women undergoing breast imaging. The study is at high overall risk of bias, predominantly due to confounding (residual imbala",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "3.5",
+        "label": "The entire study window was 3.5 years [derived: 42 months between January 1, 2022, and June 30, 2025], with no minimum exposure duration required and no lag applied. Solid tumor breast cancer latency typically requires 5 to 10 or more years, vastly exceeding the available study observation window.",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      },
+      {
+        "value": "3.5",
+        "label": "The study uses an encounter-anchored prevalent-user design with zero lag time and a total study window of only 3.5 years, which is substantially shorter than the biological latency of breast cancer. These temporal defects artificially inflate the apparent protective association of GLP-1 agonists.",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      }
+    ],
+    "max_confidence": "CONFIRMED",
+    "caveat": null,
+    "usage": {
+      "prompt": 23375,
+      "output": 2414,
+      "thoughts": 1692,
+      "total": 27481
+    },
+    "engine": "direct",
+    "agents": {
+      "critic_robins_e": {
+        "prompt": 23375,
+        "output": 2414,
+        "thoughts": 1692,
+        "total": 27481
+      },
+      "subagent_baseline_comparability": {
+        "prompt": 23763,
+        "output": 4389,
+        "thoughts": 1966,
+        "total": 30118
+      },
+      "subagent_time_related_biases": {
+        "prompt": 23964,
+        "output": 984,
+        "thoughts": 1036,
+        "total": 25984
+      }
+    }
+  }
+}

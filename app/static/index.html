@@ -69,7 +69,7 @@ section h2{margin:0 0 14px;font-size:13px;letter-spacing:.09em;text-transform:up
 .cell b{display:block;font-size:23px;font-weight:650;letter-spacing:-.02em}
 .cell span{font-size:12.5px;color:var(--dim)}
 .cell.ok b{color:var(--low)} .cell.warn b{color:var(--mid)} .cell.bad b{color:var(--high)}
-.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
+a.brief{display:inline-block;padding:8px 14px;border:1px solid var(--line);\n  border-radius:8px;text-decoration:none;font-size:13px;font-weight:550}\na.brief:hover{border-color:var(--dim)}\n.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
 .p-high{background:var(--high-soft);color:var(--high)}
 .p-mid{background:var(--mid-soft);color:var(--mid)}
 .p-low{background:var(--low-soft);color:var(--low)}
@@ -261,6 +261,33 @@ function render(d){
     ${d.caveat?`<p class="muted" style="margin-top:12px">${esc(d.caveat)}</p>`:""}
   </section>`;
 
+  /* The tally of directions sits with the verdict, because it is the check on it:
+     the model's overall direction against the directions of its own domains. */
+  const ds = d.direction_summary||null;
+  if(ds){
+    const c2 = ds.counts||{};
+    const cls = ds.agreement==="contradicts" ? "p-high"
+              : ds.agreement==="consistent" ? "p-low" : "p-mid";
+    const words = {
+      consistent: "the overall direction matches where its own domains point",
+      contradicts: "the overall direction is the opposite of where its own domains point",
+      unsupported: "an overall direction is claimed, but the domains do not favour either way",
+      not_stated: "no overall direction was given"
+    }[ds.agreement] || "";
+    h += `<section>
+      <h2>Where the bias pushes — counted, not asserted</h2>
+      <div class="grid">
+        <div class="cell ${(c2.away_from_null||0)>0?"bad":""}"><b>${c2.away_from_null||0}</b><span>away from null</span></div>
+        <div class="cell"><b>${c2.towards_null||0}</b><span>towards null</span></div>
+        <div class="cell"><b>${c2.unpredictable||0}</b><span>unpredictable</span></div>
+        <div class="cell"><b>${c2.no_information||0}</b><span>no information</span></div>
+      </div>
+      <p class="muted" style="margin:12px 0 0">
+        <span class="pill ${cls}">${esc(ds.agreement)}</span> ${esc(words)}.</p>
+      <p class="muted" style="margin:8px 0 0">${esc(ds.note)}</p>
+    </section>`;
+  }
+
   /* the verdict first — that is what a reader wants */
   if(ov.summary){
     h += `<section>
@@ -276,13 +303,46 @@ function render(d){
 
   /* numbers the model was NOT allowed to compute itself */
   const c = f.computed||{};
-  if(c.absolute_risk_difference||c.nnt){
+  /* The heading of this section is a claim about how the numbers were produced,
+     so the section has to earn it. `d.recomputed` is what a function returned;
+     `basis` says what that function was given, and the model's own figures are
+     shown beside it rather than instead of it. */
+  const rc = d.recomputed||null;
+  if(rc && rc.basis!=="none" && rc.basis!==undefined){
+    const ag = rc.agreement||{}, ms = rc.model_said||{};
+    const agree = v => v==="match" ? `<span class="pill p-low">model agrees</span>`
+                     : v==="mismatch" ? `<span class="pill p-high">model said something else</span>`
+                     : `<span class="pill p-mid">model gave no figure</span>`;
     h += `<section>
       <h2>Recomputed by a function, not by the model</h2>
       <div class="grid">
-        ${c.absolute_risk_difference?`<div class="cell"><b>${esc(c.absolute_risk_difference)}</b><span>absolute risk difference</span></div>`:""}
-        ${c.nnt?`<div class="cell"><b>${esc(c.nnt)}</b><span>number needed to treat</span></div>`:""}
+        <div class="cell"><b>${esc(rc.absolute_risk_difference_pp)} pp</b><span>absolute risk difference</span></div>
+        <div class="cell"><b>${esc(rc.nnt)}</b><span>${rc.nnt<0?"number needed to harm":"number needed to treat"}</span></div>
+        <div class="cell"><b>${esc(rc.rr)}</b><span>risk ratio (${esc((rc.rr_ci95||[]).join("–"))})</span></div>
+        <div class="cell"><b>${esc(rc.e_value_point)}</b><span>E-value (CI ${esc(rc.e_value_ci)})</span></div>
       </div>
+      <p class="muted" style="margin:12px 0 0">
+        ${agree(ag.absolute_risk_difference)} risk difference — the model wrote
+        ${ms.absolute_risk_difference??"nothing"}, the function gets ${esc(rc.absolute_risk_difference_pp)}.
+        ${agree(ag.nnt)} NNT — model ${ms.nnt??"nothing"}, function ${esc(rc.nnt)}.
+      </p>
+      <p class="muted" style="margin:8px 0 0">
+        ${rc.independent
+          ? `Computed from the four counts the model copied out of the paper — ${esc(rc.counts.exposed_events)}/${esc(rc.counts.exposed_total)} against ${esc(rc.counts.control_events)}/${esc(rc.counts.control_total)} — and those four numbers are checked against the source below. The recomputation is therefore independent of the model's arithmetic.`
+          : `The model did not report the 2×2 counts, so they were recovered from its own arithmetic (${esc(rc.counts.exposed_events)}/${esc(rc.counts.exposed_total)} against ${esc(rc.counts.control_events)}/${esc(rc.counts.control_total)}). That makes this a consistency check, not an independent one: coherent invention would survive it.`}
+      </p>
+      ${c.arithmetic?`<div class="ev">${esc(c.arithmetic)}</div>`:""}
+    </section>`;
+  } else if(c.absolute_risk_difference||c.nnt){
+    h += `<section>
+      <h2>Absolute measures — stated by the model, not recomputed</h2>
+      <div class="grid">
+        ${c.absolute_risk_difference?`<div class="cell warn"><b>${esc(c.absolute_risk_difference)}</b><span>absolute risk difference</span></div>`:""}
+        ${c.nnt?`<div class="cell warn"><b>${esc(c.nnt)}</b><span>number needed to treat</span></div>`:""}
+      </div>
+      <p class="muted" style="margin:12px 0 0">No 2×2 table could be assembled from the
+        reported data, so nothing here was checked by a function. Treat these as the
+        model's claim, at the same standing as the rest of its prose.</p>
       ${c.arithmetic?`<div class="ev">${esc(c.arithmetic)}</div>`:""}
     </section>`;
   }
@@ -354,6 +414,25 @@ function render(d){
     h += `<section><h2>Cannot be settled without more data</h2>
       <ul class="muted" style="margin:0;padding-left:18px">
       ${f.unresolvable_without_more_data.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></section>`;
+  }
+
+  /* Where this very report lives. A tool that demands reproducibility from other
+     people's papers has to start with its own output: an audit you cannot open
+     again is an audit nobody can check. */
+  if(d.audit_id){
+    const st = d.stored;
+    h += `<section><h2>This report, on the record</h2>
+      <p class="muted" style="margin:0">
+        ${st==="gcs"
+          ? `Stored in Cloud Storage — <a href="/audits/${esc(d.audit_id)}">open it again</a>, any time, exactly as produced.`
+          : st==="local"
+            ? `Cloud Storage was unreachable, so this went to the container's own disk and dies with the instance. <a href="/audits/${esc(d.audit_id)}">Readable for now.</a>`
+            : `Not stored. The report exists only on this screen.`}
+      </p>
+      <p class="muted" style="margin:8px 0 0"><code>${esc(d.audit_id)}</code>${
+        d.store_error?` — ${esc(d.store_error)}`:""}</p>
+      <p style="margin:12px 0 0"><a class="brief" href="/audits/${esc(d.audit_id)}/brief.md">Download the one-page brief (Markdown)</a></p>
+    </section>`;
   }
 
   $("#out").innerHTML = h;

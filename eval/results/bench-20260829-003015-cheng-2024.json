@@ -1,0 +1,672 @@
+{
+  "case": "cheng-2024",
+  "engine": "direct",
+  "ground_truth_version": 1,
+  "seconds": 31.5,
+  "level": "L1",
+  "tables": {
+    "main": 1,
+    "appendix": 7
+  },
+  "agents": [
+    "critic_robins_e",
+    "subagent_baseline_comparability",
+    "subagent_time_related_biases"
+  ],
+  "tool_calls": null,
+  "engine_note": null,
+  "verification": {
+    "total": 418,
+    "verified": 323,
+    "unverified": 1,
+    "group_mismatch": 4,
+    "found_but_label_mismatch": 20
+  },
+  "unverified_numbers": [
+    {
+      "value": "90.52",
+      "label": "Severe unmeasured and residual confounding by indication and disease severity — Type 2 diabetes severity, duration, and key clinical prognostic variables could not be controlled because key biomarkers had massive missingness (HbA1c was missing in 90.52% to 91.79% of patients; fasting plasma glucose ",
+      "status": "GROUP_MISMATCH",
+      "group_check": "mismatch",
+      "matched_as": "90.52",
+      "context": "fferent groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of the HbA1c were 90.52%, 91.79%, and 90.45% among GLP-1 RAs, insulin only and metformin onl y groups, r"
+    },
+    {
+      "value": "91.79",
+      "label": "Severe unmeasured and residual confounding by indication and disease severity — Type 2 diabetes severity, duration, and key clinical prognostic variables could not be controlled because key biomarkers had massive missingness (HbA1c was missing in 90.52% to 91.79% of patients; fasting plasma glucose ",
+      "status": "GROUP_MISMATCH",
+      "group_check": "mismatch",
+      "matched_as": "91.79",
+      "context": "groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of the HbA1c were 90.52%, 91.79%, and 90.45% among GLP-1 RAs, insulin only and metformin onl y groups, respectiv"
+    },
+    {
+      "value": "24.13",
+      "label": "Severe unmeasured and residual confounding by indication and disease severity — Type 2 diabetes severity, duration, and key clinical prognostic variables could not be controlled because key biomarkers had massive missingness (HbA1c was missing in 90.52% to 91.79% of patients; fasting plasma glucose ",
+      "status": "GROUP_MISMATCH",
+      "group_check": "mismatch",
+      "matched_as": "24.13",
+      "context": "The fasting plasma glucose (mmol/L) and hemoglobin A1c (percentage %) were presented as the mean ± standard deviation among different groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of"
+    },
+    {
+      "value": "32.95",
+      "label": "Severe unmeasured and residual confounding by indication and disease severity — Type 2 diabetes severity, duration, and key clinical prognostic variables could not be controlled because key biomarkers had massive missingness (HbA1c was missing in 90.52% to 91.79% of patients; fasting plasma glucose ",
+      "status": "GROUP_MISMATCH",
+      "group_check": "mismatch",
+      "matched_as": "32.95",
+      "context": "Note: The fasting plasma glucose (mmol/L) and hemoglobin A1c (percentage %) were presented as the mean ± standard deviation among different groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rat"
+    },
+    {
+      "value": "500000",
+      "label": "The study has very high risk of bias stemming primarily from critical missing data in essential confounders (HbA1c missing in >90% of participants, BMI/education missing in >30%), where propensity score matching matched on 'unspecified' missing categories rather than actual values. Furthermore, subs",
+      "status": "UNVERIFIED",
+      "group_check": "unknown",
+      "matched_as": null,
+      "context": null
+    }
+  ],
+  "judge": {
+    "points": {
+      "C1": 1.0,
+      "C2": 1.0,
+      "C3": 0.0,
+      "C4": 1.0
+    },
+    "score": 3.0,
+    "of": 4,
+    "ratio": 0.75,
+    "detail": [
+      {
+        "id": "C1",
+        "score": 1.0,
+        "reason": "The auditor fully identified the predominant-user design (noting the <6 months criterion across follow-up) and the lack of a pre-baseline washout period leading to prevalent user bias.",
+        "quote": "Lack of incident new-user design with washout: Without a documented washout period establishing incident new use, the cohort captures prevalent users and fails to align baseline covariates with treatment initiation."
+      },
+      {
+        "id": "C2",
+        "score": 1.0,
+        "reason": "The auditor identified the absence of a lag period and explained how early event ascertainment reflects detection/surveillance bias and pre-existing disease rather than a causal effect.",
+        "quote": "Absence of latency lag period for malignancies and chronic outcomes: Failing to implement a lag period counts malignancies diagnosed shortly after drug initiation, where the neoplasm almost certainly predated treatment initiation, inflating apparent drug harm through detection bias or reverse causation."
+      },
+      {
+        "id": "C3",
+        "score": 0.0,
+        "reason": "The auditor missed the inverse duration-response gradient critique. In fact, the auditor explicitly evaluated the duration gradient as 'rises_with_exposure' (citing higher point estimates for ≥12 months for select endpoints), failing to note the critique that risk was predominantly observed with short exposure (<12 months) and not sustained with longer exposure.",
+        "quote": "direction: rises_with_exposure ... While estimates are numerically higher in the ≥12 months stratum for several endpoints, substantial hazard elevations exist already within <12 months of prescription"
+      },
+      {
+        "id": "C4",
+        "score": 1.0,
+        "reason": "The auditor noted that the ~24-month mean follow-up period is too short relative to the multi-year biological latency required for malignancies like thyroid cancer.",
+        "quote": "Mean follow-up was 23.7 months (under 2 years). Solid tumors like thyroid cancer typically possess a multi-year biological latency (5 to 10+ years), yet outcomes were counted immediately from day 1"
+      }
+    ],
+    "extra_findings": [
+      {
+        "title": "Severe missingness in key clinical variables (HbA1c >90%) handled via 'unspecified' matching category",
+        "valid": true,
+        "why": "Table 1 and Table 3S confirm HbA1c missingness exceeded 90% and PSM matched on missing indicator categories rather than true clinical values."
+      },
+      {
+        "title": "Massive cohort attrition from database exclusions",
+        "valid": true,
+        "why": "Over 500,000 screened patients were excluded for missing ID/prescription data, which could induce selection bias."
+      }
+    ],
+    "traps": null
+  },
+  "report": {
+    "meta": {
+      "found": true,
+      "doi": "10.1111/1753-0407.70013",
+      "pmid": "39435881",
+      "pmcid": "PMC11494487",
+      "title": "The potential adverse effects of hypodermic glucagon-like peptide -1 receptor agonist on patients with type 2 diabetes: A population-based study.",
+      "journal": "Journal of diabetes",
+      "open_access": true,
+      "in_epmc": true,
+      "has_supplementary": true,
+      "abstract": "<h4>Background</h4>Glucagon-like peptide-1 receptor agonists (GLP-1 RAs), a class of injectable antidiabetic drugs, have shown significant efficacies in improving glycemic and weight control in patients with type 2 diabetes (T2D). However, the long-term safety of GLP-1 RAs remains insufficiently studied. This study aimed to provide real-world evidence on potential adverse outcomes associated with GLP-1 RAs use in T2D patients without major chronic diseases including impaired cardiac or renal function.<h4>Methods</h4>We conducted a retrospective cohort study involving 7746 T2D patients on GLP-1 RAs in Shenzhen, China. They were compared with 124 371 metformin-only users and 36 146 insulin-only users, forming two therapy control groups. GLP-1 RAs users were also further 1:2 paired with the control groups. Competing risk survival analyses were conducted to assess the incidence risks, presenting subdistributional hazard ratios (sHRs) with 95% confidence intervals (CIs) for various adverse outcomes associated with GLP-1 RAs use.<h4>Results</h4>Compared with metformin-only users, GLP-1 RAs use was associated with increased risks of various adverse outcomes (sHRs with 95% CIs), including pancreatitis (2.01, 1.24-3.24), acute nephritis (3.20, 2.17-4.70), kidney failure (3.73, 2.74-5.08), thyroid cancer (2.25, 1.23-4.10), and thyroid dysfunction (1.27, 1.00-1.63), respectively; Similar results were also found when compared with insulin-only users. Importantly, long-term (≥12 months) GLP-1 RAs use may further elevate the incidence risks of pancreatitis, acute nephritis, thyroid cancer, and thyroid dysfunction.<h4>Conclusion</h4>Compared with traditional T2D treatments, GLP-1 RAs use may be associated with increased risks of various adverse outcomes in a Chinese population. Cautions were strongly warranted in the use of GLP-1 RAs. Further validation is crucial across diverse populations."
+    },
+    "level": {
+      "level": "L1",
+      "name": "full text + appendix tables",
+      "max_confidence": "CONFIRMED",
+      "measured_score": "5.0-6.0 / 6 (median 6.0)"
+    },
+    "tables": {
+      "main": 1,
+      "appendix": 7
+    },
+    "findings": {
+      "domains": [
+        {
+          "id": 1,
+          "name": "Confounding",
+          "risk": "very_high",
+          "direction": "away_from_null",
+          "direction_justification": "GLP-1 RA users at baseline had markedly higher rates of obesity (BMI 30.0-39.9 kg/m2: 13.21% in GLP-1 RAs vs 4.87% in metformin and 3.04% in insulin) and higher citizen health insurance coverage (75.60% vs 54.96% in metformin), predisposing them to both higher baseline risk of comorbidities and increased clinical surveillance.",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Severe unmeasured and residual confounding by indication and disease severity",
+              "mechanism": "Type 2 diabetes severity, duration, and key clinical prognostic variables could not be controlled because key biomarkers had massive missingness (HbA1c was missing in 90.52% to 91.79% of patients; fasting plasma glucose missing in 24.13% to 32.95%). Matching on 'unspecified' missing categories does not balance actual underlying clinical severity.",
+              "evidence": [
+                "Missing rate for HbA1c was 91.27% overall (Table 1 footnote) and 90.52% in GLP-1 RA, 91.79% in insulin, 90.45% in metformin (Table 3S footnote).",
+                "Missing rate for FPG was 33.22% overall and 32.95% in GLP-1 RAs, 32.66% in insulin, 24.13% in metformin."
+              ]
+            },
+            {
+              "title": "Not matched on and imbalanced: Duration of diabetes and baseline microvascular complications",
+              "mechanism": "Insulin users typically have more advanced diabetes duration and baseline nephropathy compared to newer GLP-1 RA initiators.",
+              "evidence": [
+                "Duration of diabetes and baseline microvascular complications: exposed Not reported vs unexposed Not reported"
+              ],
+              "found_by": "subagent:baseline_comparability"
+            },
+            {
+              "title": "Not matched on and imbalanced: Citizen health insurance coverage (unmatched in PSM specification list, though balanced post-matching)",
+              "mechanism": "Higher insurance coverage drives greater outpatient healthcare contact, enhancing diagnostic surveillance for non-acute events like thyroid disorders and cysts.",
+              "evidence": [
+                "Citizen health insurance coverage (unmatched in PSM specification list, though balanced post-matching): exposed 75.60% (unmatched) vs unexposed Insulin: 59.60%; Metformin: 54.96% (unmatched)"
+              ],
+              "found_by": "subagent:baseline_comparability"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "Measurement of the exposure",
+          "risk": "some_concerns",
+          "direction": "unpredictable",
+          "direction_justification": "Exposure definition was defined retrospectively over the entire follow-up period ('mainly prescribed GLP-1 RAs lasting from the baseline date to the last follow-up while the accumulative prescription period of any other antidiabetic medication <6 months'), creating potential conditioning on post-baseline adherence.",
+          "threatens_conclusions": false,
+          "findings": [
+            {
+              "title": "Post-baseline exposure definition criteria",
+              "mechanism": "Classifying exposure based on cumulative medication use from baseline through the entire follow-up introduces potential immortal time or selection bias based on treatment persistence.",
+              "evidence": [
+                "GLP-1 RAs group defined as patients prescribed GLP-1 RAs lasting from baseline to last follow-up with other antidiabetic medication <6 months."
+              ]
+            },
+            {
+              "title": "Post-baseline exposure classification and immortal time bias",
+              "mechanism": "Defining cohorts based on total cumulative exposure evaluated through to the end of follow-up introduces conditioning on future events and immortal time, especially in duration-stratified analyses (≥12 months).",
+              "evidence": [
+                "defined as any T2D patients who mainly prescribed GLP‐1 RAs lasting from the baseline date to the last follow‐up while the accumulative prescription period of any other antidiabetic medication <6 months",
+                "the GLP‐1 RAs group was further divided into two groups based on 12 months of prescriptive usage"
+              ],
+              "found_by": "subagent:time_related_biases"
+            },
+            {
+              "title": "Absence of latency lag period for malignancies and chronic outcomes",
+              "mechanism": "Failing to implement a lag period counts malignancies diagnosed shortly after drug initiation, where the neoplasm almost certainly predated treatment initiation, inflating apparent drug harm through detection bias or reverse causation.",
+              "evidence": [
+                "All incidence duration/survival times for outcomes of interest were operationalized as the number of months from the initial outpatient date at baseline to the occurrence of the first recorded hospitalization/outpatient events",
+                "GLP‐1 RAs use under 12 months group appeared to be associated with increased incidence risks of... thyroid cancer (sHR: 2.25, 95% CI: 1.23–4.10)"
+              ],
+              "found_by": "subagent:time_related_biases"
+            },
+            {
+              "title": "Lack of incident new-user design with washout",
+              "mechanism": "Without a documented washout period establishing incident new use, the cohort captures prevalent users and fails to align baseline covariates with treatment initiation.",
+              "evidence": [
+                "All of the outcome events were limited to the newly onset incidents, defined as those diagnosed as diabetes only at baseline, whereafter detected as any of the aforementioned events"
+              ],
+              "found_by": "subagent:time_related_biases"
+            }
+          ],
+          "disagreement": {
+            "main_critic": "unpredictable",
+            "subagent_time": "away_from_null",
+            "note": "два прохода дали разное направление; не сведено намеренно"
+          }
+        },
+        {
+          "id": 3,
+          "name": "Selection of participants into the study",
+          "risk": "high",
+          "direction": "unpredictable",
+          "direction_justification": "Out of 985,278 initial diabetes outpatients, 362,035 were excluded for missing prescription data, 177,381 for missing IDs, and 55,321 for prevalent conditions, leaving a highly selected subset (380,370 eligible) without validation of selection mechanisms.",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Massive cohort attrition from database exclusion criteria",
+              "mechanism": "Excluding over 60% of the initial outpatient registry due to missing identifiers and missing prescription data can induce selection bias if data capture is related to treatment regimen or outcome development.",
+              "evidence": [
+                "Total screened: 985,278; excluded for missing ID: 177,381; excluded for missing prescription data: 362,035 (Figure 1)."
+              ]
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "Post-exposure interventions",
+          "risk": "some_concerns",
+          "direction": "unpredictable",
+          "direction_justification": "Patients could receive other antidiabetic medications for up to 6 months without being excluded, and differential co-treatments across arms were not tracked over time.",
+          "threatens_conclusions": false,
+          "findings": [
+            {
+              "title": "Unaccounted concomitant medications",
+              "mechanism": "Permitting up to 6 months of concomitant non-assigned antidiabetic prescriptions without time-varying adjustment may distort effect estimates.",
+              "evidence": [
+                "Accumulative prescription period of any other antidiabetic medication <6 months allowed in exposure and control groups."
+              ]
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "Missing data",
+          "risk": "very_high",
+          "direction": "away_from_null",
+          "direction_justification": "PSM matched on missing indicator categories ('Unspecified' BMI: 33.81% GLP-1 vs 36.08% Insulin; 'Unspecified' Age: 20.53% vs 21.93%; 'Unspecified' Education: 33.62% vs 35.89%), leaving substantial true baseline imbalance unaddressed.",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Extensive missingness in key confounders handled via missing indicator category",
+              "mechanism": "Matching on 'Unspecified' as a discrete category creates pseudo-balance in missingness patterns rather than actual clinical characteristics, masking severe underlying confounding.",
+              "evidence": [
+                "In PSM cohort (Table 1): Age unspecified in 20.53% (GLP-1) vs 21.93% (Insulin); Education unspecified in 33.62% vs 35.89%; BMI unspecified in 33.81% vs 36.08%; HbA1c missing rate 91.27%."
+              ]
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "name": "Measurement of the outcome",
+          "risk": "high",
+          "direction": "away_from_null",
+          "direction_justification": "Patients initiated on novel, expensive injectable therapies (GLP-1 RAs with 75.60% citizen insurance vs 54.96% in metformin) undergo more frequent outpatient contact and biochemical surveillance, increasing detection of subclinical or routine diagnostic codes (e.g., acute nephritis, thyroid nodules/dysfunction, cysts).",
+          "threatens_conclusions": true,
+          "findings": [
+            {
+              "title": "Surveillance bias and unadjudicated electronic health record diagnostic coding",
+              "mechanism": "Outcomes were extracted using ICD-10 codes combined with regular expression text matching from routine electronic records without clinical adjudication or standardized monitoring intervals.",
+              "evidence": [
+                "Outcomes identified via ICD-10 and regular expression matching (Table 2S) across unadjudicated outpatient and inpatient records.",
+                "Elevated hazard ratios observed across widely disparate, non-specific outcomes including acne (sHR 5.32, 95% CI 2.21-12.81) and leukemia (sHR 15.09, 95% CI 4.65-48.98)."
+              ]
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "name": "Selection of the reported result",
+          "risk": "some_concerns",
+          "direction": "unpredictable",
+          "direction_justification": "Multiple outcomes and multiple sub-analyses were conducted across multiple control groups without an explicit pre-registered analysis plan.",
+          "threatens_conclusions": false,
+          "findings": [
+            {
+              "title": "Multiple testing across exploratory endpoints",
+              "mechanism": "Analyses spanned 19 distinct adverse outcome categories across multiple subgroups and exposure durations without family-wise error rate control.",
+              "evidence": [
+                "19 clinical conditions assessed across two distinct control populations and four individual drug subgroups."
+              ]
+            }
+          ]
+        }
+      ],
+      "overall": {
+        "risk": "very_high",
+        "direction": "away_from_null",
+        "threatens_conclusions": true,
+        "summary": "The study has very high risk of bias stemming primarily from critical missing data in essential confounders (HbA1c missing in >90% of participants, BMI/education missing in >30%), where propensity score matching matched on 'unspecified' missing categories rather than actual values. Furthermore, substantial confounding by indication, selection bias from excluding over 500,000 registry patients, and surveillance/detection bias for patients on novel injectable therapies undermine the causal validity of the reported associations."
+      },
+      "computed": {
+        "counts": null,
+        "absolute_risk_difference": null,
+        "nnt": null,
+        "arithmetic": null
+      },
+      "classification": "real_association_explained_by_selection",
+      "unresolvable_without_more_data": [
+        "Complete baseline laboratory data (actual HbA1c, fasting glucose, renal function tests eGFR/uACR) for the >90% missing cohort.",
+        "Raw event counts and person-time per treatment arm for each specific adverse event.",
+        "Information on surveillance frequency and outpatient visit counts across exposure groups to quantify detection bias."
+      ],
+      "subagents": {
+        "baseline_comparability": {
+          "baseline_table_found": true,
+          "source_tables": [
+            "Table 1",
+            "Table 3S"
+          ],
+          "characteristics": [
+            {
+              "name": "Men, n (%)",
+              "exposed": "4,389 (56.66)",
+              "unexposed": "Insulin: 19,869 (54.97); Metformin: 68,533 (55.10)",
+              "exposed_matched": "vs Insulin: 4190 (56.75); vs Metformin: 4362 (56.80)",
+              "unexposed_matched": "Insulin: 7859 (56.84); Metformin: 8618 (56.84)",
+              "table": "Table 3S, Table 1",
+              "favours": "neutral",
+              "why": "Sex distribution is roughly similar across cohorts (~55-57% male)."
+            },
+            {
+              "name": "Women, n (%)",
+              "exposed": "3,344 (43.17)",
+              "unexposed": "Insulin: 16,206 (44.83); Metformin: 55,680 (44.77)",
+              "exposed_matched": "vs Insulin: 3188 (43.18); vs Metformin: 3312 (43.13)",
+              "unexposed_matched": "Insulin: 5960 (43.10); Metformin: 6536 (43.10)",
+              "table": "Table 3S, Table 1",
+              "favours": "neutral",
+              "why": "Female proportions are closely balanced across all groups."
+            },
+            {
+              "name": "Age <30 years, n (%)",
+              "exposed": "391 (5.05)",
+              "unexposed": "Insulin: 1,458 (4.03); Metformin: 1,008 (0.81)",
+              "exposed_matched": "vs Insulin: 302 (4.09); vs Metformin: 353 (4.60)",
+              "unexposed_matched": "Insulin: 499 (3.61); Metformin: 564 (3.72)",
+              "table": "Table 3S, Table 1",
+              "favours": "exposed",
+              "why": "Younger age reduces baseline baseline risk of organ failure, malignancies, and severe systemic illness."
+            },
+            {
+              "name": "Age 30–49 years, n (%)",
+              "exposed": "2,834 (36.59)",
+              "unexposed": "Insulin: 9,699 (26.83); Metformin: 30,926 (24.87)",
+              "exposed_matched": "vs Insulin: 2600 (35.22); vs Metformin: 2816 (36.67)",
+              "unexposed_matched": "Insulin: 4538 (32.82); Metformin: 5586 (36.84)",
+              "table": "Table 3S, Table 1",
+              "favours": "exposed",
+              "why": "Substantially younger cohort in GLP-1 RA group reduces baseline incidence of adverse chronic outcomes."
+            },
+            {
+              "name": "Age 50–69 years, n (%)",
+              "exposed": "2,561 (33.06)",
+              "unexposed": "Insulin: 14,933 (41.31); Metformin: 58,669 (47.17)",
+              "exposed_matched": "vs Insulin: 2529 (34.25); vs Metformin: 2555 (33.27)",
+              "unexposed_matched": "Insulin: 4899 (35.43); Metformin: 5104 (33.66)",
+              "table": "Table 3S, Table 1",
+              "favours": "exposed",
+              "why": "Lower proportion of older adults in GLP-1 RA group confers lower baseline medical risk."
+            },
+            {
+              "name": "Age ≥70 years, n (%)",
+              "exposed": "443 (5.72)",
+              "unexposed": "Insulin: 3,737 (10.34); Metformin: 11,103 (8.93)",
+              "exposed_matched": "vs Insulin: 436 (5.91); vs Metformin: 440 (5.73)",
+              "unexposed_matched": "Insulin: 859 (6.21); Metformin: 877 (5.78)",
+              "table": "Table 3S, Table 1",
+              "favours": "exposed",
+              "why": "Elderly patients have higher baseline rates of cancer, pancreatitis, and renal failure; exposed group has half the rate of insulin users."
+            },
+            {
+              "name": "Education: Undergraduate and above, n (%)",
+              "exposed": "2019 (26.07)",
+              "unexposed": "Insulin: 5,656 (15.65); Metformin: 14,852 (11.94)",
+              "exposed_matched": "vs Insulin: 1760 (23.84); vs Metformin: 1981 (25.80)",
+              "unexposed_matched": "Insulin: 2941 (21.27); Metformin: 3837 (25.31)",
+              "table": "Table 3S, Table 1",
+              "favours": "exposed",
+              "why": "Higher socioeconomic and educational status is associated with better health literacy and general outcomes, but higher detection of symptoms."
+            },
+            {
+              "name": "Health insurance: Citizen health insurance, n (%)",
+              "exposed": "5,850 (75.60)",
+              "unexposed": "Insulin: 21,525 (59.60); Metformin: 68,326 (54.96)",
+              "exposed_matched": "vs Insulin: 5542 (75.06); vs Metformin: 5809 (75.64)",
+              "unexposed_matched": "Insulin: 10 273 (74.30); Metformin: 11 466 (75.62)",
+              "table": "Table 3S, Table 1",
+              "favours": "unexposed",
+              "why": "Higher insurance coverage increases healthcare encounters, leading to higher diagnostic ascertainment/detection of adverse outcomes."
+            },
+            {
+              "name": "BMI 25.0–29.9 kg/m2, n (%)",
+              "exposed": "2,363 (30.51)",
+              "unexposed": "Insulin: 7,436 (20.57); Metformin: 36,688 (29.50)",
+              "exposed_matched": "vs Insulin: 2327 (31.52); vs Metformin: 2352 (30.63)",
+              "unexposed_matched": "Insulin: 4227 (30.57); Metformin: 4655 (30.70)",
+              "table": "Table 3S, Table 1",
+              "favours": "unexposed",
+              "why": "Overweight status elevates risk of pancreatitis, metabolic dysfunction, and adverse renal/endocrine events."
+            },
+            {
+              "name": "BMI 30.0–39.9 kg/m2, n (%)",
+              "exposed": "1,023 (13.21)",
+              "unexposed": "Insulin: 1,100 (3.04); Metformin: 6,053 (4.87)",
+              "exposed_matched": "vs Insulin: 710 (9.62); vs Metformin: 979 (12.75)",
+              "unexposed_matched": "Insulin: 925 (6.69); Metformin: 1852 (12.21)",
+              "table": "Table 3S, Table 1",
+              "favours": "unexposed",
+              "why": "Obesity is a major independent risk factor for pancreatitis, chronic kidney disease, and thyroid malignancies."
+            },
+            {
+              "name": "Fasting plasma glucose (mmol/L)",
+              "exposed": "7.27 ± 2.51",
+              "unexposed": "Insulin: 7.59 ± 2.79; Metformin: 7.68 ± 2.63",
+              "exposed_matched": "vs Insulin: 7.29 ± 2.53; vs Metformin: 7.27 ± 2.50",
+              "unexposed_matched": "Insulin: 7.49 ± 2.65; Metformin: 7.57 ± 2.54",
+              "table": "Table 3S, Table 1",
+              "favours": "exposed",
+              "why": "Lower baseline fasting glucose reflects slightly better glycemic control, reducing baseline microvascular risk."
+            },
+            {
+              "name": "Hemoglobin A1c (%)",
+              "exposed": "6.82 ± 6.35",
+              "unexposed": "Insulin: 6.33 ± 4.27; Metformin: 6.69 ± 5.30",
+              "exposed_matched": "vs Insulin: 6.79 ± 5.44; vs Metformin: 6.82 ± 5.37",
+              "unexposed_matched": "Insulin: 6.55 ± 4.67; Metformin: 6.41 ± 4.67",
+              "table": "Table 3S, Table 1",
+              "favours": "unexposed",
+              "why": "Slightly higher mean HbA1c indicates higher glycemic exposure, though massive missingness (>90%) limits interpretation."
+            }
+          ],
+          "matching": {
+            "used": true,
+            "matched_on": [
+              "age",
+              "sex",
+              "education",
+              "marital status",
+              "BMI"
+            ],
+            "not_matched_but_imbalanced": [
+              {
+                "name": "Duration of diabetes and baseline microvascular complications",
+                "exposed": "Not reported",
+                "unexposed": "Not reported",
+                "direction": "towards_null",
+                "why": "Insulin users typically have more advanced diabetes duration and baseline nephropathy compared to newer GLP-1 RA initiators."
+              },
+              {
+                "name": "Citizen health insurance coverage (unmatched in PSM specification list, though balanced post-matching)",
+                "exposed": "75.60% (unmatched)",
+                "unexposed": "Insulin: 59.60%; Metformin: 54.96% (unmatched)",
+                "direction": "away_from_null",
+                "why": "Higher insurance coverage drives greater outpatient healthcare contact, enhancing diagnostic surveillance for non-acute events like thyroid disorders and cysts."
+              }
+            ]
+          },
+          "contradiction": {
+            "present": false,
+            "statement": "No fundamental paradox exists: the exposed GLP-1 RA group had much higher baseline obesity (BMI 30-39.9: 13.21% vs 3.04% in insulin and 4.87% in metformin) and higher insurance coverage, consistent with higher incidence of obesity-related and monitored adverse outcomes.",
+            "supporting_characteristics": [
+              "BMI 30.0–39.9 kg/m2: GLP-1 RA 13.21% vs Insulin 3.04% vs Metformin 4.87% (Table 3S)",
+              "BMI 25.0–29.9 kg/m2: GLP-1 RA 30.51% vs Insulin 20.57% vs Metformin 29.50% (Table 3S)",
+              "Citizen health insurance: GLP-1 RA 75.60% vs Insulin 59.60% vs Metformin 54.96% (Table 3S)"
+            ],
+            "reported_result": "Compared with metformin-only users, GLP-1 RAs use was associated with increased risks of various adverse outcomes (sHRs with 95% CIs), including pancreatitis (2.01, 1.24–3.24), acute nephritis (3.20, 2.17–4.70), kidney failure (3.73, 2.74–5.08), thyroid cancer (2.25, 1.23–4.10), and thyroid dysfunction (1.27, 1.00–1.63), respectively; Similar results were also found when compared with insulin-only users.",
+            "candidate_mechanisms": [
+              "Indication bias (GLP-1 RAs preferentially prescribed to obese patients with metabolic syndrome)",
+              "Surveillance/detection bias (substantially higher health insurance and education causing higher diagnostic testing for thyroid and renal panels)",
+              "True pharmacological toxicity of GLP-1 receptor agonists"
+            ]
+          },
+          "direction_of_baseline_imbalance": "away_from_null",
+          "summary": "Baseline differences show GLP-1 RA users were younger but markedly more obese and had higher health insurance coverage than comparator cohorts. These baseline imbalances, combined with potential surveillance bias, push risk estimates for adverse outcomes away from the null.",
+          "_usage": {
+            "prompt": 39492,
+            "output": 3331,
+            "thoughts": 875,
+            "total": 43698
+          }
+        },
+        "time_related_biases": {
+          "timeline": {
+            "study_period": "January 1, 2016 to September 1, 2022",
+            "follow_up": "mean follow‐up time was 23.7 ± 18.5, 23.2 ± 18.3, and 24.8 ± 18.6 months for the GLP‐1 RAs, insulin‐only, and metformin‐only groups, respectively",
+            "exposure_definition": "any T2D patients who mainly prescribed GLP‐1 RAs lasting from the baseline date to the last follow‐up while the accumulative prescription period of any other antidiabetic medication <6 months",
+            "cohort_entry_rule": "from the initial outpatient date at baseline to the occurrence of the first recorded hospitalization/outpatient events, whichever came first",
+            "washout": "not reported",
+            "lag_period": "not reported",
+            "comparator": "active comparator"
+          },
+          "design": {
+            "type": "predominant_user",
+            "why": "The authors define cohorts retrospectively based on prescription continuity across the entire observation window: 'defined as any T2D patients who mainly prescribed GLP‐1 RAs lasting from the baseline date to the last follow‐up while the accumulative prescription period of any other antidiabetic medication <6 months.'",
+            "selects_for": "Patients who maintained treatment adherence and survived on a single therapeutic class throughout follow-up without early discontinuation, treatment switching, or early death."
+          },
+          "immortal_time": {
+            "present": true,
+            "which_group": "GLP-1 RAs and long-term (≥12 months) usage subgroups",
+            "duration": "Up to 12 months for the duration-stratified ≥12 months group, and across follow-up for monotherapy definitions requiring cumulative exposure",
+            "why": "Exposure group allocation depends on cumulative exposure assessed from baseline through the entire follow-up window; additionally, patients stratified into the ≥12 months exposure subgroup had to survive event-free and maintain therapy for at least 12 months to enter that stratum."
+          },
+          "lag_and_latency": {
+            "lag_applied": false,
+            "follow_up_vs_latency": "Mean follow-up was 23.7 months (under 2 years). Solid tumors like thyroid cancer typically possess a multi-year biological latency (5 to 10+ years), yet outcomes were counted immediately from day 1, reporting elevated thyroid cancer risks at <12 months (sHR: 2.25, 95% CI: 1.23–4.10).",
+            "verdict": "too_short"
+          },
+          "duration_gradient": {
+            "reported": true,
+            "strata": [
+              {
+                "stratum": "GLP-1 RAs vs metformin (<12 months)",
+                "estimate": "Pancreatitis sHR: 2.01 (1.24–3.24); Thyroid cancer sHR: 2.25 (1.23–4.10); Acute nephritis sHR: 3.20 (2.17–4.70); Renal failure sHR: 3.73 (2.74–5.08)"
+              },
+              {
+                "stratum": "GLP-1 RAs vs metformin (≥12 months)",
+                "estimate": "Pancreatitis sHR: 3.48 (1.81–6.71); Thyroid cancer sHR: 3.43 (1.30–9.03); Acute nephritis sHR: 4.11 (2.21–7.64); Renal failure sHR: 3.16 (1.77–5.64)"
+              }
+            ],
+            "direction": "rises_with_exposure",
+            "interpretation": "While estimates are numerically higher in the ≥12 months stratum for several endpoints, substantial hazard elevations exist already within <12 months of prescription for insidious outcomes like thyroid cancer (sHR 2.25), indicating reverse causation, pre-existing occult disease, or intense baseline surveillance upon starting injectable therapy."
+          },
+          "findings": [
+            {
+              "title": "Post-baseline exposure classification and immortal time bias",
+              "mechanism": "Defining cohorts based on total cumulative exposure evaluated through to the end of follow-up introduces conditioning on future events and immortal time, especially in duration-stratified analyses (≥12 months).",
+              "evidence": [
+                "defined as any T2D patients who mainly prescribed GLP‐1 RAs lasting from the baseline date to the last follow‐up while the accumulative prescription period of any other antidiabetic medication <6 months",
+                "the GLP‐1 RAs group was further divided into two groups based on 12 months of prescriptive usage"
+              ],
+              "direction": "unpredictable"
+            },
+            {
+              "title": "Absence of latency lag period for malignancies and chronic outcomes",
+              "mechanism": "Failing to implement a lag period counts malignancies diagnosed shortly after drug initiation, where the neoplasm almost certainly predated treatment initiation, inflating apparent drug harm through detection bias or reverse causation.",
+              "evidence": [
+                "All incidence duration/survival times for outcomes of interest were operationalized as the number of months from the initial outpatient date at baseline to the occurrence of the first recorded hospitalization/outpatient events",
+                "GLP‐1 RAs use under 12 months group appeared to be associated with increased incidence risks of... thyroid cancer (sHR: 2.25, 95% CI: 1.23–4.10)"
+              ],
+              "direction": "away_from_null"
+            },
+            {
+              "title": "Lack of incident new-user design with washout",
+              "mechanism": "Without a documented washout period establishing incident new use, the cohort captures prevalent users and fails to align baseline covariates with treatment initiation.",
+              "evidence": [
+                "All of the outcome events were limited to the newly onset incidents, defined as those diagnosed as diabetes only at baseline, whereafter detected as any of the aforementioned events"
+              ],
+              "direction": "unpredictable"
+            }
+          ],
+          "direction_of_time_related_bias": "away_from_null",
+          "summary": "The study defines exposure retrospectively across total follow-up time rather than at incident cohort entry, creating immortal time bias and survivor selection. Omitting an exposure lag window in a study with only ~24 months of follow-up attributes pre-existing cancers and chronic diseases diagnosed within months of drug initiation to GLP-1 RA exposure.",
+          "_usage": {
+            "prompt": 39693,
+            "output": 1521,
+            "thoughts": 1278,
+            "total": 42492
+          }
+        }
+      }
+    },
+    "recomputed": {
+      "basis": "none",
+      "note": "the 2×2 table could not be assembled from the model's output, so nothing was recomputed"
+    },
+    "parse_error": null,
+    "verification": {
+      "total": 418,
+      "verified": 323,
+      "unverified": 1,
+      "group_mismatch": 4,
+      "found_but_label_mismatch": 20
+    },
+    "unverified_numbers": [
+      {
+        "value": "90.52",
+        "label": "Severe unmeasured and residual confounding by indication and disease severity — Type 2 diabetes severity, duration, and key clinical prognostic variables could not be controlled because key biomarkers had massive missingness (HbA1c was missing in 90.52% to 91.79% of patients; fasting plasma glucose ",
+        "status": "GROUP_MISMATCH",
+        "group_check": "mismatch",
+        "matched_as": "90.52",
+        "context": "fferent groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of the HbA1c were 90.52%, 91.79%, and 90.45% among GLP-1 RAs, insulin only and metformin onl y groups, r"
+      },
+      {
+        "value": "91.79",
+        "label": "Severe unmeasured and residual confounding by indication and disease severity — Type 2 diabetes severity, duration, and key clinical prognostic variables could not be controlled because key biomarkers had massive missingness (HbA1c was missing in 90.52% to 91.79% of patients; fasting plasma glucose ",
+        "status": "GROUP_MISMATCH",
+        "group_check": "mismatch",
+        "matched_as": "91.79",
+        "context": "groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of the HbA1c were 90.52%, 91.79%, and 90.45% among GLP-1 RAs, insulin only and metformin onl y groups, respectiv"
+      },
+      {
+        "value": "24.13",
+        "label": "Severe unmeasured and residual confounding by indication and disease severity — Type 2 diabetes severity, duration, and key clinical prognostic variables could not be controlled because key biomarkers had massive missingness (HbA1c was missing in 90.52% to 91.79% of patients; fasting plasma glucose ",
+        "status": "GROUP_MISMATCH",
+        "group_check": "mismatch",
+        "matched_as": "24.13",
+        "context": "The fasting plasma glucose (mmol/L) and hemoglobin A1c (percentage %) were presented as the mean ± standard deviation among different groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rates of"
+      },
+      {
+        "value": "32.95",
+        "label": "Severe unmeasured and residual confounding by indication and disease severity — Type 2 diabetes severity, duration, and key clinical prognostic variables could not be controlled because key biomarkers had massive missingness (HbA1c was missing in 90.52% to 91.79% of patients; fasting plasma glucose ",
+        "status": "GROUP_MISMATCH",
+        "group_check": "mismatch",
+        "matched_as": "32.95",
+        "context": "Note: The fasting plasma glucose (mmol/L) and hemoglobin A1c (percentage %) were presented as the mean ± standard deviation among different groups. The missing rates of the FPG were 32.95%, 32.66%, and 24.13% among GLP-1 RAs, insulin only , and metformin groups, respectively; The missing rat"
+      },
+      {
+        "value": "500000",
+        "label": "The study has very high risk of bias stemming primarily from critical missing data in essential confounders (HbA1c missing in >90% of participants, BMI/education missing in >30%), where propensity score matching matched on 'unspecified' missing categories rather than actual values. Furthermore, subs",
+        "status": "UNVERIFIED",
+        "group_check": "unknown",
+        "matched_as": null,
+        "context": null
+      }
+    ],
+    "max_confidence": "CONFIRMED",
+    "caveat": null,
+    "usage": {
+      "prompt": 39104,
+      "output": 2236,
+      "thoughts": 1068,
+      "total": 42408
+    },
+    "engine": "direct",
+    "agents": {
+      "critic_robins_e": {
+        "prompt": 39104,
+        "output": 2236,
+        "thoughts": 1068,
+        "total": 42408
+      },
+      "subagent_baseline_comparability": {
+        "prompt": 39492,
+        "output": 3331,
+        "thoughts": 875,
+        "total": 43698
+      },
+      "subagent_time_related_biases": {
+        "prompt": 39693,
+        "output": 1521,
+        "thoughts": 1278,
+        "total": 42492
+      }
+    }
+  }
+}
