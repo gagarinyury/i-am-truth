@@ -263,13 +263,81 @@ def verify_findings(findings: dict, source_text: str) -> dict:
     return verify(uniq, source_text)
 
 
+def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
+              engine: str = "direct", tool_calls: list = None,
+              agents: dict = None, engine_note: str = None) -> dict:
+    """Сборка отчёта — одна на оба движка.
+
+    Сверка чисел (шаг 4) стоит здесь, а не внутри движка, намеренно: чем бы разбор
+    ни делался, числа проверяются одинаково и независимо от того, кто их написал.
+    В ADK у агента есть инструмент самопроверки, но он не отменяет этот шаг (D-14).
+    """
+    ver = verify_findings(findings, gathered["source_text"]) if findings else None
+    lvl = gathered["level"]["level"]
+    out = {
+        "meta": gathered["meta"],
+        "level": gathered["level"],
+        "tables": {"main": len(gathered["jats_tables"]),
+                   "appendix": len(gathered["appendix_tables"])},
+        "findings": findings,
+        "parse_error": parse_error,
+        "verification": ver["summary"] if ver else None,
+        "unverified_numbers": [c for c in (ver["claims"] if ver else [])
+                               if c["status"] in ("UNVERIFIED", "GROUP_MISMATCH")][:20],
+        "max_confidence": gathered["level"]["max_confidence"],
+        "caveat": (None if lvl == "L1" else
+                   "Разбор сделан на неполных данных. Находки этого уровня опираются на "
+                   "общие свойства дизайна, а не на числа из документа: проверять нечего, "
+                   "потому что цитировать нечего. Направление смещения при этом может быть "
+                   "названо верно — но верная догадка не является доказательством, "
+                   "поэтому статус CONFIRMED здесь недостижим (F-44)."),
+        "usage": usage,
+        "engine": engine,
+    }
+    if agents:
+        out["agents"] = agents
+    if tool_calls is not None:
+        out["tool_calls"] = tool_calls
+    if engine_note:
+        out["engine_note"] = engine_note
+    return out
+
+
 def run(doi: str = None, text: str = None, prompt: str = None,
-        uploads: list = None) -> dict:
+        uploads: list = None, engine: str = "direct") -> dict:
+    """`engine`: "direct" — оркестрация кодом, "adk" — граф Google ADK.
+
+    По баллам пути равноценны (медиана 5.5/6 у обоих, F-46). ADK даёт агентам
+    инструменты и объявляет параллельность декларативно; прямой путь быстрее
+    (~35 с против ~73 с) и потому оставлен по умолчанию для батча.
+    """
     gathered = gather(doi=doi, text=text, uploads=uploads)
     paper = gathered["source_text"]
     tbl = tables_as_text(gathered)
     if tbl:
         paper = f"{paper}\n\n## ТАБЛИЦЫ\n\n{tbl}"
+
+    if engine == "adk":
+        # Тот же аудит через граф ADK. Отличие не косметическое: там у агентов есть
+        # инструменты — калькулятор рисков и проверка числа в источнике, — которыми
+        # они пользуются во время рассуждения, а не после него.
+        try:
+            from . import adk_agent
+            a = adk_agent.run(paper_text=paper[:400000],
+                              pdfs=gathered.get("pdfs"),
+                              source_text=gathered["source_text"])
+            findings = subagents.merge_into_confounding(
+                a.get("robins_e") or {}, a.get("baseline") or {})
+            return _assemble(gathered, findings,
+                             parse_error=(a.get("parse_errors") or None),
+                             usage=None, engine="adk", tool_calls=a.get("tool_calls"))
+        except Exception as e:                               # noqa: BLE001
+            # Падать целиком из-за каркаса нельзя: у прямого пути тот же результат
+            # по баллам (F-46), он просто выражен кодом. Отмечаем подмену в отчёте,
+            # чтобы никто не считал, будто отработал ADK.
+            engine_note = f"ADK не отработал ({type(e).__name__}), разбор сделан прямым путём"
+    else:
+        engine_note = None
 
     # Два прохода по одному документу идут параллельно: основной критик по семи
     # доменам и суб-агент по сопоставимости групп. Параллельно, а не последовательно,
@@ -288,30 +356,12 @@ def run(doi: str = None, text: str = None, prompt: str = None,
     if findings:
         findings = subagents.merge_into_confounding(findings, baseline)
 
-    ver = verify_findings(findings, gathered["source_text"]) if findings else None
-
-    lvl = gathered["level"]["level"]
-    return {
-        "meta": gathered["meta"],
-        "level": gathered["level"],
-        "tables": {"main": len(gathered["jats_tables"]),
-                   "appendix": len(gathered["appendix_tables"])},
-        "findings": findings,
-        "parse_error": result.get("parse_error"),
-        "verification": ver["summary"] if ver else None,
-        "unverified_numbers": [c for c in (ver["claims"] if ver else [])
-                               if c["status"] in ("UNVERIFIED", "GROUP_MISMATCH")][:20],
-        "max_confidence": gathered["level"]["max_confidence"],
-        "caveat": (None if lvl == "L1" else
-                   "Разбор сделан на неполных данных. Находки этого уровня опираются на "
-                   "общие свойства дизайна, а не на числа из документа: проверять нечего, "
-                   "потому что цитировать нечего. Направление смещения при этом может быть "
-                   "названо верно — но верная догадка не является доказательством, "
-                   "поэтому статус CONFIRMED здесь недостижим (F-44)."),
-        "usage": result.get("usage"),
-        "agents": {
-            "critic_robins_e": result.get("usage"),
-            "subagent_baseline_comparability": (baseline or {}).get("_usage")
-                                               or {"error": (baseline or {}).get("error")},
-        },
-    }
+    return _assemble(gathered, findings, parse_error=result.get("parse_error"),
+                     usage=result.get("usage"), engine="direct",
+                     agents={
+                         "critic_robins_e": result.get("usage"),
+                         "subagent_baseline_comparability":
+                             (baseline or {}).get("_usage")
+                             or {"error": (baseline or {}).get("error")},
+                     },
+                     engine_note=engine_note)

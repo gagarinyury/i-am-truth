@@ -7,7 +7,8 @@ HTTP-сервис «Я есть Правда».
 Эндпоинты:
   GET  /            статус сервиса и конфигурация — годится как пруф деплоя
   GET  /health      проверка живости
-  POST /analyze     разбор статьи: {"doi": "..."} или {"text": "..."}
+  POST /analyze     разбор статьи: {"doi": "..."} или {"text": "..."};
+                    engine="direct" (по умолчанию) или "adk"
   POST /analyze/upload  разбор принесённых файлов (.pdf/.docx) — путь B
   GET  /levels      описание уровней доказательности с измеренными ценами
 """
@@ -39,6 +40,10 @@ app = FastAPI(
 class AnalyzeRequest(BaseModel):
     doi: str | None = None
     text: str | None = None
+    # "direct" — оркестрация кодом, "adk" — граф Google ADK с инструментами у агентов.
+    # По баллам пути равноценны (медиана 5.5/6 у обоих, F-46); ADK вдвое медленнее,
+    # поэтому выбор явный, а не спрятанный в дефолте.
+    engine: str = "direct"
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -78,7 +83,8 @@ def analyze(req: AnalyzeRequest):
     if not req.doi and not req.text:
         raise HTTPException(400, "нужен doi или text")
     try:
-        return pipeline.run(doi=req.doi, text=req.text, prompt=PROMPT)
+        return pipeline.run(doi=req.doi, text=req.text, prompt=PROMPT,
+                            engine=req.engine)
     except Exception as e:                                   # noqa: BLE001
         raise HTTPException(500, f"{type(e).__name__}: {e}"[:500])
 
@@ -91,7 +97,8 @@ MAX_UPLOAD = 25 * 1024 * 1024
 
 @app.post("/analyze/upload")
 async def analyze_upload(files: list[UploadFile] = File(...),
-                         doi: str | None = Form(None)):
+                         doi: str | None = Form(None),
+                         engine: str = Form("direct")):
     """Путь B: статья принесена пользователем.
 
     Существует потому, что автоматическая добыча берёт около 55% статей класса
@@ -115,7 +122,7 @@ async def analyze_upload(files: list[UploadFile] = File(...),
     if not uploads:
         raise HTTPException(400, "нужен хотя бы один файл")
     try:
-        return pipeline.run(doi=doi, prompt=PROMPT, uploads=uploads)
+        return pipeline.run(doi=doi, prompt=PROMPT, uploads=uploads, engine=engine)
     except Exception as e:                                   # noqa: BLE001
         raise HTTPException(500, f"{type(e).__name__}: {e}"[:500])
 
