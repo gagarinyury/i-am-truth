@@ -74,7 +74,7 @@ directly:
 ```bash
 curl -X POST $URL/analyze/upload \
      -F "files=@paper.pdf" -F "files=@appendix.pdf" \
-     -F "doi=10.1200/OP-26-00485R1"
+     -F "doi=10.1200/OP-26-00485"
 ```
 
 Several files are accepted because most journals ship the appendix separately — and the

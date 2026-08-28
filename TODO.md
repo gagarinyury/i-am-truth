@@ -124,7 +124,7 @@ F-25). Поэтому приёмка сделана строже, чем пла�
 
 ---
 
-## Ш-5 · Текст заявки + декларация pre-existing data (S5) 🔲
+## Ш-5 · Текст заявки + декларация pre-existing data (S5) ✅ 28.08 — `docs/08-submission.md`
 
 **Делаю:** `docs/08-submission.md` под копипаст в Devpost: inspiration, what it does,
 how we built it, challenges, accomplishments, what we learned — и отдельным блоком

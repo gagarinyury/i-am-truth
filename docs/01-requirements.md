@@ -35,7 +35,7 @@
 | S2 | Репозиторий | GitHub / GitLab / Bitbucket (публичный или приватный) | ✅ https://github.com/gagarinyury/i-am-truth — публичный, запушен 28.08. Личная почта вынесена из публикуемых файлов перед публикацией |
 | S3 | README со spin-up-инструкцией | обязательно | ✅ README на английском: живой endpoint, запуск в три команды, деплой своей копии, API, уровни с замеренными ценами (28.08) |
 | S4 | **Архитектурная диаграмма** | «system visualization» | ✅ `docs/07-architecture.md` — Mermaid + PNG в `docs/img/` (28.08) |
-| S5 | Текстовое описание | features, technologies, data sources, learnings | 🔲 |
+| S5 | Текстовое описание | features, technologies, data sources, learnings | ✅ `docs/08-submission.md` — под копипаст, с декларацией pre-existing work (28.08) |
 | S6 | Hosted project URL | «encouraged but not strictly required for judging» | ✅ `https://i-am-truth-242136767009.us-central1.run.app` |
 | S7 | Пруф деплоя на Google Cloud | в видео и/или репо (= R4) | 🟡 сервис, job и бакет есть — снять на видео |
 
