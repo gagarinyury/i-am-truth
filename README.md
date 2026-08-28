@@ -269,13 +269,37 @@ in a submission would sell as an improvement something we measured as a tie (F-4
 
 ## Reproduce the measurements
 
+Two benchmarks, and they measure different things.
+
+**`eval/bench.py` — the product, end to end.** DOI (or a file) in, report out, exactly as
+a user gets it: retrieval, table parsing, three agents, number verification. Every run is
+written to `eval/results/bench-*.json` with the full report *and* the judge's per-point
+scoring, so the numbers quoted above can be checked rather than trusted.
+
+```bash
+python3 eval/bench.py run              # both references, 3 runs each
+python3 eval/bench.py run --engine adk # same, through the ADK graph
+python3 eval/bench.py report           # table + medians
+```
+
+**`eval/harness.py` — the model on a prepared input.** Feeds a file from `eval/inputs/`
+straight to the model and judges the answer. It cannot see retrieval or verification, and
+that is the point: it is the tool for comparing prompts and evidence levels.
+
 ```bash
 python3 eval/harness.py run --models gemini-3.7-flash --prompt v2 \
         --inputs abstract,fulltext_no_appendix,with_appendix
 python3 eval/harness.py report
-
-python3 tests/test_parallel_isolation.py
 ```
+
+```bash
+python3 tests/test_parallel_isolation.py
+python3 tests/test_normalise_math.py
+```
+
+The McDonald PDF is not in the repository — it is under the publisher's copyright. Put
+it in `eval/pdf/mcdonald.pdf` (that path is gitignored) and `bench.py` will find it;
+the Cheng case needs nothing, it comes from Europe PMC by DOI.
 
 The harness scores model output against an expert ground truth
 (`eval/ground_truth/mcdonald-2026.yaml`, six points) using an LLM judge, and reports
@@ -299,14 +323,14 @@ result is the number this project is actually judged by:
 
 | Reference | before | after |
 |---|---|---|
-| ours (McDonald, 6 points) | 5.5 — **92%** | 5.0 — **83%** |
-| external (Cheng, 4 points) | 1.0 — **25%** | 3.5 — **87.5%** |
-| **spread between cases** | **67 pts** | **4.5 pts** |
+| ours (McDonald, 6 points) | 5.5 — **92%** | 5.5 · 5.5 · 5.5 — **92%** |
+| external (Cheng, 4 points) | 1.0 — **25%** | 3.5 · 3.5 · 3.5 — **88%** |
+| **spread between cases** | **67 pts** | **4 pts** |
 
 The point is not the higher score. It is that the spread collapsed: a system that knew
-its own case and failed a neighbouring one now performs the same on both. The cost is
-named too — the profile case lost half a point, since a wider input dilutes attention on
-individual items (F-48).
+its own case and failed a neighbouring one now performs the same on both, with no loss
+on the case it was designed around. Every run above is stored in `eval/results/` and
+reproducible with one command (F-48).
 
 ---
 

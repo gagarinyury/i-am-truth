@@ -339,7 +339,10 @@ def run(doi: str = None, text: str = None, prompt: str = None,
             findings = subagents.merge_time(findings, a.get("timing") or {})
             return _assemble(gathered, findings,
                              parse_error=(a.get("parse_errors") or None),
-                             usage=None, engine="adk", tool_calls=a.get("tool_calls"))
+                             usage=None, engine="adk", tool_calls=a.get("tool_calls"),
+                             agents={k: {"via": "adk"} for k in
+                                     ("critic_robins_e", "baseline_comparability",
+                                      "time_related_biases")})
         except Exception as e:                               # noqa: BLE001
             # Падать целиком из-за каркаса нельзя: у прямого пути тот же результат
             # по баллам (F-46), он просто выражен кодом. Отмечаем подмену в отчёте,

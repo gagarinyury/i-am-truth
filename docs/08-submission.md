@@ -162,11 +162,11 @@ the second paper's flaws are time-related — lag periods, latency, the shape of
 duration gradient — and this system is built around confounding and group comparability.
 So we made that move: one more pass that does nothing but reconstruct the study's
 timeline — new-user versus prevalent-user, immortal time, lag period, latency, and the
-shape of the duration gradient. Re-measured, three runs each: **83% on our own reference,
-87.5% on the external one**. The spread between the two cases fell from 67 points to 4.5.
-The profile case lost half a point in the process, and we report that too — a wider input
-dilutes attention on individual items. What we are claiming is not a higher score but a
-narrower gap between a case we designed for and one we did not.
+shape of the duration gradient. Re-measured, three runs each: **92% on our own reference, 88% on the external one**, with
+no loss on the case we designed around. The spread between the two fell from 67 points to
+4. What we are claiming is not a higher score but a narrower gap between a case we built
+for and one we did not — and every run behind those numbers is stored in the repository,
+reproducible with one command.
 
 **We found our own errors with our own instrument.** Twice the reference standard itself
 was wrong — once with an inverted direction, once missing a whole defect the model kept
@@ -179,7 +179,7 @@ rather than quietly corrected.
 it reports, and returns the same verdict the human expert reached —
 `real_association_explained_by_selection`. It catches the appendix imbalance with the
 correct direction in all three runs, the same direction it gets *wrong* when given only
-the abstract. Against the expert reference it scores a **median of 5.0 / 6** on the published PDF — up
+the abstract. Against the expert reference it scores a **median of 5.5 / 6** on the published PDF — up
 from 3.5 with a single critic, and deliberately not the 6.0 it reaches on a prepared input
 where the numbers already sit side by side. We report the real-file number, since
 inflating a score is the exact failure this project exists to detect.

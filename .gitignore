@@ -10,3 +10,6 @@ venv/
 .claude/hooks/
 
 scripts/.preflight.env
+
+# PDF статей — копирайт издателей, в репозиторий не кладутся
+eval/pdf/
