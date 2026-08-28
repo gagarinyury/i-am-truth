@@ -137,11 +137,19 @@ def build_graph(model: str = None) -> ParallelAgent:
         output_key="baseline",
         retry_config=retry,
     )
+    time_agent = LlmAgent(
+        name="time_related_biases",
+        model=m,
+        instruction=(HERE / "prompt_time_biases.md").read_text(),
+        tools=[check_number_in_source],
+        output_key="timing",
+        retry_config=retry,
+    )
     return ParallelAgent(
         name="audit",
-        sub_agents=[critic_agent, baseline_agent],
-        description="Два независимых прохода по одной статье: семь доменов ROBINS-E "
-                    "и сопоставимость групп.",
+        sub_agents=[critic_agent, baseline_agent, time_agent],
+        description="Три независимых прохода по одной статье: семь доменов ROBINS-E, "
+                    "сопоставимость групп и временнáя структура.",
     )
 
 
@@ -167,7 +175,7 @@ async def _run_async(pdfs: list, paper_text: str, model: str = None) -> dict:
         app_name=APP, user_id="svc", session_id=session.id)).state
 
     out = {"tool_calls": tool_calls}
-    for key in ("robins_e", "baseline"):
+    for key in ("robins_e", "baseline", "timing"):
         parsed, err = critic.parse_json_answer(state.get(key) or "")
         out[key] = parsed
         if err:

@@ -230,7 +230,7 @@ Full diagram with rationale: `docs/07-architecture.md`.
 | 0 | `truth/pipeline.py` | orchestration, DOI → report |
 | 1 | `truth/retrieval.py` | Europe PMC, appendix files, Unpaywall fallback, level assessment |
 | 2 | `truth/jats_tables.py`, `truth/docx_tables.py`, `truth/pdf_tables.py` | structural table parsing — colspan/rowspan, compound headers, PDF tables via pdfplumber |
-| 3 | `truth/critic.py`, `truth/subagents.py` | two parallel passes: ROBINS-E across seven domains, and a narrow baseline-comparability agent |
+| 3 | `truth/critic.py`, `truth/subagents.py` | three parallel passes: ROBINS-E across seven domains, baseline comparability, and temporal structure |
 | 4 | `truth/verify_numbers.py` | every reported number checked back against the source |
 | 5 | `truth/stats_tool.py` | E-value, ARR, NNT, RR with CI — computed, never generated |
 | 6 | `app/main.py`, `truth/batch.py` | Cloud Run service and Cloud Run Job |
@@ -243,12 +243,14 @@ model wrote, finds it in the retrieved source with its surrounding context, and 
 group labels — which is how it catches an inverted direction (`GROUP_MISMATCH`), not
 just an invented value.
 
-**A sub-agent exists only where the measurement demands one.** One expert point was
-never reached by the single critic on the real file — the paradox that the GLP-1 arm was
-sicker and yet had fewer cancers. Not because the model cannot reason it out, but because
-one call cannot both survey seven domains and lay two distant numbers side by side. A
-second pass that does nothing but read the baseline table fixed it in every run. The
-other six domains got no sub-agent, because they show no such failure.
+**A sub-agent exists only where a measurement demands one.** Both of them were added the
+same way: a benchmark showed a reproducible failure, one narrow agent was written for it,
+and the benchmark was re-run. The first fixed a point the single critic never reached in
+three runs — that the GLP-1 arm was sicker and yet had fewer cancers. The second fixed an
+entire class the system was blind to, and collapsed the spread between our own reference
+and an external one from 67 points to 4.5. The remaining five ROBINS-E domains have no
+sub-agent, because no failure has been measured on them — and adding agents without a
+measurement is exactly what this project avoids.
 
 **Statistics are computed, never generated.** E-value, absolute risk reduction, NNT and
 confidence intervals come from `stats_tool.py`, which self-tests on import. The model is
@@ -287,11 +289,24 @@ criticising a different GLP-1/cancer cohort study, with the authors' reply print
 alongside it. Against our own reference the system scores **92%** (5.5/6). Against the
 external one it scores **25%** (1.0/4), stably across three runs.
 
-The gap is not noise, and the per-point breakdown says why: the second paper's defects
+The gap was not noise, and the per-point breakdown said why: the second paper's defects
 are *time-related* — no lag period, latency shorter than follow-up, a duration gradient
-pointing the wrong way for causation — and the system is built around confounding and
-group comparability. It handles what it was tuned on and misses a neighbouring class.
-That number belongs in the README, not in a footnote (F-47).
+pointing the wrong way for causation — while the system was built around confounding and
+group comparability. It handled what it had been tuned on and missed a neighbouring class.
+
+So a third pass was added, doing nothing but reconstructing the study's timeline. The
+result is the number this project is actually judged by:
+
+| Reference | before | after |
+|---|---|---|
+| ours (McDonald, 6 points) | 5.5 — **92%** | 5.0 — **83%** |
+| external (Cheng, 4 points) | 1.0 — **25%** | 3.5 — **87.5%** |
+| **spread between cases** | **67 pts** | **4.5 pts** |
+
+The point is not the higher score. It is that the spread collapsed: a system that knew
+its own case and failed a neighbouring one now performs the same on both. The cost is
+named too — the profile case lost half a point, since a wider input dilutes attention on
+individual items (F-48).
 
 ---
 

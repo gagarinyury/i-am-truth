@@ -19,8 +19,17 @@
   3) её результат проверяем — то есть состоит из чисел, которые верификатор
      потом сверит с документом.
 
-`baseline_comparability` отвечает всем трём. Остальные шесть доменов — нет:
-они не механические, и общий критик с ними справляется.
+`baseline_comparability` отвечает всем трём — заведён после F-45.
+
+`time_related_biases` заведён после F-47 по тому же правилу. Второй эталон, взятый
+из внешнего письма в редакцию, дал 1.0 из 4: пункты про lag-период, латентность и
+форму градиента по длительности не брались ни в одном прогоне. Класс признанный
+(prevalent-user, immortal time, lag periods — Suissa; Hicks et al. 2023; Lund et al.
+2015), механический и проверяемый числами, а общий промпт ROBINS-E покрывает из него
+только определение экспозиции.
+
+Остальные пять доменов ROBINS-E суб-агентов не получили: измеренного провала на них
+нет, а заводить агента без замера — ровно то, чего этот проект избегает.
 """
 import pathlib
 
@@ -28,6 +37,7 @@ from . import critic
 
 HERE = pathlib.Path(__file__).resolve().parent
 PROMPT_BASELINE = (HERE / "prompt_baseline_table.md").read_text()
+PROMPT_TIME = (HERE / "prompt_time_biases.md").read_text()
 
 
 def baseline_comparability(paper_text: str, pdfs: list = None,
@@ -47,6 +57,76 @@ def baseline_comparability(paper_text: str, pdfs: list = None,
     out = r.get("findings") or {}
     out["_usage"] = r.get("usage")
     return out
+
+
+def time_related_biases(paper_text: str, pdfs: list = None,
+                        model: str = None) -> dict:
+    """Суб-агент временнóй структуры: new-user, immortal time, lag, латентность.
+
+    Отдельный проход нужен потому, что дефект здесь не в числах, а в том, *когда* они
+    измерены: статья выглядит безупречно, пока кто-нибудь не восстановит таймлайн.
+    """
+    try:
+        r = critic.critique(paper_text, PROMPT_TIME,
+                            **({"model": model} if model else {}), pdfs=pdfs)
+    except Exception as e:                                   # noqa: BLE001
+        return {"error": f"{type(e).__name__}: {e}"[:200]}
+    if r.get("parse_error"):
+        return {"error": f"ответ не разобран: {r['parse_error']}"}
+    out = r.get("findings") or {}
+    out["_usage"] = r.get("usage")
+    return out
+
+
+def merge_time(findings: dict, timing: dict) -> dict:
+    """Вливает временной разбор в домен «Measurement of the exposure».
+
+    Именно туда ROBINS-E относит определение экспозиции, а prevalent-user, immortal
+    time и отсутствие lag — это всё дефекты того, как экспозиция определена во времени.
+    """
+    if not isinstance(findings, dict) or not isinstance(timing, dict):
+        return findings
+    findings.setdefault("subagents", {})["time_related_biases"] = timing
+    if timing.get("error"):
+        return findings
+
+    doms = findings.get("domains") or []
+    dom = next((d for d in doms
+                if "exposure" in str(d.get("name", "")).lower()), None)
+    if dom is None:
+        dom = next((d for d in doms if str(d.get("id")) == "2"), None)
+    if dom is None:
+        return findings
+
+    for f in timing.get("findings") or []:
+        dom.setdefault("findings", []).append({
+            "title": f.get("title"),
+            "mechanism": f.get("mechanism"),
+            "evidence": f.get("evidence") or [],
+            "found_by": "subagent:time_related_biases",
+        })
+
+    grad = timing.get("duration_gradient") or {}
+    if grad.get("direction") == "falls_with_exposure":
+        # Сигнал сильнее прочих: связь тем слабее, чем дольше приём, — для причинного
+        # эффекта на медленный исход это направление обратное ожидаемому.
+        dom.setdefault("findings", []).append({
+            "title": "Duration gradient points away from causation",
+            "mechanism": grad.get("interpretation") or
+                         "association strongest at short exposure — signature of "
+                         "detection bias or reverse causation, not of a drug effect",
+            "evidence": [str(x) for x in (grad.get("strata") or [])],
+            "found_by": "subagent:time_related_biases",
+        })
+
+    sub_dir = timing.get("direction_of_time_related_bias")
+    if sub_dir and sub_dir not in ("no_information", dom.get("direction")):
+        dom["disagreement"] = {
+            "main_critic": dom.get("direction"),
+            "subagent_time": sub_dir,
+            "note": "два прохода дали разное направление; не сведено намеренно",
+        }
+    return findings
 
 
 def merge_into_confounding(findings: dict, baseline: dict) -> dict:

@@ -336,6 +336,7 @@ def run(doi: str = None, text: str = None, prompt: str = None,
                               source_text=gathered["source_text"])
             findings = subagents.merge_into_confounding(
                 a.get("robins_e") or {}, a.get("baseline") or {})
+            findings = subagents.merge_time(findings, a.get("timing") or {})
             return _assemble(gathered, findings,
                              parse_error=(a.get("parse_errors") or None),
                              usage=None, engine="adk", tool_calls=a.get("tool_calls"))
@@ -352,17 +353,21 @@ def run(doi: str = None, text: str = None, prompt: str = None,
     # потому что суб-агент не зависит от вывода критика — он смотрит в тот же
     # документ под другим углом. Два вызова Vertex одновременно укладываются в лимит
     # (429 начинается с пятого подряд, F-11), у каждого свой backoff.
-    with cf.ThreadPoolExecutor(max_workers=2) as ex:
+    with cf.ThreadPoolExecutor(max_workers=3) as ex:
         f_main = ex.submit(critic.critique, paper[:400000], prompt,
                            pdfs=gathered.get("pdfs"))
         f_base = ex.submit(subagents.baseline_comparability, paper[:400000],
                            gathered.get("pdfs"))
+        f_time = ex.submit(subagents.time_related_biases, paper[:400000],
+                           gathered.get("pdfs"))
         result = f_main.result()
         baseline = f_base.result()
+        timing = f_time.result()
 
     findings = result.get("findings")
     if findings:
         findings = subagents.merge_into_confounding(findings, baseline)
+        findings = subagents.merge_time(findings, timing)
 
     return _assemble(gathered, findings, parse_error=result.get("parse_error"),
                      usage=result.get("usage"), engine="direct",
@@ -371,5 +376,8 @@ def run(doi: str = None, text: str = None, prompt: str = None,
                          "subagent_baseline_comparability":
                              (baseline or {}).get("_usage")
                              or {"error": (baseline or {}).get("error")},
+                         "subagent_time_related_biases":
+                             (timing or {}).get("_usage")
+                             or {"error": (timing or {}).get("error")},
                      },
                      engine_note=engine_note)

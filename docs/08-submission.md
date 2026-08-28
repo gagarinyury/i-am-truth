@@ -80,7 +80,7 @@ instead: `POST /analyze/upload` takes PDFs and .docx and reaches the same L1.
   passes per paper: a ROBINS-E critic across seven domains, and a narrow sub-agent that
   reads nothing but the baseline characteristics table.
 - **google-genai SDK** 1.56.0, and the same audit expressed as a **Google ADK**
-  `ParallelAgent` where the agents get tools they can call mid-reasoning.
+  `ParallelAgent` of three agents that get tools they can call mid-reasoning.
 - **Cloud Run** for the synchronous service, **Cloud Run Jobs** for unattended batch
   work over a corpus, **GCS** for results — one object per paper, so a single failure
   never takes the run down.
@@ -160,8 +160,13 @@ reply printed next to it. The system scores 92% against our own reference and **
 against the external one**, stably across three runs. The per-point breakdown shows why:
 the second paper's flaws are time-related — lag periods, latency, the shape of the
 duration gradient — and this system is built around confounding and group comparability.
-The fix is the same move that already worked once: find the failure by measurement, add
-one narrow agent, re-measure. Until that is done, 25% is the number we report.
+So we made that move: one more pass that does nothing but reconstruct the study's
+timeline — new-user versus prevalent-user, immortal time, lag period, latency, and the
+shape of the duration gradient. Re-measured, three runs each: **83% on our own reference,
+87.5% on the external one**. The spread between the two cases fell from 67 points to 4.5.
+The profile case lost half a point in the process, and we report that too — a wider input
+dilutes attention on individual items. What we are claiming is not a higher score but a
+narrower gap between a case we designed for and one we did not.
 
 **We found our own errors with our own instrument.** Twice the reference standard itself
 was wrong — once with an inverted direction, once missing a whole defect the model kept
@@ -174,10 +179,10 @@ rather than quietly corrected.
 it reports, and returns the same verdict the human expert reached —
 `real_association_explained_by_selection`. It catches the appendix imbalance with the
 correct direction in all three runs, the same direction it gets *wrong* when given only
-the abstract. Against the expert reference it scores **5.0–6.0 / 6, median 5.5** — up from a median of
-3.5 before we added a second, narrow agent, and still below the 6.0 it reaches on a
-prepared input where the numbers already sit side by side. We report the real-file
-number, since inflating a score is the exact failure this project exists to detect.
+the abstract. Against the expert reference it scores a **median of 5.0 / 6** on the published PDF — up
+from 3.5 with a single critic, and deliberately not the 6.0 it reaches on a prepared input
+where the numbers already sit side by side. We report the real-file number, since
+inflating a score is the exact failure this project exists to detect.
 
 **It runs in the cloud, unattended.** The last batch: 8 papers, 8 successes, 232 numbers
 verified. All eight came back L3 — which is not a malfunction. It is the system refusing
