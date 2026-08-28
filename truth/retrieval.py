@@ -18,13 +18,17 @@ import urllib.request
 EPMC = "https://www.ebi.ac.uk/europepmc/webservices/rest"
 UA = {"User-Agent": "i-am-truth/0.1 (methodology audit)"}
 
+# Цены уровней замерены на промпте ROBINS-E (том, что в проде) по эталону version 2,
+# шесть пунктов, три прогона 27–28.08 — F-40. Указан диапазон и медиана: разброс между
+# прогонами реален и скрывать его нечестно. Числа из пятибалльной эпохи (до F-32) сюда
+# переносить нельзя — знаменатель изменился, а баллы нет.
 LEVELS = {
     "L1": {"name": "full-text + приложения", "max_confidence": "CONFIRMED",
-           "measured_score": "4.0-4.5 / 6"},
+           "measured_score": "5.0-6.0 / 6 (медиана 6.0)"},
     "L2": {"name": "полный текст без приложений", "max_confidence": "PLAUSIBLE-UNVERIFIED",
-           "measured_score": "3.5 / 6"},
+           "measured_score": "4.0-5.0 / 6 (медиана 4.5)"},
     "L3": {"name": "только абстракт", "max_confidence": "PLAUSIBLE-UNVERIFIED",
-           "measured_score": "3.0 / 6"},
+           "measured_score": "3.5-4.0 / 6 (медиана 4.0)"},
 }
 
 

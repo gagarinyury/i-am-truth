@@ -20,18 +20,21 @@
 | R4 | «Must demonstrate the backend is running on Google Cloud» (Cloud Console, Cloud Run dashboard, Vertex AI logs, URL вида `.run`) | ✅ **закрыто** | `https://i-am-truth-242136767009.us-central1.run.app` (F-36); в видео показать дашборд |
 | R5 | «a next-generation, autonomous AI Agent leveraging Gemini 3.5 that operates beyond standard chat loops» | ✅ **закрыто** | Cloud Run Job `i-am-truth-batch`: находит корпус по запросу Europe PMC, разбирает параллельно, складывает в GCS. Прогон в облаке выполнен (F-37) |
 
-⚠️ **R1 — самая опасная строка.** Проверенный результат проекта (3.5/5 → 4.5/5)
-получен на Gemini **2.5 Pro**, которая порог не проходит. Pro-линейка на Vertex
-обрывается на `gemini-3.1-pro-preview`. Доступны ≥3.5 **только Flash-модели**.
+✅ **R1 — риск снят.** Опасение было в том, что результат проекта получен на Gemini
+**2.5 Pro**, которая порог «3.5+» не проходит: Pro-линейка на Vertex обрывается на
+`gemini-3.1-pro-preview`, доступны ≥3.5 только Flash-модели. Замер на `gemini-3.7-flash`
+воспроизвёл эффект — сначала на пятибалльной шкале (F-26), затем повторно на
+шестибалльной и на продовом промпте ROBINS-E, три прогона (F-40). Продукт работает
+на модели, проходящей порог.
 
 ## Артефакты подачи
 
 | # | Артефакт | Требование | Статус |
 |---|---|---|---|
 | S1 | Демо-видео | **≤4 мин**, публично на YouTube или Vimeo, английский или англ. субтитры | 🔲 |
-| S2 | Репозиторий | GitHub / GitLab / Bitbucket (публичный или приватный) | 🔲 |
-| S3 | README со spin-up-инструкцией | обязательно | 🔲 |
-| S4 | **Архитектурная диаграмма** | «system visualization» | 🔲 |
+| S2 | Репозиторий | GitHub / GitLab / Bitbucket (публичный или приватный) | 🟡 `gagarinyury/i-am-truth` создан публичным 27.08, но **пуст** — коммиты не запушены (Ш-3 в TODO.md) |
+| S3 | README со spin-up-инструкцией | обязательно | ✅ README на английском: живой endpoint, запуск в три команды, деплой своей копии, API, уровни с замеренными ценами (28.08) |
+| S4 | **Архитектурная диаграмма** | «system visualization» | ✅ `docs/07-architecture.md` — Mermaid + PNG в `docs/img/` (28.08) |
 | S5 | Текстовое описание | features, technologies, data sources, learnings | 🔲 |
 | S6 | Hosted project URL | «encouraged but not strictly required for judging» | ✅ `https://i-am-truth-242136767009.us-central1.run.app` |
 | S7 | Пруф деплоя на Google Cloud | в видео и/или репо (= R4) | 🟡 сервис, job и бакет есть — снять на видео |
