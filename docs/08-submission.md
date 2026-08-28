@@ -56,7 +56,7 @@ That last part is the point. Three levels, and their cost is measured, not assig
 
 | Level | What was retrieved | Max confidence | Measured score |
 |---|---|---|---|
-| L1 | full text + appendix tables | `CONFIRMED` | 6.0 / 6 (median of 3 runs) |
+| L1 | full text + appendix tables | `CONFIRMED` | 6.0 / 6 (prepared input) · 3.5 / 6 (live PDF) |
 | L2 | full text, no appendices | `PLAUSIBLE` / `UNVERIFIED` | 4.5 / 6 |
 | L3 | abstract only | `PLAUSIBLE` / `UNVERIFIED` | 4.0 / 6 |
 
@@ -131,6 +131,16 @@ was wrong — once with an inverted direction, once missing a whole defect the m
 correctly finding and never got credit for. Both were caught by the harness, not by
 reading. The measurement was fixed, and both failures are written up in the repository
 rather than quietly corrected.
+
+**It works on the real file, and we know exactly how well.** Handed the published
+10-page PDF of the paper that started this, the agent reaches L1, verifies every number
+it reports, and returns the same verdict the human expert reached —
+`real_association_explained_by_selection`. It catches the appendix imbalance with the
+correct direction in all three runs, the same direction it gets *wrong* when given only
+the abstract. It scores 3.5–4.5 / 6 against the expert reference — lower than the 6.0 it
+scores on a prepared input, because on the real file the numbers must be found before
+they can be reasoned about. We report the lower number, since inflating a score is the
+exact failure this project exists to detect.
 
 **It runs in the cloud, unattended.** The last batch: 8 papers, 8 successes, 232 numbers
 verified. All eight came back L3 — which is not a malfunction. It is the system refusing

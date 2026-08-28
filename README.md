@@ -32,6 +32,17 @@ The gap between the first row and the last is positive in **every** run (+1.0, +
 the abstract. So the honest statement is not "each step up helps a little" — it is
 **the appendix is where the audit becomes real**.
 
+**And the honest caveat.** Those three inputs are prepared documents, where the relevant
+appendix numbers sit next to each other. Run the same system end-to-end on the
+**published 10-page PDF** and it scores **3.5–4.5 / 6 (median 3.5)** across three runs —
+lower, because the numbers now have to be *found* before they can be reasoned about.
+What survives on the real file is the part that matters most: the appendix imbalance is
+caught with the **correct direction** every time, and the verdict matches the human
+expert's word for word (`real_association_explained_by_selection`). What does not
+survive is the point requiring two distant numbers to be combined — never scored on the
+real file, always scored on the prepared one. That gap is the argument for per-domain
+sub-agents, and it is written up in `docs/02-verified-facts.md`, F-43.
+
 The interesting part is not the trend. It is the **mechanism**: each level unlocks
 exactly those expert points that physically live in it, and no others (`docs/02-verified-facts.md`, F-26).
 

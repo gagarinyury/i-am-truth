@@ -106,7 +106,7 @@ def _from_uploads(uploads: list) -> dict:
     uploads — список (имя, байты). Принимаются .pdf и .docx: первый формат — то,
     как статью видит человек, второй — то, как приходят приложения из Europe PMC.
     """
-    texts, main, appendix, notes = [], [], [], []
+    texts, main, appendix, notes, pdfs = [], [], [], [], []
     for name, blob in uploads:
         low = name.lower()
         with tempfile.NamedTemporaryFile(
@@ -122,6 +122,11 @@ def _from_uploads(uploads: list) -> dict:
                     notes.append(f"{name}: нет текстового слоя, нужен OCR — файл пропущен")
                     continue
                 texts.append(pdf_text(tmp))
+                # Сам файл уходит модели: Gemini читает PDF вместе с вёрсткой и
+                # берёт таблицы точнее, чем любой наш парсер (F-42). Наш разбор
+                # остаётся ради двух вещей, которые модели поручать нельзя:
+                # источник для обратной сверки чисел и определение уровня.
+                pdfs.append(blob)
                 for t in extract_pdf(tmp):
                     t["source_file"] = name
                     (appendix if is_appendix(t) else main).append(t)
@@ -138,7 +143,7 @@ def _from_uploads(uploads: list) -> dict:
         finally:
             os.unlink(tmp)
     return {"text": "\n\n".join(t for t in texts if t),
-            "main": main, "appendix": appendix, "notes": notes}
+            "main": main, "appendix": appendix, "notes": notes, "pdfs": pdfs}
 
 
 def gather(doi: str = None, text: str = None, uploads: list = None) -> dict:
@@ -166,7 +171,8 @@ def gather(doi: str = None, text: str = None, uploads: list = None) -> dict:
         if got["notes"]:
             level["upload_notes"] = got["notes"]
         return {"meta": meta, "source_text": src, "jats_tables": got["main"],
-                "appendix_tables": got["appendix"], "level": level}
+                "appendix_tables": got["appendix"], "level": level,
+                "pdfs": got["pdfs"]}
 
     if text and not doi:
         return {"meta": {"found": False, "doi": None}, "source_text": text,
@@ -260,7 +266,7 @@ def run(doi: str = None, text: str = None, prompt: str = None,
     if tbl:
         paper = f"{paper}\n\n## ТАБЛИЦЫ\n\n{tbl}"
 
-    result = critic.critique(paper[:400000], prompt)
+    result = critic.critique(paper[:400000], prompt, pdfs=gathered.get("pdfs"))
     findings = result.get("findings")
 
     ver = verify_findings(findings, gathered["source_text"]) if findings else None

@@ -54,14 +54,24 @@ def parse_json_answer(raw: str):
         return None, f"не JSON: {e}"
 
 
-def call(system: str, user: str, model: str = MODEL, attempts: int = 5) -> dict:
-    """Вызов с backoff: Vertex отдаёт 429 уже на пятом запросе подряд (F-11)."""
+def call(system: str, user: str, model: str = MODEL, attempts: int = 5,
+         pdfs: list = None) -> dict:
+    """Вызов с backoff: Vertex отдаёт 429 уже на пятом запросе подряд (F-11).
+
+    `pdfs` — список байтовых PDF, которые уходят модели как есть. Gemini читает
+    PDF нативно, вместе с вёрсткой: на McDonald et al. он берёт из Appendix
+    Table A1 строку «5+ very high» правильно, тогда как в текстовом слое она
+    вырождается в «51 very high» из-за шрифта. Свой разбор таблиц соревноваться
+    с этим не может, поэтому и не пытается — правило «сначала искать готовое».
+    """
+    parts = ([types.Part.from_bytes(data=b, mime_type="application/pdf") for b in (pdfs or [])]
+             + [types.Part.from_text(text=user)])
     delay = 8
     for i in range(attempts):
         try:
             resp = client().models.generate_content(
                 model=model,
-                contents=user,
+                contents=parts,
                 config=types.GenerateContentConfig(
                     system_instruction=system,
                     max_output_tokens=MAX_OUTPUT_TOKENS,
@@ -88,9 +98,10 @@ def call(system: str, user: str, model: str = MODEL, attempts: int = 5) -> dict:
     raise RuntimeError("исчерпаны попытки")
 
 
-def critique(paper_text: str, prompt: str, model: str = MODEL) -> dict:
+def critique(paper_text: str, prompt: str, model: str = MODEL,
+             pdfs: list = None) -> dict:
     """Разбор статьи. Возвращает разобранный JSON и метаданные вызова."""
-    r = call(prompt, paper_text, model=model)
+    r = call(prompt, paper_text, model=model, pdfs=pdfs)
     parsed, err = parse_json_answer(r["text"])
     return {"findings": parsed, "parse_error": err,
             "usage": r["usage"], "model": model,

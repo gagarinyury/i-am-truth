@@ -30,8 +30,16 @@ import sys
 # Заголовок таблицы в статьях выглядит однообразно; тот же набор, что в docx_tables,
 # плюс формы, встречающиеся в основном тексте, а не только в приложении.
 CAPTION_RE = re.compile(
-    r"^\s*((?:e|Supplementary\s+|Appendix\s+|Supplemental\s+)?Tables?\s*[Ss]?\d+"
-    r"(?![\d)])[.:]?\s*.{0,160})", re.I)
+    r"^\s*((?:e|Supplementary\s+|Appendix\s+|Supplemental\s+)?Tables?\s*"
+    r"[A-Za-z]?\s*\d+(?![\d)])[.:]?\s*.{0,160})", re.I)
+
+# Раздел приложения в статье открывается заголовком и дальше не закрывается.
+# Опираться на подпись каждой таблицы недостаточно: у ASCO они называются
+# «TABLE A1», без слова Appendix, — приложение опознаётся по разделу, в котором
+# таблица стоит. Проверено на McDonald et al. 2026 (10.1200/OP-26-00485).
+APPENDIX_HEAD_RE = re.compile(
+    r"^\s*(APPENDIX|SUPPLEMENTARY(\s+(MATERIAL|APPENDIX|DATA))?|SUPPLEMENTAL\s+"
+    r"(MATERIAL|APPENDIX))\s*$", re.I)
 
 # Пробелы между словами в PDF ставятся по расстоянию между глифами, и у части
 # издателей (проверено на Frontiers) стандартный порог pdfplumber = 3 склеивает
@@ -75,10 +83,12 @@ def extract_text(path: str) -> str:
 def extract(path: str) -> list:
     """Таблицы документа в том же формате, что даёт разбор .docx и JATS."""
     import pdfplumber
-    tables = []
+    tables, in_appendix = [], False
     with pdfplumber.open(path) as pdf:
         for pno, page in enumerate(pdf.pages, 1):
             words = page.extract_text(x_tolerance=X_TOL) or ""
+            if any(APPENDIX_HEAD_RE.match(ln) for ln in words.splitlines()):
+                in_appendix = True
             # заголовок ищем на той же странице: pdfplumber не связывает подпись
             # с таблицей сам, а без подписи таблица теряет половину смысла
             caps = [m.group(1).strip() for m in
@@ -99,6 +109,7 @@ def extract(path: str) -> list:
                     "n_rows": len(rows),
                     "n_cols": max(len(r) for r in rows),
                     "page": pno,
+                    "appendix": in_appendix,
                 })
     return tables
 
@@ -107,8 +118,13 @@ def is_appendix(table: dict) -> bool:
     """Приложение или основная таблица. Различие не косметическое: замер показал,
     что уровень L1 открывают именно приложения (F-26), поэтому оркестратор кладёт
     их в подачу модели первыми."""
+    if table.get("appendix"):
+        return True
     cap = (table.get("caption") or "").lower()
-    return bool(re.match(r"^\s*(e|supplementary|appendix|supplemental)", cap))
+    if re.match(r"^\s*(e|supplementary|appendix|supplemental)", cap):
+        return True
+    # «Table A1» / «Table S2»: буква в номере — общепринятая пометка приложения
+    return bool(re.match(r"^\s*tables?\s*[a-z]\s*\d", cap))
 
 
 def main():
