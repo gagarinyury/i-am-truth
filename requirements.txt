@@ -1,8 +1,12 @@
-fastapi==0.128.0
-uvicorn[standard]==0.40.0
-google-genai==1.56.0
-pydantic==2.13.0
+# Версии зафиксированы по фактически проверенному окружению (.venv), а не подобраны:
+# google-adk требует fastapi>=0.133 и google-genai>=2.19, из-за чего сборка Cloud Run
+# на прежних 0.128/1.56 упала с ResolutionImpossible. Прямой путь и ADK-путь прогнаны
+# на этих версиях — 28.08.2026.
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+google-genai==2.20.0
+pydantic==2.13.4
 google-cloud-storage==3.13.1
-python-multipart==0.0.28
+python-multipart==0.0.32
 pdfplumber==0.11.10
 google-adk==2.8.0
