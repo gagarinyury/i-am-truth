@@ -68,9 +68,16 @@ def render(report: dict) -> str:
         L.append(f"| {c.get('away_from_null', 0)} | {c.get('towards_null', 0)} | "
                  f"{c.get('unpredictable', 0)} | {c.get('no_information', 0)} |")
         L.append("")
-        L.append(f"The model's overall direction is **{ds.get('model_overall') or 'not stated'}**; "
-                 f"against its own domains this is **{ds.get('agreement')}**. "
-                 f"{ds.get('note', '')}")
+        WORDS = {
+            "consistent": "which matches where its own domains point",
+            "contradicts": "which is the opposite of where its own domains point",
+            "unsupported": "and the domains favour neither way",
+            "not_comparable": "which is not a direction, so there is nothing to compare",
+            "not_stated": "— it gave none",
+        }
+        L.append(f"The model's overall direction is "
+                 f"**{ds.get('model_overall') or 'not stated'}**, "
+                 f"{WORDS.get(ds.get('agreement'), '')}. {ds.get('note', '')}")
         L.append("")
 
     # 3. Пересчёт функцией

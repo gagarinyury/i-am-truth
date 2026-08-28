@@ -26,7 +26,9 @@ def summarise(findings: dict) -> dict | None:
       `contradicts`  — общее направление противоположно преобладающему;
       `unsupported`  — общее направление названо, но по доменам перевеса нет
                        (поровну или направленных доменов нет вовсе);
-      `not_stated`   — общего направления модель не дала.
+      `not_comparable` — общее направление названо, но оно не направленное
+                       (`unpredictable` / `no_information`), сравнивать не с чем;
+      `not_stated`   — общего направления модель не дала вовсе.
     """
     domains = (findings or {}).get("domains") or []
     if not domains:
@@ -46,7 +48,11 @@ def summarise(findings: dict) -> dict | None:
     dominant = "away_from_null" if a > t else "towards_null" if t > a else None
 
     overall = ((findings or {}).get("overall") or {}).get("direction")
-    if overall not in ("away_from_null", "towards_null"):
+    if overall in ("unpredictable", "no_information"):
+        # Направление названо, но оно не направленное. Это не молчание модели и не
+        # согласие: сравнивать счёт по доменам не с чем.
+        agreement = "not_comparable"
+    elif overall not in ("away_from_null", "towards_null"):
         agreement = "not_stated"
     elif dominant is None:
         agreement = "unsupported"

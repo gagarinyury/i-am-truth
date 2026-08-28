@@ -51,6 +51,12 @@ silent = summarise(f(["away_from_null"], None))
 check("молчание модели — отдельный случай, не согласие",
       silent["agreement"] == "not_stated")
 
+# «unpredictable» — это названное направление, но ненаправленное: сравнивать не с
+# чем, и путать это с молчанием нельзя.
+check("«unpredictable» отличается от молчания",
+      summarise(f(["away_from_null", "towards_null"], "unpredictable"))["agreement"]
+      == "not_comparable")
+
 check("мусорное направление считается отдельно",
       summarise(f(["вверх", "away_from_null"], "away_from_null"))["unclassified"] == 1)
 check("без доменов свод не выдумывается", summarise({"overall": {}}) is None)

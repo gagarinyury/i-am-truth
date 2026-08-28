@@ -272,6 +272,7 @@ function render(d){
       consistent: "the overall direction matches where its own domains point",
       contradicts: "the overall direction is the opposite of where its own domains point",
       unsupported: "an overall direction is claimed, but the domains do not favour either way",
+      not_comparable: "the overall verdict is not a direction, so the count has nothing to compare against",
       not_stated: "no overall direction was given"
     }[ds.agreement] || "";
     h += `<section>
@@ -283,7 +284,7 @@ function render(d){
         <div class="cell"><b>${c2.no_information||0}</b><span>no information</span></div>
       </div>
       <p class="muted" style="margin:12px 0 0">
-        <span class="pill ${cls}">${esc(ds.agreement)}</span> ${esc(words)}.</p>
+        <span class="pill ${cls}">${esc((ds.agreement||"").replace(/_/g," "))}</span> ${esc(words)}.</p>
       <p class="muted" style="margin:8px 0 0">${esc(ds.note)}</p>
     </section>`;
   }

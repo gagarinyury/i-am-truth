@@ -65,7 +65,7 @@ they are put side by side.
 https://i-am-truth-242136767009.us-central1.run.app
 ```
 
-![The audit page: a DOI goes in, the evidence level and what was retrieved come out](docs/img/ui-report.jpg)
+![The audit page: a DOI goes in, the evidence level and what was retrieved come out, then the direction of bias counted across the seven domains](docs/img/ui-report.jpg)
 
 Paste a DOI, or drop the PDF and its appendix if the paper is not open. The page reports,
 in this order: **the evidence level actually reached** and the confidence ceiling that
@@ -84,7 +84,9 @@ same report is downloadable as a one-page Markdown brief at `/audits/<id>/brief.
 the same order as the page: what the audit stands on, where the bias points by a count of
 domains, what the function recomputed, and only then the prose.
 
-![Verification block: 389 numbers confirmed with their label, 2 not found, 0 group inversions](docs/img/ui-verification.jpg)
+![The recomputation block — 9.8919 pp and NNH 10.1 computed by a function, the model's own figures beside them marked "model agrees" — and the verification block: 438 numbers confirmed with their label, 0 not found, 0 group inversions](docs/img/ui-verification.jpg)
+
+![The report on the record: a permanent audit id and a link to the one-page brief](docs/img/ui-record.jpg)
 
 The same audit is available over HTTP:
 
@@ -100,15 +102,26 @@ curl -X POST $URL/analyze \
 
 That DOI is an open-access paper: the service pulls the JATS full text **and 35 appendix
 tables**, runs a seven-domain ROBINS-E assessment across three agents, and back-checks
-every number it reports against the source. Measured on the live service, 28.08:
-**52 seconds, level L1, 598 numbers checked — 478 confirmed together with their label,
-3 unverified, 0 group inversions** (F-51).
+every number it reports against the source. Measured on the live service through the
+browser, 29.08, revision 00013:
+**level L1, 544 numbers checked — 438 confirmed together with their label, 0 unverified,
+0 group inversions**; the absolute risk difference recomputed by a function from the
+2×2 counts (9.8919 pp, NNH 10.1) and agreeing with the model's own figures; and the
+whole thing kept at
+[`/audits/audit-20260828-225453-cefe10`](https://i-am-truth-242136767009.us-central1.run.app/audits/audit-20260828-225453-cefe10).
 
-The earlier figure here read "102 numbers verified". It was not wrong, it was measured
-with a broken ruler: until F-51 a number's label was taken from the JSON path of the
-model's own answer, so almost nothing could match and the verifier was nearly blind.
-Re-measured, not rewritten — the same rule this project applies to other people's
-numbers.
+That same run is also where the direction tally earned its place: the model's overall
+verdict came out `away_from_null` while three of its own domains pointed the other way
+and only two pointed with it. The report says `contradicts` instead of quietly printing
+the verdict.
+
+These figures have been re-measured twice rather than rewritten, and both times the
+reason was a defect in the instrument, not in the audit. First the label of a number was
+taken from the JSON path of the model's own answer, so almost nothing could match and the
+verifier was nearly blind (F-51). Then the marker of a control group was the bare
+substring `control`, which matched `glycemic control` and produced accusations of
+inverted groups where no control arm was mentioned at all — 13 of them, now 0 (F-56).
+The same rule this project applies to other people's numbers.
 
 ### When the paper is not open
 
