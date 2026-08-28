@@ -179,8 +179,9 @@ def gather(doi: str = None, text: str = None, uploads: list = None) -> dict:
         return {"meta": {"found": False, "doi": None}, "source_text": text,
                 "jats_tables": [], "appendix_tables": [],
                 "level": {"level": "L3", **retrieval.LEVELS["L3"],
-                          "note": "текст подан напрямую, уровень определить нельзя — "
-                                  "считаем нижним, пока не доказано обратное"}}
+                          "note": "text supplied directly; the evidence level cannot be "
+                                  "established, so the lowest one is assumed until shown "
+                                  "otherwise"}}
 
     meta = retrieval.lookup(doi)
     source_text, jats, appendix = meta.get("abstract") or "", [], []
@@ -331,11 +332,11 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
                                if c["status"] in ("UNVERIFIED", "GROUP_MISMATCH")][:20],
         "max_confidence": gathered["level"]["max_confidence"],
         "caveat": (None if lvl == "L1" else
-                   "Разбор сделан на неполных данных. Находки этого уровня опираются на "
-                   "общие свойства дизайна, а не на числа из документа: проверять нечего, "
-                   "потому что цитировать нечего. Направление смещения при этом может быть "
-                   "названо верно — но верная догадка не является доказательством, "
-                   "поэтому статус CONFIRMED здесь недостижим (F-44)."),
+                   "This audit ran on incomplete data. Findings at this level rest on "
+                   "generic design properties rather than numbers from the document: "
+                   "there is nothing to verify because there is nothing to quote. The "
+                   "direction of bias may still be named correctly — but a correct guess "
+                   "is not evidence, so CONFIRMED is unreachable here (F-44)."),
         "usage": usage,
         "engine": engine,
     }

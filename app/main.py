@@ -46,18 +46,29 @@ class AnalyzeRequest(BaseModel):
     engine: str = "direct"
 
 
+INDEX = pathlib.Path(__file__).resolve().parent / "static" / "index.html"
+
+
 @app.get("/", response_class=HTMLResponse)
 def root():
-    return f"""<h1>Я есть Правда / I Am Truth</h1>
-<p>Методологический аудит биомедицинских публикаций. Версия {__version__}.</p>
+    """Страница аудита. Один самодостаточный файл — без сборки и без CDN.
+
+    Отчёт нельзя показывать как голый JSON: главное в нём — не текст находок, а
+    **чем они обеспечены**. Уровень доказательности, число проверенных значений и
+    ноль инверсий групп должны читаться раньше формулировок, иначе выводы выглядят
+    убедительнее, чем данные под ними, — ровно та ошибка, которую продукт ищет в
+    чужих статьях.
+    """
+    if INDEX.exists():
+        return INDEX.read_text(encoding="utf-8")
+    # запасной вид, если статика не доехала в образ
+    return f"""<h1>I Am Truth</h1>
+<p>Methodology audit for biomedical papers. Version {__version__}.</p>
 <ul>
-  <li>модель: <code>{critic.MODEL}</code> (Vertex AI, {critic.LOCATION})</li>
-  <li>проект: <code>{critic.PROJECT}</code></li>
-  <li>рубрика разбора: ROBINS-E, семь доменов</li>
+  <li>model: <code>{critic.MODEL}</code> (Vertex AI, {critic.LOCATION})</li>
+  <li>project: <code>{critic.PROJECT}</code></li>
 </ul>
-<p>Интерактивная документация: <a href="/docs">/docs</a></p>
-<pre>curl -X POST $URL/analyze -H 'Content-Type: application/json' \\
-     -d '{{"doi": "10.1136/jitc-2025-014726"}}'</pre>"""
+<p>API docs: <a href="/docs">/docs</a></p>"""
 
 
 @app.get("/health")

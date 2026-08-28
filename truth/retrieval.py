@@ -28,12 +28,12 @@ UA = {"User-Agent": "i-am-truth/0.1 (methodology audit)"}
 # прогонами реален и скрывать его нечестно. Числа из пятибалльной эпохи (до F-32) сюда
 # переносить нельзя — знаменатель изменился, а баллы нет.
 LEVELS = {
-    "L1": {"name": "full-text + приложения", "max_confidence": "CONFIRMED",
-           "measured_score": "5.0-6.0 / 6 (медиана 6.0)"},
-    "L2": {"name": "полный текст без приложений", "max_confidence": "PLAUSIBLE-UNVERIFIED",
-           "measured_score": "4.0-5.0 / 6 (медиана 4.5)"},
-    "L3": {"name": "только абстракт", "max_confidence": "PLAUSIBLE-UNVERIFIED",
-           "measured_score": "3.5-4.0 / 6 (медиана 4.0)"},
+    "L1": {"name": "full text + appendix tables", "max_confidence": "CONFIRMED",
+           "measured_score": "5.0-6.0 / 6 (median 6.0)"},
+    "L2": {"name": "full text, no appendices", "max_confidence": "PLAUSIBLE-UNVERIFIED",
+           "measured_score": "4.0-5.0 / 6 (median 4.5)"},
+    "L3": {"name": "abstract only", "max_confidence": "PLAUSIBLE-UNVERIFIED",
+           "measured_score": "3.5-4.0 / 6 (median 4.0)"},
 }
 
 
@@ -82,7 +82,7 @@ def assess_level(meta: dict, has_fulltext: bool, has_appendix: bool) -> dict:
         lvl = "L3"
     out = {"level": lvl, **LEVELS[lvl]}
     if lvl != "L1":
-        out["missing"] = ("таблицы приложения — без них разбор опирается на общие "
-                          "свойства дизайна, а не на числа из статьи, и проверить его "
-                          "нечем (F-44)")
+        out["missing"] = ("appendix tables — without them the audit rests on generic "
+                          "design properties rather than numbers from this paper, and "
+                          "there is nothing to check it against (F-44)")
     return out
