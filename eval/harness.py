@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eval-харнес проекта «Я есть Правда».
+Eval-харнес проекта «Я Правда».
 
 Задача: воспроизводимо померить, насколько модель самостоятельно воспроизводит
 экспертный методологический разбор, и как на это влияет объём поданных данных
@@ -314,7 +314,7 @@ def cmd_report(args):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="eval-харнес «Я есть Правда»")
+    ap = argparse.ArgumentParser(description="eval-харнес «Я Правда»")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("run", help="прогнать модели по входам и оценить")

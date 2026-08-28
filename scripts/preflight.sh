@@ -14,7 +14,7 @@ pass() { say "$1" "✅ $2"; ok=$((ok+1)); }
 fail() { say "$1" "❌ $2"; bad=$((bad+1)); }
 warn() { say "$1" "⚠️  $2"; }
 
-echo "=== preflight «Я есть Правда» ==="
+echo "=== preflight «Я Правда» ==="
 
 # 1. ADC — критично: определяет, ЧЕЙ кредит тратится (правило из ~/.claude/CLAUDE.md)
 TOKEN=$(gcloud auth application-default print-access-token 2>/dev/null)

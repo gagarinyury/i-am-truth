@@ -1,4 +1,4 @@
-# I Am Truth · Я есть Правда
+# I Am Truth · Я Правда
 
 **An agent that audits the methodology of biomedical papers — and reports how much of
 that audit it was actually able to ground in the data.**
