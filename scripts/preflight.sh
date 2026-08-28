@@ -3,8 +3,11 @@
 # Ловит ровно те грабли, на которых проект уже спотыкался (см. docs/02-verified-facts.md).
 set -uo pipefail
 
-PROJECT="merci-prod"
-EXPECTED_ADC="yurcheg13@gmail.com"
+# Кто и куда: задаются локально, чтобы личная почта не уезжала в публичный репозиторий.
+# Положить рядом .preflight.env (в .gitignore) или экспортировать перед запуском.
+[ -f "$(dirname "$0")/.preflight.env" ] && . "$(dirname "$0")/.preflight.env"
+PROJECT="${TRUTH_PROJECT:-merci-prod}"
+EXPECTED_ADC="${TRUTH_ADC:-}"
 ok=0; bad=0
 say()  { printf '%-46s %s\n' "$1" "$2"; }
 pass() { say "$1" "✅ $2"; ok=$((ok+1)); }
@@ -20,7 +23,9 @@ if [ -z "$TOKEN" ]; then
 else
   ADC_EMAIL=$(curl -s "https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=$TOKEN" \
               | python3 -c 'import sys,json; print(json.load(sys.stdin).get("email",""))' 2>/dev/null)
-  if [ "$ADC_EMAIL" = "$EXPECTED_ADC" ]; then
+  if [ -z "$EXPECTED_ADC" ]; then
+    warn "ADC identity" "$ADC_EMAIL (ожидаемый не задан — TRUTH_ADC в scripts/.preflight.env)"
+  elif [ "$ADC_EMAIL" = "$EXPECTED_ADC" ]; then
     pass "ADC identity" "$ADC_EMAIL"
   else
     fail "ADC identity" "$ADC_EMAIL (ожидался $EXPECTED_ADC — иначе кредиты сгорают впустую)"

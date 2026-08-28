@@ -8,3 +8,5 @@ venv/
 
 .claude/settings.local.json
 .claude/hooks/
+
+scripts/.preflight.env

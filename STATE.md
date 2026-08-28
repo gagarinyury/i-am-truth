@@ -9,7 +9,7 @@
 
 ## Что уже эмпирически доказано (не гипотеза, а факт)
 
-27.08.2026, Gemini 2.5 Pro на Vertex (`merci-prod`, `us-central1`, ADC `yurcheg13`,
+27.08.2026, Gemini 2.5 Pro на Vertex (`merci-prod`, `us-central1`, ADC рабочего аккаунта,
 эндпоинт `v1beta1`), тест на McDonald et al. (GLP-1 и рак груди, JCO Oncology Practice 2026)
 против собственного экспертного разбора из 5 пунктов:
 
@@ -78,7 +78,7 @@ Layer 6 — Report Synth: финальный отчёт в духе Letter-to-th
   с ретраями) + Cloud Workflows (если многошаговая оркестрация между сервисами) —
   свою очередь/шедулер не писать.
 
-- **Vertex AI Search / Agent Builder** — есть Trial-кредит €855 на аккаунте `yurcheg13`
+- **Vertex AI Search / Agent Builder** — есть Trial-кредит €855 на рабочем аккаунте
   (действует до мая 2027, только под этот продукт). Проверено по документации 27.08.2026,
   уточнено 27.08.2026 (второй заход) — важно различать два сценария:
   - **Сценарий А (плохой):** заливать сырые PDF и доверять OCR/layout-parser Google
@@ -174,7 +174,7 @@ SciScore (reporting-чеклисты, не количественный пере
 
 ## Проверенные факты о моделях (27.08.2026, живой вызов Vertex, не по памяти)
 
-ADC = `yurcheg13@gmail.com`, проект `merci-prod`, эндпоинт `v1beta1`.
+ADC = рабочий аккаунт проекта, проект `merci-prod`, эндпоинт `v1beta1`.
 
 Список `publishers/google/models` по регионам:
 - **Pro-линейка обрывается на `gemini-3.1-pro-preview`** (us-central1 и global) —

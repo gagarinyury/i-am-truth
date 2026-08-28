@@ -53,7 +53,7 @@ curl -s -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
 
 **Дата:** 2026-08-27 · **Способ:** `tokeninfo` + `gcloud config list`
 
-- ADC email: **yurcheg13@gmail.com** ✅ (правильный — см. правило про кредиты в CLAUDE.md)
+- ADC email: **рабочий аккаунт проекта** ✅ (правильный — см. правило про кредиты в CLAUDE.md)
 - Активный проект: **merci-prod**
 - Эндпоинт, на котором всё работает: **`v1beta1`** (подтверждает старый факт из памяти)
 - Включённые API в merci-prod: `aiplatform`, `bigquery*`, `storage*`, `datastore`,
@@ -152,7 +152,7 @@ r = c.models.generate_content(model="gemini-3.7-flash", contents="Reply with exa
 ## F-10 · Preflight зелёный на 2026-08-27
 
 **Способ:** `bash scripts/preflight.sh` — 10/10 проверок пройдено.
-ADC `yurcheg13@gmail.com`, проект `merci-prod`, `gemini-3.7-flash` в каталоге и отвечает,
+ADC рабочий аккаунт проекта, проект `merci-prod`, `gemini-3.7-flash` в каталоге и отвечает,
 Pro ≥3.5 по-прежнему нет (D-01 в силе), вход A чист от appendix-чисел.
 До дедлайна на момент проверки — **104 часа**.
 
