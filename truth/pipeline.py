@@ -22,6 +22,9 @@ import zipfile
 from . import critic, retrieval
 from .docx_tables import extract as extract_docx
 from .jats_tables import parse_tables, to_claims
+from .pdf_tables import extract as extract_pdf
+from .pdf_tables import extract_text as pdf_text
+from .pdf_tables import has_text_layer, is_appendix
 from .stats_tool import TwoByTwo
 from .verify_numbers import verify
 
@@ -53,6 +56,17 @@ def _supplementary_text(blob: bytes) -> str:
     return "\n".join(out)
 
 
+def _docx_text(blob: bytes) -> str:
+    """Плоский текст одиночного .docx. Отличается от `_supplementary_text` тем,
+    что там на входе zip-архив приложений Europe PMC, а здесь сам документ."""
+    try:
+        z = zipfile.ZipFile(io.BytesIO(blob))
+        xml = z.read("word/document.xml").decode("utf-8", "replace")
+    except Exception:                                        # noqa: BLE001
+        return ""
+    return re.sub(r"<[^>]+>", " ", xml)
+
+
 def _tables_from_supplementary(blob: bytes) -> list:
     """Приложения Europe PMC приходят zip'ом; текстовые внутри — .docx (F-22)."""
     tables = []
@@ -81,8 +95,79 @@ def _tables_from_supplementary(blob: bytes) -> list:
     return tables
 
 
-def gather(doi: str = None, text: str = None) -> dict:
-    """Шаги 1-2: достать что можно и определить уровень."""
+def _from_uploads(uploads: list) -> dict:
+    """Путь B: статья принесена пользователем файлами.
+
+    Нужен потому, что автоматически достаётся около 55% статей (F-25), а остальное
+    закрыто Cloudflare или TDM-токеном. При этом человеку та же статья обычно
+    доступна — по подписке или как bronze OA, который просто не отдаётся скрипту.
+    Файл от пользователя доводит такую статью до того же уровня, что открытую.
+
+    uploads — список (имя, байты). Принимаются .pdf и .docx: первый формат — то,
+    как статью видит человек, второй — то, как приходят приложения из Europe PMC.
+    """
+    texts, main, appendix, notes = [], [], [], []
+    for name, blob in uploads:
+        low = name.lower()
+        with tempfile.NamedTemporaryFile(
+                suffix=".pdf" if low.endswith(".pdf") else ".docx", delete=False) as fh:
+            fh.write(blob)
+            tmp = fh.name
+        try:
+            if low.endswith(".pdf"):
+                if not has_text_layer(tmp):
+                    # Скан без текстового слоя: таблиц из него не достать ничем,
+                    # кроме OCR. Молчать об этом нельзя — иначе пустой разбор
+                    # выглядел бы как «в статье ничего не нашлось».
+                    notes.append(f"{name}: нет текстового слоя, нужен OCR — файл пропущен")
+                    continue
+                texts.append(pdf_text(tmp))
+                for t in extract_pdf(tmp):
+                    t["source_file"] = name
+                    (appendix if is_appendix(t) else main).append(t)
+            elif low.endswith(".docx"):
+                for t in extract_docx(tmp):
+                    t["source_file"] = name
+                    # .docx у издателей — это почти всегда приложение (F-22)
+                    appendix.append(t)
+                texts.append(_docx_text(blob))
+            else:
+                notes.append(f"{name}: формат не поддержан, нужен .pdf или .docx")
+        except Exception as e:                               # noqa: BLE001
+            notes.append(f"{name}: {type(e).__name__}")
+        finally:
+            os.unlink(tmp)
+    return {"text": "\n\n".join(t for t in texts if t),
+            "main": main, "appendix": appendix, "notes": notes}
+
+
+def gather(doi: str = None, text: str = None, uploads: list = None) -> dict:
+    """Шаги 1-2: достать что можно и определить уровень.
+
+    Три входа, один порядок: принесённые файлы (путь B) сильнее автоматической
+    добычи, потому что дают то, что за платным доступом; DOI используется вместе
+    с ними — ради метаданных и на случай, если приложения лежат в Europe PMC.
+    """
+    if uploads:
+        got = _from_uploads(uploads)
+        meta = retrieval.lookup(doi) if doi else {"found": False, "doi": doi}
+        src = got["text"] or (meta.get("abstract") or "")
+        # приложения могут прийти из Europe PMC, даже когда основной текст принесён
+        if doi and meta.get("in_epmc") and meta.get("pmcid") and meta.get("has_supplementary") \
+                and not got["appendix"]:
+            try:
+                blob = retrieval.fetch_supplementary(meta["pmcid"])
+                got["appendix"] = _tables_from_supplementary(blob)
+                src += "\n\n" + _supplementary_text(blob)
+            except Exception:                                # noqa: BLE001
+                pass
+        level = retrieval.assess_level(meta, bool(got["text"]), bool(got["appendix"]))
+        level["source"] = "файлы пользователя (путь B)"
+        if got["notes"]:
+            level["upload_notes"] = got["notes"]
+        return {"meta": meta, "source_text": src, "jats_tables": got["main"],
+                "appendix_tables": got["appendix"], "level": level}
+
     if text and not doi:
         return {"meta": {"found": False, "doi": None}, "source_text": text,
                 "jats_tables": [], "appendix_tables": [],
@@ -167,8 +252,9 @@ def verify_findings(findings: dict, source_text: str) -> dict:
     return verify(uniq, source_text)
 
 
-def run(doi: str = None, text: str = None, prompt: str = None) -> dict:
-    gathered = gather(doi=doi, text=text)
+def run(doi: str = None, text: str = None, prompt: str = None,
+        uploads: list = None) -> dict:
+    gathered = gather(doi=doi, text=text, uploads=uploads)
     paper = gathered["source_text"]
     tbl = tables_as_text(gathered)
     if tbl:

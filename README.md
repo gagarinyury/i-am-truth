@@ -64,6 +64,26 @@ tables**, runs a seven-domain ROBINS-E assessment, and back-checks every number 
 reports against the source. Measured: 34 seconds, level L1, 102 numbers verified,
 0 invalid (F-36).
 
+### When the paper is not open
+
+Automatic retrieval reaches about 55% of papers in this class; the rest sits behind
+Cloudflare or a publisher's TDM token, and we do not work around site protection. But a
+paper unavailable to a script is usually available to a person. So it can be handed over
+directly:
+
+```bash
+curl -X POST $URL/analyze/upload \
+     -F "files=@paper.pdf" -F "files=@appendix.pdf" \
+     -F "doi=10.1200/OP-26-00485R1"
+```
+
+Several files are accepted because most journals ship the appendix separately — and the
+appendix is what raises the level to L1. `doi` is optional; with it, metadata is filled
+in and, if Europe PMC happens to hold the supplement, it is added to what you brought.
+
+Validated against path A on a paper reachable both ways: same level (L1), same tables
+(5 main + 2 appendix), 0 unverified numbers on both.
+
 Interactive API docs: `$URL/docs`.
 
 ---
@@ -107,6 +127,7 @@ evaluation inputs.
 | `GET /health` | liveness, version, active model |
 | `GET /levels` | the three evidence levels with their **measured** cost |
 | `POST /analyze` | `{"doi": "..."}` or `{"text": "..."}` → full report |
+| `POST /analyze/upload` | the paper as files (`.pdf` / `.docx`) → same report, **path B** |
 | `GET /runs` | batch runs completed by the Cloud Run Job |
 | `GET /runs/{run_id}` | one run's summary: level distribution, verification statistics |
 
@@ -189,7 +210,7 @@ Full diagram with rationale: `docs/07-architecture.md`.
 |---|---|---|
 | 0 | `truth/pipeline.py` | orchestration, DOI → report |
 | 1 | `truth/retrieval.py` | Europe PMC, appendix files, Unpaywall fallback, level assessment |
-| 2 | `truth/jats_tables.py`, `truth/docx_tables.py` | structural table parsing — colspan/rowspan, compound headers |
+| 2 | `truth/jats_tables.py`, `truth/docx_tables.py`, `truth/pdf_tables.py` | structural table parsing — colspan/rowspan, compound headers, PDF tables via pdfplumber |
 | 3 | `truth/critic.py` | Gemini 3.7 Flash on Vertex, ROBINS-E prompt, seven domains |
 | 4 | `truth/verify_numbers.py` | every reported number checked back against the source |
 | 5 | `truth/stats_tool.py` | E-value, ARR, NNT, RR with CI — computed, never generated |
@@ -248,7 +269,7 @@ mechanism demonstrated in detail, not a population estimate — see `docs/03-ope
 | `truth/` | the product: pipeline, retrieval, parsers, critic, verifier, stats, batch |
 | `app/` | FastAPI service |
 | `eval/` | measurement harness, ground truth, inputs, run results |
-| `tests/` | parallel-isolation test, including a static check against fixed temp paths |
+| `tests/` | parallel isolation; regression on comparison signs vs. markup (F-41) |
 | `docs/` | facts, decisions, open questions, architecture *(Russian)* |
 | `STATE.md` | design intent, layer architecture, next step |
 | `TODO.md` | remaining work to submission, each item with its argument |

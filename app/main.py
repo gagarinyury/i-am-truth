@@ -8,13 +8,14 @@ HTTP-сервис «Я есть Правда».
   GET  /            статус сервиса и конфигурация — годится как пруф деплоя
   GET  /health      проверка живости
   POST /analyze     разбор статьи: {"doi": "..."} или {"text": "..."}
+  POST /analyze/upload  разбор принесённых файлов (.pdf/.docx) — путь B
   GET  /levels      описание уровней доказательности с измеренными ценами
 """
 import os
 import pathlib
 import sys
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
@@ -76,6 +77,43 @@ def analyze(req: AnalyzeRequest):
         raise HTTPException(400, "нужен doi или text")
     try:
         return pipeline.run(doi=req.doi, text=req.text, prompt=PROMPT)
+    except Exception as e:                                   # noqa: BLE001
+        raise HTTPException(500, f"{type(e).__name__}: {e}"[:500])
+
+
+# Предел на файл. Статья с приложением — единицы мегабайт; 25 МБ с запасом
+# перекрывает виденное (самый тяжёлый PDF в проверках — 5.9 МБ) и не даёт
+# положить контейнер одним запросом.
+MAX_UPLOAD = 25 * 1024 * 1024
+
+
+@app.post("/analyze/upload")
+async def analyze_upload(files: list[UploadFile] = File(...),
+                         doi: str | None = Form(None)):
+    """Путь B: статья принесена пользователем.
+
+    Существует потому, что автоматическая добыча берёт около 55% статей класса
+    (F-25) — остальное закрыто Cloudflare или TDM-токеном издателя. Человеку та же
+    статья, как правило, доступна. Принимаются .pdf (как видит статью человек) и
+    .docx (как приходят приложения). Файлов может быть несколько: у большинства
+    журналов приложение лежит отдельным файлом, а именно оно поднимает уровень
+    до L1 — см. замер F-26.
+
+    `doi` необязателен: с ним подтягиваются метаданные и, если приложения есть в
+    Europe PMC, они добавляются к принесённому тексту.
+    """
+    uploads = []
+    for f in files:
+        blob = await f.read()
+        if len(blob) > MAX_UPLOAD:
+            raise HTTPException(413, f"{f.filename}: больше {MAX_UPLOAD // 1024 // 1024} МБ")
+        if not blob:
+            raise HTTPException(400, f"{f.filename}: пустой файл")
+        uploads.append((f.filename or "file", blob))
+    if not uploads:
+        raise HTTPException(400, "нужен хотя бы один файл")
+    try:
+        return pipeline.run(doi=doi, prompt=PROMPT, uploads=uploads)
     except Exception as e:                                   # noqa: BLE001
         raise HTTPException(500, f"{type(e).__name__}: {e}"[:500])
 
