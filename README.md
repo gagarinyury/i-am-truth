@@ -74,9 +74,16 @@ curl -X POST $URL/analyze \
 ```
 
 That DOI is an open-access paper: the service pulls the JATS full text **and 35 appendix
-tables**, runs a seven-domain ROBINS-E assessment, and back-checks every number it
-reports against the source. Measured: 34 seconds, level L1, 102 numbers verified,
-0 invalid (F-36).
+tables**, runs a seven-domain ROBINS-E assessment across three agents, and back-checks
+every number it reports against the source. Measured on the live service, 28.08:
+**52 seconds, level L1, 598 numbers checked — 478 confirmed together with their label,
+3 unverified, 0 group inversions** (F-51).
+
+The earlier figure here read "102 numbers verified". It was not wrong, it was measured
+with a broken ruler: until F-51 a number's label was taken from the JSON path of the
+model's own answer, so almost nothing could match and the verifier was nearly blind.
+Re-measured, not rewritten — the same rule this project applies to other people's
+numbers.
 
 ### When the paper is not open
 
@@ -342,7 +349,7 @@ reproducible with one command (F-48).
 | R2 | Google agent framework | `google-genai` SDK 1.56.0; the same audit is also expressed as a **Google ADK** graph (`truth/adk_agent.py`) |
 | R3 | Google Cloud service | Cloud Run + Cloud Run Jobs + GCS |
 | R4 | Backend running in the cloud | live `.run.app` URL above |
-| R5 | Background work over data | Cloud Run Job, 8/8 papers, 232 numbers verified |
+| R5 | Background work over data | Cloud Run Job, 8/8 papers, 517 numbers checked, 3 unverified |
 
 ---
 

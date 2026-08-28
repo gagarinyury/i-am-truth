@@ -184,8 +184,8 @@ from 3.5 with a single critic, and deliberately not the 6.0 it reaches on a prep
 where the numbers already sit side by side. We report the real-file number, since
 inflating a score is the exact failure this project exists to detect.
 
-**It runs in the cloud, unattended.** The last batch: 8 papers, 8 successes, 232 numbers
-verified. All eight came back L3 — which is not a malfunction. It is the system refusing
+**It runs in the cloud, unattended.** The last batch: 8 papers, 8 successes, 517 numbers
+checked against their sources, 3 of them not found. All eight came back L3 — which is not a malfunction. It is the system refusing
 to call anything confirmed when it only read an abstract.
 
 ## What we learned
