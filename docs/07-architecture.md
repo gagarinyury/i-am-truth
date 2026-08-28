@@ -46,8 +46,12 @@ flowchart LR
     JATS --> L3
     DOCX --> L3
 
-    L3["<b>L3 · critic.py</b><br/>Gemini 3.7 Flash<br/>Vertex AI · global<br/>ROBINS-E, 7 доменов<br/>temperature 0"]
+    subgraph L3G["L3 · разбор моделью — два прохода параллельно"]
+        L3["<b>critic.py</b><br/>Gemini 3.7 Flash · Vertex<br/>ROBINS-E, 7 доменов"]
+        SUB["<b>subagents.py</b><br/>сопоставимость групп<br/>таблица характеристик<br/>тест на противоречие"]
+    end
     L3 --> L4
+    SUB --> L4
     L4["<b>L4 · verify_numbers.py</b><br/>каждое число —<br/>обратно в источник<br/>сверка меток групп<br/>→ GROUP_MISMATCH"]
     L4 --> L5
     L5["<b>L5 · stats_tool.py</b><br/>E-value, ARR, NNT, RR CI<br/><i>вычисляются,<br/>не генерируются</i>"]
@@ -66,6 +70,7 @@ flowchart LR
     end
 
     style L3 fill:#e8f0fe,stroke:#4285f4,stroke-width:2px
+    style SUB fill:#e8f0fe,stroke:#4285f4,stroke-width:2px
     style L4 fill:#fce8e6,stroke:#ea4335,stroke-width:2px
     style L5 fill:#e6f4ea,stroke:#34a853,stroke-width:2px
     style OUT fill:#fef7e0,stroke:#fbbc04,stroke-width:2px
@@ -156,8 +161,10 @@ full-text для 27.5%, и там, где отдаёт, приложения п�
 
 - **ADK-обёртки нет.** Требование R2 закрыто через `google-genai` SDK; оркестратор
   свой (`pipeline.py`). Переход на ADK — резерв Р-1 в `TODO.md`.
-- **Суб-агентов нет.** Замер даёт прямой аргумент за них (F-26: при росте объёма входа
-  проседает отдельный пункт P4), но в текущей сборке критик один.
+- **Суб-агент один, и это осознанно.** `baseline_comparability` заведён потому, что
+  замер показал воспроизводимый провал основного критика на конкретном пункте — 0.0 в
+  трёх прогонах из трёх — и его появление подняло медиану с 3.5 до 5.5 (F-45). Для
+  остальных шести доменов такого провала не измерено, поэтому суб-агентов для них нет.
 - **Memory Bank не подключён** — Q-11 открыт.
 - **Document AI не подключён и не понадобился.** Q-08 закрыт иначе: pdfplumber (MIT)
   разбирает таблицы текстовых PDF локально и бесплатно. Для сканов без текстового слоя

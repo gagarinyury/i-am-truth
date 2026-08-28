@@ -34,8 +34,11 @@ the abstract. So the honest statement is not "each step up helps a little" — i
 
 **And the honest caveat.** Those three inputs are prepared documents, where the relevant
 appendix numbers sit next to each other. Run the same system end-to-end on the
-**published 10-page PDF** and it scores **3.5–4.5 / 6 (median 3.5)** across three runs —
-lower, because the numbers now have to be *found* before they can be reasoned about.
+**published 10-page PDF** and a single critic scored **3.5–4.5 / 6 (median 3.5)** across
+three runs — lower, because the numbers now have to be *found* before they can be
+reasoned about. Adding one narrow sub-agent for baseline comparability took that to
+**5.0–6.0 / 6 (median 5.5)**, and the point it was built for went from 0.0 in every run
+to 1.0 in every run (F-45).
 What survives on the real file is the part that matters most: the appendix imbalance is
 caught with the **correct direction** every time, and the verdict matches the human
 expert's word for word (`real_association_explained_by_selection`). What does not
@@ -227,7 +230,7 @@ Full diagram with rationale: `docs/07-architecture.md`.
 | 0 | `truth/pipeline.py` | orchestration, DOI → report |
 | 1 | `truth/retrieval.py` | Europe PMC, appendix files, Unpaywall fallback, level assessment |
 | 2 | `truth/jats_tables.py`, `truth/docx_tables.py`, `truth/pdf_tables.py` | structural table parsing — colspan/rowspan, compound headers, PDF tables via pdfplumber |
-| 3 | `truth/critic.py` | Gemini 3.7 Flash on Vertex, ROBINS-E prompt, seven domains |
+| 3 | `truth/critic.py`, `truth/subagents.py` | two parallel passes: ROBINS-E across seven domains, and a narrow baseline-comparability agent |
 | 4 | `truth/verify_numbers.py` | every reported number checked back against the source |
 | 5 | `truth/stats_tool.py` | E-value, ARR, NNT, RR with CI — computed, never generated |
 | 6 | `app/main.py`, `truth/batch.py` | Cloud Run service and Cloud Run Job |
@@ -239,6 +242,13 @@ itself is asking the same process for a second opinion. Layer 4 takes each numbe
 model wrote, finds it in the retrieved source with its surrounding context, and compares
 group labels — which is how it catches an inverted direction (`GROUP_MISMATCH`), not
 just an invented value.
+
+**A sub-agent exists only where the measurement demands one.** One expert point was
+never reached by the single critic on the real file — the paradox that the GLP-1 arm was
+sicker and yet had fewer cancers. Not because the model cannot reason it out, but because
+one call cannot both survey seven domains and lay two distant numbers side by side. A
+second pass that does nothing but read the baseline table fixed it in every run. The
+other six domains got no sub-agent, because they show no such failure.
 
 **Statistics are computed, never generated.** E-value, absolute risk reduction, NNT and
 confidence intervals come from `stats_tool.py`, which self-tests on import. The model is

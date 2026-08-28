@@ -76,7 +76,9 @@ instead: `POST /analyze/upload` takes PDFs and .docx and reaches the same L1.
 
 ## How we built it
 
-- **Gemini 3.7 Flash** on **Vertex AI**, `global` endpoint, temperature 0.
+- **Gemini 3.7 Flash** on **Vertex AI**, `global` endpoint, temperature 0 — two parallel
+  passes per paper: a ROBINS-E critic across seven domains, and a narrow sub-agent that
+  reads nothing but the baseline characteristics table.
 - **google-genai SDK** 1.56.0.
 - **Cloud Run** for the synchronous service, **Cloud Run Jobs** for unattended batch
   work over a corpus, **GCS** for results — one object per paper, so a single failure
@@ -94,6 +96,14 @@ itself is asking the same process for a second opinion. A separate layer takes e
 number the model wrote, locates it in the retrieved source with its surrounding context,
 and compares group labels — so it catches not only an invented value (`UNVERIFIED`) but
 a real value attached to the wrong group (`GROUP_MISMATCH`).
+
+**Sub-agents are added where a measurement demands one, not by default.** On the real
+PDF the single critic never reached one expert point in three runs: that the exposed arm
+was sicker at baseline (Charlson 5+: 19.7% vs 10.4%) and still had fewer cancers. One
+call cannot both survey seven domains and put two distant numbers side by side. A second
+pass doing only the baseline table reached it in three runs out of three, and lifted the
+overall score from a median of 3.5 to 5.5. The remaining six domains have no sub-agent,
+because they show no comparable failure.
 
 **Statistics are computed, never generated.** E-value, absolute risk reduction, NNT and
 confidence intervals come from a function that self-tests on import. The model is never
@@ -144,10 +154,10 @@ rather than quietly corrected.
 it reports, and returns the same verdict the human expert reached —
 `real_association_explained_by_selection`. It catches the appendix imbalance with the
 correct direction in all three runs, the same direction it gets *wrong* when given only
-the abstract. It scores 3.5–4.5 / 6 against the expert reference — lower than the 6.0 it
-scores on a prepared input, because on the real file the numbers must be found before
-they can be reasoned about. We report the lower number, since inflating a score is the
-exact failure this project exists to detect.
+the abstract. Against the expert reference it scores **5.0–6.0 / 6, median 5.5** — up from a median of
+3.5 before we added a second, narrow agent, and still below the 6.0 it reaches on a
+prepared input where the numbers already sit side by side. We report the real-file
+number, since inflating a score is the exact failure this project exists to detect.
 
 **It runs in the cloud, unattended.** The last batch: 8 papers, 8 successes, 232 numbers
 verified. All eight came back L3 — which is not a malfunction. It is the system refusing
@@ -173,9 +183,9 @@ verified in both directions.
 
 ## What's next
 
-Sub-agents per ROBINS-E domain — the measurement already argues for them: when the input
-grows, attention on an individual point degrades. A second reference paper, because
-calibration currently rests on one. And OCR for scanned PDFs, which the system today
+More sub-agents — but only where a measurement shows the single critic failing, the way
+it did for baseline comparability. A second reference paper, because calibration
+currently rests on one. And OCR for scanned PDFs, which the system today
 declines honestly rather than pretending to read.
 
 ---

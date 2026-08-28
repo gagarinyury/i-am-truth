@@ -13,13 +13,14 @@ Layer 0 — оркестратор. Сквозной путь от DOI или т
 находки не могут получить статус CONFIRMED — это следует из замера F-26, где
 ошибка направления confounding держалась на обоих нижних уровнях.
 """
+import concurrent.futures as cf
 import io
 import os
 import re
 import tempfile
 import zipfile
 
-from . import critic, retrieval
+from . import critic, retrieval, subagents
 from .docx_tables import extract as extract_docx
 from .jats_tables import parse_tables, to_claims
 from .pdf_tables import extract as extract_pdf
@@ -243,9 +244,13 @@ def verify_findings(findings: dict, source_text: str) -> dict:
             for v in node:
                 walk(v, label, root)
         elif isinstance(node, str):
-            # число целиком, вместе с разделителями разрядов: «3,609» и «151 691»
-            # иначе regex рвёт их на куски и они не находятся в источнике
-            for raw in re.findall(r"\d{1,3}(?:[  ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?", node):
+            # Число целиком, вместе с разделителями разрядов: «3,609» и «151 691» —
+            # иначе regex рвёт их на куски и они не находятся в источнике.
+            # Ведущая точка тоже часть числа: в статьях сплошь «P < .0001», и без
+            # этой альтернативы из него выдёргивалось «0001», которого в тексте нет
+            # как отдельного числа, — модель получала UNVERIFIED за точную цитату.
+            for raw in re.findall(
+                    r"\d{1,3}(?:[  ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+", node):
                 num = raw.replace(",", "").replace(" ", "").replace("\u00a0", "")
                 claims.append({"value": num, "label": label or node[:60]})
     walk(findings or {})
@@ -266,8 +271,22 @@ def run(doi: str = None, text: str = None, prompt: str = None,
     if tbl:
         paper = f"{paper}\n\n## ТАБЛИЦЫ\n\n{tbl}"
 
-    result = critic.critique(paper[:400000], prompt, pdfs=gathered.get("pdfs"))
+    # Два прохода по одному документу идут параллельно: основной критик по семи
+    # доменам и суб-агент по сопоставимости групп. Параллельно, а не последовательно,
+    # потому что суб-агент не зависит от вывода критика — он смотрит в тот же
+    # документ под другим углом. Два вызова Vertex одновременно укладываются в лимит
+    # (429 начинается с пятого подряд, F-11), у каждого свой backoff.
+    with cf.ThreadPoolExecutor(max_workers=2) as ex:
+        f_main = ex.submit(critic.critique, paper[:400000], prompt,
+                           pdfs=gathered.get("pdfs"))
+        f_base = ex.submit(subagents.baseline_comparability, paper[:400000],
+                           gathered.get("pdfs"))
+        result = f_main.result()
+        baseline = f_base.result()
+
     findings = result.get("findings")
+    if findings:
+        findings = subagents.merge_into_confounding(findings, baseline)
 
     ver = verify_findings(findings, gathered["source_text"]) if findings else None
 
@@ -290,4 +309,9 @@ def run(doi: str = None, text: str = None, prompt: str = None,
                    "названо верно — но верная догадка не является доказательством, "
                    "поэтому статус CONFIRMED здесь недостижим (F-44)."),
         "usage": result.get("usage"),
+        "agents": {
+            "critic_robins_e": result.get("usage"),
+            "subagent_baseline_comparability": (baseline or {}).get("_usage")
+                                               or {"error": (baseline or {}).get("error")},
+        },
     }
