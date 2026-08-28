@@ -140,7 +140,7 @@ evaluation inputs.
 | `GET /` | service status and live configuration — doubles as deployment proof |
 | `GET /health` | liveness, version, active model |
 | `GET /levels` | the three evidence levels with their **measured** cost |
-| `POST /analyze` | `{"doi": "..."}` or `{"text": "..."}` → full report |
+| `POST /analyze` | `{"doi": "..."}` or `{"text": "..."}` → full report; `"engine": "adk"` runs the same audit as a Google ADK graph |
 | `POST /analyze/upload` | the paper as files (`.pdf` / `.docx`) → same report, **path B** |
 | `GET /runs` | batch runs completed by the Cloud Run Job |
 | `GET /runs/{run_id}` | one run's summary: level distribution, verification statistics |
@@ -254,6 +254,15 @@ other six domains got no sub-agent, because they show no such failure.
 confidence intervals come from `stats_tool.py`, which self-tests on import. The model is
 never asked to do arithmetic.
 
+**Two orchestrations, and we publish the comparison.** The default path orchestrates in
+plain code. `truth/adk_agent.py` expresses the same audit as a Google ADK
+`ParallelAgent`, where the two agents additionally get *tools* — the risk calculator and
+a source-checker they can call mid-reasoning, instead of learning about a bad number
+afterwards from layer 4. Measured over three runs each, both reach a **median of 5.5/6**;
+ADK's spread is tighter and its wall-clock is twice as long. So ADK is available via
+`engine: "adk"` and is **not** the default: making it the default for the sake of a line
+in a submission would sell as an improvement something we measured as a tie (F-46).
+
 ---
 
 ## Reproduce the measurements
@@ -271,8 +280,18 @@ The harness scores model output against an expert ground truth
 what the model found *beyond* the reference as well. Method and its limitations:
 `eval/README.md`.
 
-**The honest limitation:** the calibration rests on a single reference paper. It is a
-mechanism demonstrated in detail, not a population estimate — see `docs/03-open-questions.md`, Q-01.
+**The honest limitation, now measured instead of guessed.** The calibration used to rest
+on a single reference written by this project's own author. A second reference was added
+from an outside source — a published letter to the editor (`10.1111/1753-0407.70202`)
+criticising a different GLP-1/cancer cohort study, with the authors' reply printed
+alongside it. Against our own reference the system scores **92%** (5.5/6). Against the
+external one it scores **25%** (1.0/4), stably across three runs.
+
+The gap is not noise, and the per-point breakdown says why: the second paper's defects
+are *time-related* — no lag period, latency shorter than follow-up, a duration gradient
+pointing the wrong way for causation — and the system is built around confounding and
+group comparability. It handles what it was tuned on and misses a neighbouring class.
+That number belongs in the README, not in a footnote (F-47).
 
 ---
 
@@ -281,7 +300,7 @@ mechanism demonstrated in detail, not a population estimate — see `docs/03-ope
 | # | Requirement | How |
 |---|---|---|
 | R1 | Gemini 3.5+ | `gemini-3.7-flash` on Vertex AI (Pro line stops at 3.1 — F-01) |
-| R2 | Google agent framework | `google-genai` SDK 1.56.0 |
+| R2 | Google agent framework | `google-genai` SDK 1.56.0; the same audit is also expressed as a **Google ADK** graph (`truth/adk_agent.py`) |
 | R3 | Google Cloud service | Cloud Run + Cloud Run Jobs + GCS |
 | R4 | Backend running in the cloud | live `.run.app` URL above |
 | R5 | Background work over data | Cloud Run Job, 8/8 papers, 232 numbers verified |

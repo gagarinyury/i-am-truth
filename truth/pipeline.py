@@ -272,7 +272,15 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
     ни делался, числа проверяются одинаково и независимо от того, кто их написал.
     В ADK у агента есть инструмент самопроверки, но он не отменяет этот шаг (D-14).
     """
-    ver = verify_findings(findings, gathered["source_text"]) if findings else None
+    # Источник для сверки = текст статьи ПЛЮС разобранные таблицы.
+    # Без таблиц числа из приложения не находятся: `_supplementary_text` заменяет
+    # XML-теги пробелами, а Word разбивает число на несколько <w:t>-фрагментов —
+    # «3.04» превращается в «3 . 04». Разбор таблиц склеивает ячейку правильно,
+    # поэтому он и есть надёжный источник цифр. Четвёртый случай ложного обвинения
+    # за проект (после F-41 и двух в приложениях) — и снова найден замером.
+    src = gathered["source_text"]
+    tbl_text = tables_as_text(gathered, limit=200)
+    ver = verify_findings(findings, f"{src}\n\n{tbl_text}") if findings else None
     lvl = gathered["level"]["level"]
     out = {
         "meta": gathered["meta"],

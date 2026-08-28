@@ -79,7 +79,8 @@ instead: `POST /analyze/upload` takes PDFs and .docx and reaches the same L1.
 - **Gemini 3.7 Flash** on **Vertex AI**, `global` endpoint, temperature 0 — two parallel
   passes per paper: a ROBINS-E critic across seven domains, and a narrow sub-agent that
   reads nothing but the baseline characteristics table.
-- **google-genai SDK** 1.56.0.
+- **google-genai SDK** 1.56.0, and the same audit expressed as a **Google ADK**
+  `ParallelAgent` where the agents get tools they can call mid-reasoning.
 - **Cloud Run** for the synchronous service, **Cloud Run Jobs** for unattended batch
   work over a corpus, **GCS** for results — one object per paper, so a single failure
   never takes the run down.
@@ -96,6 +97,14 @@ itself is asking the same process for a second opinion. A separate layer takes e
 number the model wrote, locates it in the retrieved source with its surrounding context,
 and compares group labels — so it catches not only an invented value (`UNVERIFIED`) but
 a real value attached to the wrong group (`GROUP_MISMATCH`).
+
+**We built the same thing twice and published the losing comparison.** The audit runs
+either as plain-code orchestration or as a Google ADK `ParallelAgent` whose agents can
+call a risk calculator and a source-checker mid-reasoning. Three runs each: both reach a
+median of 5.5/6. ADK did not improve the audit. It is offered as an option and is not
+the default, because making it one would sell a tie as an improvement — and the tie is
+worth reporting, since "we adopted the framework and it changed nothing measurable" is a
+finding too.
 
 **Sub-agents are added where a measurement demands one, not by default.** On the real
 PDF the single critic never reached one expert point in three runs: that the exposed arm
@@ -142,6 +151,17 @@ three different inputs. The abstract→appendix gap is positive in every run (+1
 +2.0). And it is mechanism, not correlation: each level unlocks exactly the expert
 points that physically live in it. The point about comparator composition rises only
 when Table 2 appears; the two appendix points are never reached without the appendix.
+
+**We measured how far it does *not* generalise, and published that too.** Calibration
+originally rested on one paper, critiqued by this project's own author — a setup that
+measures agreement with oneself. So a second reference was taken from outside: a
+published letter to the editor about a different GLP-1/cancer cohort, with the authors'
+reply printed next to it. The system scores 92% against our own reference and **25%
+against the external one**, stably across three runs. The per-point breakdown shows why:
+the second paper's flaws are time-related — lag periods, latency, the shape of the
+duration gradient — and this system is built around confounding and group comparability.
+The fix is the same move that already worked once: find the failure by measurement, add
+one narrow agent, re-measure. Until that is done, 25% is the number we report.
 
 **We found our own errors with our own instrument.** Twice the reference standard itself
 was wrong — once with an inverted direction, once missing a whole defect the model kept
@@ -192,7 +212,7 @@ declines honestly rather than pretending to read.
 
 ## Technologies
 
-`Gemini 3.7 Flash` · `Vertex AI` · `google-genai SDK` · `Cloud Run` · `Cloud Run Jobs` ·
+`Gemini 3.7 Flash` · `Vertex AI` · `google-genai SDK` · `Google ADK` · `Cloud Run` · `Cloud Run Jobs` ·
 `Cloud Storage` · `Cloud Build` · `FastAPI` · `pdfplumber` · `Python 3.12` ·
 `Europe PMC REST API` · `Unpaywall API` · `ROBINS-E`
 
