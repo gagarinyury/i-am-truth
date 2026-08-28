@@ -37,11 +37,16 @@ Nothing was fabricated. The numbers are consistent and the authors are candid in
 limitations. The distortion happens in the packaging, and it happens *after* peer review.
 
 The obvious response is to point a language model at the abstract and ask it to be
-critical. We tried that first. It produces confident, well-written, and **directionally
-wrong** conclusions: given only the abstract, the model reports a "healthy user effect"
-— it assumes the treated group was healthier. The appendix says the opposite. The GLP-1
-arm was *sicker* (Charlson 5+: 19.7% vs 10.4%) and had *fewer* cancers, which is the
-whole anomaly.
+critical. We tried that first, and the result is more interesting than a simple failure:
+the model reaches a *plausible* verdict, and often a correct one — but it supports it
+with statements that would fit any observational study. "Unmeasured health-seeking
+behaviour." Nothing in that sentence can be checked, because nothing in it comes from
+this paper.
+
+Given the appendix, the same model supports the same verdict with 7.8% versus 5.9% from
+Table A2 — a number that can be looked up, and was. And one thing it never reaches
+without the appendix: that the GLP-1 arm was *sicker* (Charlson 5+: 19.7% vs 10.4%) and
+still had *fewer* cancers, which is the whole anomaly.
 
 So the problem is not the prompt. It is that the evidence lives in files nobody reads.
 
@@ -60,9 +65,11 @@ That last part is the point. Three levels, and their cost is measured, not assig
 | L2 | full text, no appendices | `PLAUSIBLE` / `UNVERIFIED` | 4.5 / 6 |
 | L3 | abstract only | `PLAUSIBLE` / `UNVERIFIED` | 4.0 / 6 |
 
-`CONFIRMED` is structurally unreachable below L1 — because the direction error above
-survives L2. An audit that calls a finding confirmed after reading an abstract is lying
-by construction, so the system is built so that it cannot.
+`CONFIRMED` is structurally unreachable below L1 — because below it the agent has nothing
+to cite. It will still name the direction of bias correctly from the abstract alone, but
+it justifies that with reasoning that fits any observational study; with the appendix it
+justifies the same conclusion with a number from the document. A correct guess is not
+evidence, so only the second is allowed to be called confirmed.
 
 When a paper is locked (Cloudflare, or a publisher's TDM token), you hand it the file
 instead: `POST /analyze/upload` takes PDFs and .docx and reaches the same L1.

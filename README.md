@@ -46,11 +46,11 @@ sub-agents, and it is written up in `docs/02-verified-facts.md`, F-43.
 The interesting part is not the trend. It is the **mechanism**: each level unlocks
 exactly those expert points that physically live in it, and no others (`docs/02-verified-facts.md`, F-26).
 
-And one specific failure survives two levels out of three: given only the abstract or
-only the main text, the model confidently reports a *"healthy user effect"* — and gets
-the **direction of confounding backwards**. It is corrected only by Appendix Table 1,
-which shows the GLP-1 arm was *sicker* (Charlson 5+: 19.7% vs 10.4%) yet had *fewer*
-cancers. That is the measured price of the retrieval layer.
+What the appendix changes is not whether the model sounds right — it is whether anything
+it says can be checked. One expert point stays out of reach without it in every run: that
+the GLP-1 arm was *sicker* (Charlson 5+: 19.7% vs 10.4%) and yet had *fewer* cancers.
+Both numbers sit in an appendix table, ten pages in, and the paradox only exists once
+they are put side by side.
 
 ---
 
@@ -158,8 +158,13 @@ The system never claims more than its input allows. Levels are **measured, not a
 | **L2** | full text, no appendices | `PLAUSIBLE` / `UNVERIFIED` | 4.0–5.0 (median 4.5) |
 | **L3** | abstract only | `PLAUSIBLE` / `UNVERIFIED` | 3.5–4.0 (median 4.0) |
 
-`CONFIRMED` is structurally unreachable below L1, because the confounding-direction
-error persists at L2.
+`CONFIRMED` is structurally unreachable below L1 — not because the model is wrong below
+it, but because it has nothing to cite. Given only the abstract it still names the
+direction of bias correctly, yet it justifies that with reasoning that would fit any
+observational study ("unmeasured health-seeking behaviour"). Given the appendix it
+justifies the same conclusion with a number from the document (7.8% vs 5.9%, Table A2).
+A correct guess is not evidence, so only the second one is allowed to be called
+confirmed (F-44).
 
 **How often each level is reachable** — also measured, not assumed (F-21, F-24, F-25,
 sample of 40 papers of the class): Europe PMC serves full text for 27.5%, and where it
