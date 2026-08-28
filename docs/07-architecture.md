@@ -1,7 +1,11 @@
 # 07 · Архитектура
 
 Документ-артефакт подачи (требование S4). Диаграмма ниже рендерится прямо на GitHub;
-экспорт в PNG для Devpost — `docs/img/architecture.png`.
+экспорт в PNG для Devpost — `docs/img/architecture.png`, **на английском**:
+> его смотрит жюри, а README и текст заявки тоже английские. Русская схема ниже —
+> рабочая, английская собирается из `docs/architecture-en.mmd` командой
+> `npx @mermaid-js/mermaid-cli -i docs/architecture-en.mmd -o docs/img/architecture.png -b white -w 2400`.
+> При правке схемы править **обе**: расхождение диаграмм хуже отсутствия одной из них.
 
 Правило этого файла: диаграмма отражает **то, что работает**, а не то, что задумано.
 Каждый блок соответствует существующему модулю; пунктиром показано то, что ещё не
@@ -13,6 +17,10 @@
 
 ```mermaid
 flowchart LR
+    UI["<b>Веб-страница</b><br/>app/static/index.html<br/><i>отдаётся тем же сервисом,<br/>без сборки и CDN</i>"]
+    UI --> DOI
+    UI --> FILES
+
     DOI(["DOI"]) --> L0
     FILES(["Файлы от пользователя<br/>.pdf / .docx — путь B"]) --> L0
 
@@ -64,13 +72,16 @@ flowchart LR
     OUT --> JOB
 
     subgraph L6["L6 · выполнение в облаке"]
-        SVC["Cloud Run<br/><code>POST /analyze</code><br/>синхронно, ~34 с"]
+        SVC["Cloud Run<br/><code>GET /</code> — страница<br/><code>POST /analyze</code> — API<br/>синхронно, ~50 с"]
         JOB["Cloud Run Job<br/>корпус, 3 воркера<br/>фоново"]
         GCS[("GCS<br/>объект на статью")]
         JOB --> GCS
         GCS -.->|"GET /runs/{id}"| SVC
     end
 
+    SVC -.->|"отчёт на экран"| UI
+
+    style UI fill:#e6f4ea,stroke:#34a853,stroke-width:2px
     style L3 fill:#e8f0fe,stroke:#4285f4,stroke-width:2px
     style SUB fill:#e8f0fe,stroke:#4285f4,stroke-width:2px
     style SUB2 fill:#e8f0fe,stroke:#4285f4,stroke-width:2px

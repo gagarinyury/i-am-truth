@@ -6,8 +6,15 @@
 **Разделение труда:** этот файл, прогнанные заранее команды и субтитры — моя часть;
 запись экрана и голос — твоя.
 
-**Правило записи:** все команды выполняются **против живого сервиса**, не локально.
-Судья должен видеть `.run.app` в строке запроса — это и есть пруф деплоя (R4, S7).
+**Правило записи:** всё выполняется **против живого сервиса**, не локально. Судья
+должен видеть `.run.app` — в адресной строке браузера и в терминале. Это и есть пруф
+деплоя (R4, S7).
+
+**Главное изменение сценария от 28.08 (F-54): кадры 2–4 снимаются в браузере, а не в
+терминале.** У проекта появилась страница, и снимать `curl` там, где судья мог бы
+увидеть работающий продукт, — значит своими руками отдать треть оценки
+(«Demo & Production Readiness» — 30%). Терминал остаётся ровно в одном месте: кадр 5,
+где показывается облако. Там он уместен, потому что это и есть пруф инфраструктуры.
 
 ---
 
@@ -26,8 +33,12 @@ cp ~/Downloads/mcdonald-et-al-2026-*.pdf ./mcdonald.pdf
 curl -s $URL/health
 ```
 
-Терминал: крупный шрифт, тёмная тема, ширина ~100 колонок. Вывод длинный — фильтровать
-через `python3 -c`, как в командах ниже, иначе JSON зальёт экран.
+**Браузер:** окно 1440×900 или шире, масштаб 100%, никаких закладок и расширений в
+кадре. Открыть страницу заранее и один раз прогнать разбор, чтобы сервис не был
+«холодным» — первый запрос после простоя идёт дольше.
+
+**Терминал** (нужен только для кадра 5): крупный шрифт, тёмная тема, ширина ~100
+колонок, вывод фильтровать через `python3 -c`, иначе JSON зальёт экран.
 
 ---
 
@@ -49,93 +60,75 @@ curl -s $URL/health
 
 ---
 
-## Кадр 2 · 0:30–1:15 — та же статья, только абстракт
+## Кадр 2 · 0:30–1:15 — та же статья, только DOI
 
-```bash
-curl -s -X POST $URL/analyze \
-  -H 'Content-Type: application/json' \
-  -d '{"doi":"10.1200/OP-26-00485"}' \
-| python3 -c "
-import sys,json; d=json.load(sys.stdin)
-print('level:', d['level']['level'], '| max confidence:', d['max_confidence'])
-print('tables:', d['tables'])
-print(d['caveat'])"
-```
+**Что на экране:** страница сервиса. В поле вставляется `10.1200/OP-26-00485`, нажимается
+Audit. В кадре видно, как идут этапы: fetching the paper → pulling tables → three agents
+reading → checking every number.
 
-**Что видно:** `L3`, таблиц ноль, потолок уверенности `PLAUSIBLE-UNVERIFIED` и явная
-оговорка, что разбор сделан на неполных данных.
+**Что видно в отчёте:** крупная метка **`L3`**, «abstract only — ceiling
+PLAUSIBLE-UNVERIFIED», ноль приложенных таблиц и текст оговорки: разбор сделан на
+неполных данных, подтверждённым здесь ничто называться не может.
 
 **Голос (EN):**
-> Give it just the DOI. This paper is behind bot protection, so all the agent can reach
-> is the abstract. It says so: level three, no tables, and nothing here may be called
-> confirmed. That refusal is the product.
+> Give it just the DOI. This paper sits behind bot protection, so all the agent can reach
+> is the abstract. It says so itself: level three, no tables, and nothing here may be
+> called confirmed. That refusal is the product.
+
+> [для нас] Не торопить этот кадр. Пустой блок «appendix tables: 0» рядом с честной
+> оговоркой — половина смысла проекта. Дальше он заполнится, и разница будет видна
+> глазами, без единого слова.
 
 ---
 
 ## Кадр 3 · 1:15–2:30 — та же статья, файл в руках · **главный кадр**
 
-```bash
-curl -s -X POST $URL/analyze/upload \
-  -F "files=@mcdonald.pdf" -F "doi=10.1200/OP-26-00485" \
-| python3 -c "
-import sys,json; d=json.load(sys.stdin); f=d['findings']
-print('level:', d['level']['level'], '| tables:', d['tables'])
-c=[x for x in f['domains'] if 'onfound' in x['name']][0]
-print('confounding:', c['risk'], '| direction:', c['direction'])
-print(c['findings'][0]['evidence'][0])
-print('verdict:', f['classification'])
-print('numbers checked:', d['verification'])"
-```
+**Что на экране:** `mcdonald.pdf` перетаскивается прямо на страницу, Audit.
 
-**Что видно** (проверено 28.08 на живом сервисе):
+**Что видно в отчёте** (проверено на живом сервисе):
 
-```
-level: L1 | tables: {'main': 9, 'appendix': 6}
-confounding: high | direction: away_from_null
-Matched non-users had a prior breast cancer prevalence of 7.8% (1,197/15,264)
-compared to 5.9% (907/15,264) in GLP-1 users (Table A2)
-verdict: real_association_explained_by_selection
-```
+- метка меняется на **`L1`**, «full text + appendix tables — ceiling **CONFIRMED**»,
+  счётчик приложенных таблиц перестаёт быть нулём;
+- в блоке Verdict — `away_from_null` и `real_association_explained_by_selection`;
+- в домене Confounding раскрывается цитата: *Matched non-users had a prior breast cancer
+  prevalence of 7.8% (1,197/15,264) compared to 5.9% (907/15,264) in GLP-1 users
+  (Table A2)*;
+- у агента baseline comparability — красная плашка с противоречием: группа GLP-1 была
+  тяжелее по ожирению, диабету и Charlson, а рака у неё меньше.
 
 **Голос (EN):**
-> Now hand it the file. Level one. It reads the appendix — a table nobody quoted — and
-> finds that the comparison group carried more prior breast cancer than the treated
-> group: seven point eight against five point nine percent. That variable was never part
-> of the matching. Its verdict: a real association explained by selection. Word for word
-> what a human expert concluded reading the same paper.
+> Now hand it the file. Level one. It reads an appendix table nobody quoted, and finds
+> that the comparison group carried more prior breast cancer than the treated group:
+> seven point eight against five point nine percent. That variable was never part of the
+> matching. Its verdict: a real association explained by selection — word for word what a
+> human expert concluded reading the same paper.
 
-> [для нас] Держать в кадре обе строки — `direction: away_from_null` и цитату из
-> Table A2. Направление важнее балла: именно оно превращает «модель что-то написала»
-> в «модель поняла, куда смещает».
+> [для нас] Держать в кадре обе вещи разом: `away_from_null` и цитату из Table A2.
+> Направление важнее балла — именно оно отличает «модель что-то написала» от «модель
+> поняла, куда смещает». Раскрыть домен Confounding заранее, до записи, чтобы не тратить
+> секунды на клик.
 
 ---
 
 ## Кадр 4 · 2:30–3:15 — агент проверяет сам себя
 
-```bash
-curl -s -X POST $URL/analyze \
-  -H 'Content-Type: application/json' \
-  -d '{"text":"In this cohort of 15264 patients, the GLP-1 group had 9.2% prior breast cancer versus 5.9% in controls, and the hazard ratio was 0.42 (95% CI 0.31-0.58)."}' \
-| python3 -c "
-import sys,json; d=json.load(sys.stdin)
-print('verification:', d['verification'])
-for u in d['unverified_numbers'][:4]: print(' ', u['status'], u['value'], '—', str(u['label'])[:50])"
-```
+**Что на экране:** прокрутка того же отчёта к блоку **Every number checked against the
+source**. Четыре счётчика: confirmed with its label · found, label unclear · not found in
+source · **groups inverted**.
 
-**Что показать:** числа, которых в поданном тексте нет, помечаются `UNVERIFIED`;
-9.2% и 5.9% в этом тексте **поменяны местами** относительно статьи — на полном
-источнике такое ловится как `GROUP_MISMATCH`.
+Затем — короткая вставка: в поле вводится текст, где числа намеренно переставлены
+местами относительно статьи, и в отчёте загорается ненулевой счётчик.
 
 **Голос (EN):**
-> Every number the model writes is taken back to the source document and looked up with
-> its context. Not asked of the model — checked against the file. It catches invented
-> values, and it catches real values attached to the wrong group. That second one is the
-> mistake we ourselves made twice while building this, and both times the instrument
-> caught it, not us.
+> Every number the model writes is taken back to the source and looked up together with
+> what it describes. Not asked of the model — checked against the document. It catches
+> invented values, and it catches real values attached to the wrong group. That second
+> mistake is one we made ourselves twice while building this, and both times the
+> instrument caught it, not us.
 
-> [для нас] Если хочется усилить — показать `docs/02-verified-facts.md`, F-12 и F-40:
-> наши собственные ошибки, найденные харнесом. Это работает на доверие сильнее, чем
-> зелёные галочки.
+> [для нас] Усиление, если останется секунда: показать `docs/02-verified-facts.md`,
+> F-12 и F-51 — наши собственные ошибки, найденные инструментом. Признанная ошибка
+> работает на доверие сильнее любых зелёных галочек.
 
 ---
 
@@ -156,8 +149,8 @@ print('levels:', d.get('levels'), '| storage_ok:', d.get('storage_ok'))"
 
 **Голос (EN):**
 > It also runs unattended. A Cloud Run Job takes a query, finds a corpus in Europe PMC,
-> and audits it in the background — eight papers, two hundred thirty-two numbers
-> verified, results in Cloud Storage. All eight came back level three. That is not a
+> and audits it in the background — eight papers, five hundred seventeen numbers
+> checked, results in Cloud Storage. All eight came back level three. That is not a
 > failure. Only about a quarter of this literature is machine-reachable, and the agent
 > refuses to call anything confirmed when all it read was an abstract.
 
@@ -171,15 +164,15 @@ print('levels:', d.get('levels'), '| storage_ok:', d.get('storage_ok'))"
 | Кадр | Длительность | Накопительно |
 |---|---|---|
 | 1 · проблема | 0:30 | 0:30 |
-| 2 · только абстракт → L3 | 0:45 | 1:15 |
-| 3 · файл → L1, приложение, вердикт | 1:15 | 2:30 |
-| 4 · самопроверка чисел | 0:45 | 3:15 |
+| 2 · DOI → L3, в браузере | 0:45 | 1:15 |
+| 3 · файл перетащили → L1, приложение, вердикт | 1:15 | 2:30 |
+| 4 · блок сверки чисел на экране | 0:45 | 3:15 |
 | 5 · облако | 0:45 | 4:00 |
 
 Запас нулевой — если что-то режется, режется кадр 4, а не кадр 3.
 
-**Ожидаемое время ответа сервиса:** `/analyze` по DOI ≈ 30 с, `/analyze/upload` с
-PDF ≈ 35–48 с. В кадре паузы вырезать монтажом, но **не подменять вывод** — он должен
+**Ожидаемое время ответа сервиса:** `/analyze` по DOI ≈ 50 с (три агента), `/analyze/upload`
+с PDF ≈ 35–48 с. В кадре паузы вырезать монтажом, но **не подменять вывод** — он должен
 быть настоящим.
 
 ---

@@ -1,0 +1,73 @@
+flowchart LR
+    UI["<b>Web page</b><br/>app/static/index.html<br/><i>served by the same service,<br/>no build step, no CDN</i>"]
+    UI --> DOI
+    UI --> FILES
+
+    DOI(["DOI"]) --> L0
+    FILES(["Files from the user<br/>.pdf / .docx — path B"]) --> L0
+
+    L0["<b>L0</b><br/>pipeline.py<br/>orchestrator"]
+
+    L0 --> EPMC
+    L0 --> PDFP
+    L0 --> SUP
+    L0 --> UPW
+
+    subgraph L1G["L1 · retrieval.py — acquisition"]
+        EPMC["Europe PMC REST<br/>metadata + JATS"]
+        PDFP["pdf_tables.py<br/>pdfplumber, text +<br/>tables"]
+        SUP["supplementaryFiles<br/>.docx appendices"]
+        UPW["Unpaywall<br/>fallback channel"]
+        LVL["assess_level<br/>what was actually retrieved<br/>→ L1 / L2 / L3"]
+        EPMC --> LVL
+        PDFP --> LVL
+        SUP --> LVL
+        UPW --> LVL
+    end
+
+    subgraph L2G["L2 · table parsing"]
+        JATS["jats_tables.py<br/>colspan / rowspan<br/>composite headers"]
+        DOCX["docx_tables.py<br/>w:tbl / w:tr / w:tc"]
+    end
+
+    LVL --> JATS
+    LVL --> DOCX
+
+    JATS --> L3
+    DOCX --> L3
+
+    subgraph L3G["L3 · model pass — three agents in parallel"]
+        L3["critic.py<br/>Gemini 3.7 Flash · Vertex<br/>ROBINS-E, 7 domains"]
+        SUB["subagents.py<br/>baseline comparability<br/>contradiction test"]
+        SUB2["subagents.py<br/>time structure<br/>new-user, lag, latency<br/>duration gradient"]
+    end
+
+    L3 --> L4
+    SUB --> L4
+    SUB2 --> L4
+
+    L4["<b>L4 · verify_numbers.py</b><br/>every number goes back<br/>to the source; labels and<br/>groups are checked<br/>→ GROUP_MISMATCH"]
+    L4 --> L5
+    L5["<b>L5 · stats_tool.py</b><br/>E-value, ARR, NNT, RR CI<br/><i>computed,<br/>not generated</i>"]
+    L5 --> OUT
+    OUT["<b>Report</b><br/>evidence level<br/>+ findings across 7 domains<br/>+ number-verification log"]
+
+    OUT --> SVC
+    OUT --> JOB
+
+    subgraph L6["L6 · running on Google Cloud"]
+        SVC["Cloud Run<br/><code>GET /</code> — the page<br/><code>POST /analyze</code> — API<br/>synchronous, ~50 s"]
+        JOB["Cloud Run Job<br/>corpus, 3 workers<br/>in the background"]
+        GCS[("GCS<br/>one object per paper")]
+        JOB --> GCS
+        GCS -.->|"GET /runs/{id}"| SVC
+    end
+
+    SVC -.->|"report on screen"| UI
+
+    style UI fill:#e6f4ea,stroke:#34a853,stroke-width:2px
+    style L3 fill:#e8f0fe,stroke:#4285f4,stroke-width:2px
+    style SUB fill:#e8f0fe,stroke:#4285f4,stroke-width:2px
+    style SUB2 fill:#e8f0fe,stroke:#4285f4,stroke-width:2px
+    style L4 fill:#fce8e6,stroke:#ea4335,stroke-width:3px
+    style L5 fill:#e6f4ea,stroke:#34a853,stroke-width:2px

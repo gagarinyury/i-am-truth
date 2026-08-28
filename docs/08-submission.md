@@ -52,10 +52,17 @@ So the problem is not the prompt. It is that the evidence lives in files nobody 
 
 ## What it does
 
-Give it a DOI. It retrieves the full text, pulls the supplementary tables, runs a
-seven-domain **ROBINS-E** risk-of-bias assessment, checks every single number it reports
-back against the source document, computes the statistics itself, and returns a report
-that states **what level of evidence it was actually able to reach**.
+Open the page, paste a DOI — or drop the PDF and its appendix if the paper is locked.
+It retrieves the full text, pulls the supplementary tables, runs a seven-domain
+**ROBINS-E** risk-of-bias assessment, checks every single number it reports back against
+the source document, computes the statistics itself, and returns a report that states
+**what level of evidence it was actually able to reach**.
+
+The report is deliberately ordered: the evidence level reached and the confidence ceiling
+that follows from it come first, the verdict second, the recomputed risk numbers third,
+then every number checked against the source, then the two narrow agents — and only last
+the seven domains. A conclusion should not be readable before the thing that backs it,
+which is exactly the failure this tool looks for in other people's papers.
 
 That last part is the point. Three levels, and their cost is measured, not assigned:
 
@@ -72,7 +79,12 @@ justifies the same conclusion with a number from the document. A correct guess i
 evidence, so only the second is allowed to be called confirmed.
 
 When a paper is locked (Cloudflare, or a publisher's TDM token), you hand it the file
-instead: `POST /analyze/upload` takes PDFs and .docx and reaches the same L1.
+instead — by dropping it on the page, or via `POST /analyze/upload`, which takes PDFs and
+.docx and reaches the same L1.
+
+Everything is reachable both ways: the browser page and the HTTP API are the same service
+on the same Cloud Run revision, and the page is served by it — no build step, no CDN, no
+separate frontend to deploy.
 
 ## How we built it
 
@@ -219,6 +231,7 @@ declines honestly rather than pretending to read.
 
 `Gemini 3.7 Flash` · `Vertex AI` · `google-genai SDK` · `Google ADK` · `Cloud Run` · `Cloud Run Jobs` ·
 `Cloud Storage` · `Cloud Build` · `FastAPI` · `pdfplumber` · `Python 3.12` ·
+`vanilla JS/CSS single-page UI (no framework, no build)` ·
 `Europe PMC REST API` · `Unpaywall API` · `ROBINS-E`
 
 ## Data sources

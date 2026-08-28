@@ -59,9 +59,26 @@ they are put side by side.
 
 ## Live service
 
+**Open it in a browser — the audit runs from the page:**
+
 ```
 https://i-am-truth-242136767009.us-central1.run.app
 ```
+
+![The audit page: a DOI goes in, the evidence level and what was retrieved come out](docs/img/ui-report.jpg)
+
+Paste a DOI, or drop the PDF and its appendix if the paper is not open. The page reports,
+in this order: **the evidence level actually reached** and the confidence ceiling that
+follows from it, the verdict, the risk numbers recomputed by a function rather than by the
+model, then every number checked against the source, then the two narrow agents, and only
+last the seven ROBINS-E domains.
+
+That order is the design. A conclusion should not be readable before the thing that backs
+it — which is precisely the failure this tool looks for in other people's papers.
+
+![Verification block: 389 numbers confirmed with their label, 2 not found, 0 group inversions](docs/img/ui-verification.jpg)
+
+The same audit is available over HTTP:
 
 ```bash
 URL=https://i-am-truth-242136767009.us-central1.run.app
