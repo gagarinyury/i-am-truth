@@ -136,9 +136,9 @@ MAX_UPLOAD = 25 * 1024 * 1024
 
 
 @app.post("/analyze/upload")
-async def analyze_upload(files: list[UploadFile] = File(...),
-                         doi: str | None = Form(None),
-                         engine: str = Form("direct")):
+def analyze_upload(files: list[UploadFile] = File(...),
+                   doi: str | None = Form(None),
+                   engine: str = Form("direct")):
     """Путь B: статья принесена пользователем.
 
     Существует потому, что автоматическая добыча берёт около 55% статей класса
@@ -151,9 +151,14 @@ async def analyze_upload(files: list[UploadFile] = File(...),
     `doi` необязателен: с ним подтягиваются метаданные и, если приложения есть в
     Europe PMC, они добавляются к принесённому тексту.
     """
+    # Обработчик СИНХРОННЫЙ намеренно. Внутри стоит `pipeline.run`, который идёт
+    # 40-130 секунд и ничего не отдаёт циклу событий. В `async def` он блокировал
+    # весь uvicorn: пока разбирается один принесённый файл, не отвечали ни
+    # /health, ни статика, ни второй запрос. Синхронный обработчик FastAPI уводит
+    # в пул потоков, и это ровно то, что здесь нужно.
     uploads = []
     for f in files:
-        blob = await f.read()
+        blob = f.file.read()
         if len(blob) > MAX_UPLOAD:
             raise HTTPException(413, f"{f.filename}: больше {MAX_UPLOAD // 1024 // 1024} МБ")
         if not blob:

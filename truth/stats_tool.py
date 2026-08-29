@@ -50,9 +50,16 @@ class TwoByTwo:
         re, rc = self.risks()
         return rc - re
 
-    def nnt(self) -> float:
+    def nnt(self) -> float | None:
+        """`None`, если разницы рисков нет.
+
+        Раньше здесь стояло `inf`, и оно доходило до FastAPI, который на
+        сериализации падал с 500 — после трёх вызовов Vertex и полного разбора.
+        В хранилище при этом ложился литерал `Infinity`, невалидный JSON для всех,
+        кроме Python. «Лечить бессмысленно» — это результат, и выражается он
+        отсутствием числа, а не бесконечностью."""
         a = self.arr()
-        return float("inf") if a == 0 else 1.0 / a
+        return None if a == 0 else 1.0 / a
 
     def rr_ci(self, level: float = 0.95):
         """ДИ для RR методом Katz (лог-нормальное приближение)."""
@@ -75,9 +82,14 @@ class TwoByTwo:
             "rr_ci95": [round(lo, 4), round(hi, 4)],
             "odds_ratio": round(self.odds_ratio(), 4),
             "arr_pp": round(self.arr() * 100, 4),
-            "nnt": round(self.nnt(), 1),
+            "nnt": None if self.nnt() is None else round(self.nnt(), 1),
             "e_value_point": round(e_value(self.rr()), 3),
-            "e_value_ci": round(e_value(hi if self.rr() < 1 else lo), 3),
+            # ДИ, накрывающий единицу, означает, что эффект вообще не отделён от
+            # нуля: по VanderWeele & Ding E-value для такого интервала равен 1 —
+            # достаточно сколь угодно слабого конфаундера. Подставлять границу в
+            # формулу нельзя, она вернёт >1 и заявит устойчивость, которой нет.
+            "e_value_ci": (1.0 if lo <= 1.0 <= hi else
+                           round(e_value(hi if self.rr() < 1 else lo), 3)),
         }
 
 

@@ -174,7 +174,7 @@ the second paper's flaws are time-related — lag periods, latency, the shape of
 duration gradient — and this system is built around confounding and group comparability.
 So we made that move: one more pass that does nothing but reconstruct the study's
 timeline — new-user versus prevalent-user, immortal time, lag period, latency, and the
-shape of the duration gradient. Re-measured, three runs each: **92% on our own reference, 88% on the external one**, with
+shape of the duration gradient. Re-measured, ten runs each on 29.08: **median 5.0/6 (83%) on our own reference and 3.5/4 (88%) on the external one** — three runs had shown 92% and 88%, but two checklist items sit on a partial-credit boundary and flip between runs, so the wider sample is the honest figure — with
 no loss on the case we designed around. The spread between the two fell from 67 points to
 4. What we are claiming is not a higher score but a narrower gap between a case we built
 for and one we did not — and every run behind those numbers is stored in the repository,

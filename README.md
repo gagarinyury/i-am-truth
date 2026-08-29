@@ -84,7 +84,9 @@ same report is downloadable as a one-page Markdown brief at `/audits/<id>/brief.
 the same order as the page: what the audit stands on, where the bias points by a count of
 domains, what the function recomputed, and only then the prose.
 
-![The recomputation block — 9.8919 pp and NNH 10.1 computed by a function, the model's own figures beside them marked "model agrees" — and the verification block: 438 numbers confirmed with their label, 0 not found, 0 group inversions](docs/img/ui-verification.jpg)
+![The recomputation block: 9.8919 pp and NNH 10.1 computed by a function from the 2×2 counts, the model's own figures beside them marked "model agrees", and the estimate flagged crude and unadjusted](docs/img/ui-recompute.jpg)
+
+![The lookup block: 566 numbers found in the paper, 0 not found, 110 whose description also matches, and a line stating that the group check ruled on 4 of 474 numbers so a count of zero inversions means nothing about the rest](docs/img/ui-verification.jpg)
 
 ![The report on the record: a permanent audit id and a link to the one-page brief](docs/img/ui-record.jpg)
 
@@ -101,21 +103,29 @@ curl -X POST $URL/analyze \
 ```
 
 That DOI is an open-access paper: the service pulls the JATS full text **and 35 appendix
-tables**, runs a seven-domain ROBINS-E assessment across three agents, and back-checks
-every number it reports against the source. Measured on the live service through the
-browser, 29.08, revision 00013:
-**level L1, 544 numbers checked — 438 confirmed together with their label, 0 unverified,
-0 group inversions**; the absolute risk difference recomputed by a function from the
-2×2 counts (9.8919 pp, NNH 10.1) and agreeing with the model's own figures; and the
-whole thing kept at
-[`/audits/audit-20260828-225453-cefe10`](https://i-am-truth-242136767009.us-central1.run.app/audits/audit-20260828-225453-cefe10).
+tables**, runs a seven-domain ROBINS-E assessment across three agents, and looks up every
+number it reports in the source. Measured on the live service, 29.08, revision 00015:
+**level L1, 566 numbers looked up — all 566 found in the paper, none missing**; the
+absolute risk difference recomputed by a function from the 2×2 counts (9.8919 pp,
+NNH 10.1) and agreeing with the model's own figures; and the whole thing kept at
+[`/audits/audit-20260829-154707-f58847`](https://i-am-truth-242136767009.us-central1.run.app/audits/audit-20260829-154707-f58847).
 
-That same run is also where the direction tally earned its place: the model's overall
-verdict came out `away_from_null` while three of its own domains pointed the other way
-and only two pointed with it. The report says `contradicts` instead of quietly printing
-the verdict.
+That same run is also where the direction tally earns its place: the model's overall
+verdict came out `away_from_null` while four of its own domains pointed the other way and
+only two pointed with it. The report says `contradicts` instead of quietly printing the
+verdict.
 
-These figures have been re-measured twice rather than rewritten, and both times the
+**What that number does and does not mean.** "566 found" is a fact about the document: a
+value the model reported is present in the paper, and one that is not is never used in a
+calculation. Whether the *description* beside it is the same description is a weaker
+question, and the report answers it as a strength rather than a verdict — in this run 110
+numbers had at least half of the weighted words of their description standing next to
+them, median agreement 0.33. The wording is the model's, the paper's wording is its own,
+and measurement shows word overlap separates a right label from a swapped one only about
+threefold (F-63). The group check ruled on 4 of 474 numbers here and stayed silent on the
+rest rather than guessing; a count of zero inversions says nothing about the 470.
+
+These figures have been re-measured three times rather than rewritten, and every time the
 reason was a defect in the instrument, not in the audit. First the label of a number was
 taken from the JSON path of the model's own answer, so almost nothing could match and the
 verifier was nearly blind (F-51). Then the marker of a control group was the bare
@@ -125,10 +135,13 @@ The same rule this project applies to other people's numbers.
 
 ### When the paper is not open
 
-Automatic retrieval reaches about 55% of papers in this class; the rest sits behind
-Cloudflare or a publisher's TDM token, and we do not work around site protection. But a
-paper unavailable to a script is usually available to a person. So it can be handed over
-directly:
+What the service actually retrieves on its own is Europe PMC: **27.5%** of papers in
+this class, measured on a random sample of 40 (F-25). A second channel — publisher PDFs
+where the publisher offers a machine-readable pointer — would bring that to roughly 55%,
+and it is **not implemented**; the 55% figure describes what is reachable, not what this
+service does. The rest sits behind Cloudflare or a publisher's TDM token, and we do not
+work around site protection. But a paper unavailable to a script is usually available to
+a person, so it can be handed over directly:
 
 ```bash
 curl -X POST $URL/analyze/upload \
@@ -216,9 +229,14 @@ confirmed (F-44).
 
 **How often each level is reachable** — also measured, not assumed (F-21, F-24, F-25,
 sample of 40 papers of the class): Europe PMC serves full text for 27.5%, and where it
-does, appendices arrive in 9 cases out of 11 — always as `.docx`, never PDF. Adding
-publisher PDFs where the publisher offers a machine-readable pointer brings automatic
-retrieval to roughly 55%. The remainder sits behind Cloudflare or Elsevier's TDM API.
+does, appendices arrive in 9 cases out of 11. Adding publisher PDFs where the publisher
+offers a machine-readable pointer would bring automatic retrieval to roughly 55% — that
+channel is measured but not built, so 27.5% is what the service reaches today. The
+remainder sits behind Cloudflare or Elsevier's TDM API.
+
+The "always as `.docx`, never PDF" that stood here was wrong, and it cost a level: BMJ
+ships its appendix as a single "web only" PDF, we read only `.docx` out of the archive,
+and such papers were silently downgraded to L2. Fixed 29.08 (F-60).
 
 This is why the last cloud batch returned **L3 for all 8 papers** (F-37). That is not a
 malfunction — it is the system refusing to call anything confirmed when it only read an
@@ -273,7 +291,7 @@ Full diagram with rationale: `docs/07-architecture.md`.
 | Layer | Module | Responsibility |
 |---|---|---|
 | 0 | `truth/pipeline.py` | orchestration, DOI → report |
-| 1 | `truth/retrieval.py` | Europe PMC, appendix files, Unpaywall fallback, level assessment |
+| 1 | `truth/retrieval.py` | Europe PMC full text, appendix files (`.docx` and PDF), level assessment |
 | 2 | `truth/jats_tables.py`, `truth/docx_tables.py`, `truth/pdf_tables.py` | structural table parsing — colspan/rowspan, compound headers, PDF tables via pdfplumber |
 | 3 | `truth/critic.py`, `truth/subagents.py` | three parallel passes: ROBINS-E across seven domains, baseline comparability, and temporal structure |
 | 4 | `truth/verify_numbers.py` | every reported number checked back against the source |
@@ -301,7 +319,8 @@ measurement is exactly what this project avoids.
 
 **Statistics are computed, never generated — and the claim is now enforced.** E-value,
 absolute risk reduction, NNT and confidence intervals come from `stats_tool.py`, which
-self-tests on import. The model is asked only for the four raw counts of the 2×2 table,
+self-tests when run directly (`python3 -m truth.stats_tool`). The model is asked only
+for the four raw counts of the 2×2 table,
 copied out of the paper; those four numbers go through the same source check as every
 other number, the function does the arithmetic, and the model's own figures are shown
 beside the function's with a match/mismatch verdict.
@@ -315,7 +334,7 @@ A tool built to catch unbacked claims has no business keeping one.
 
 **Two orchestrations, and we publish the comparison.** The default path orchestrates in
 plain code. `truth/adk_agent.py` expresses the same audit as a Google ADK
-`ParallelAgent`, where the two agents additionally get *tools* — the risk calculator and
+`ParallelAgent`, where the three agents additionally get *tools* — the risk calculator and
 a source-checker they can call mid-reasoning, instead of learning about a bad number
 afterwards from layer 4. Measured over three runs each, both reach a **median of 5.5/6**;
 ADK's spread is tighter and its wall-clock is twice as long. So ADK is available via
@@ -367,8 +386,8 @@ what the model found *beyond* the reference as well. Method and its limitations:
 on a single reference written by this project's own author. A second reference was added
 from an outside source — a published letter to the editor (`10.1111/1753-0407.70202`)
 criticising a different GLP-1/cancer cohort study, with the authors' reply printed
-alongside it. Against our own reference the system scores **92%** (5.5/6). Against the
-external one it scores **25%** (1.0/4), stably across three runs.
+alongside it. Against our own reference the system scored **92%** (5.5/6). Against the
+external one it scored **25%** (1.0/4), stably across three runs.
 
 The gap was not noise, and the per-point breakdown said why: the second paper's defects
 are *time-related* — no lag period, latency shorter than follow-up, a duration gradient
@@ -378,16 +397,23 @@ group comparability. It handled what it had been tuned on and missed a neighbour
 So a third pass was added, doing nothing but reconstructing the study's timeline. The
 result is the number this project is actually judged by:
 
-| Reference | before | after |
-|---|---|---|
-| ours (McDonald, 6 points) | 5.5 — **92%** | 5.5 · 5.5 · 5.5 — **92%** |
-| external (Cheng, 4 points) | 1.0 — **25%** | 3.5 · 3.5 · 3.5 — **88%** |
-| **spread between cases** | **67 pts** | **4 pts** |
+| Reference | before the third pass | after, three runs | after, ten runs on 29.08 |
+|---|---|---|---|
+| ours (McDonald, 6 points) | 5.5 — **92%** | 5.5 · 5.5 · 5.5 — **92%** | 5.0–5.5, median **5.0 — 83%** |
+| external (Cheng, 4 points) | 1.0 — **25%** | 3.5 · 3.5 · 3.5 — **88%** | 3.0–3.5, median **3.5 — 88%** |
+| **spread between cases** | **67 pts** | **4 pts** | **5 pts** |
 
 The point is not the higher score. It is that the spread collapsed: a system that knew
-its own case and failed a neighbouring one now performs the same on both, with no loss
-on the case it was designed around. Every run above is stored in `eval/results/` and
-reproducible with one command (F-48).
+its own case and failed a neighbouring one now performs the same on both.
+
+The last column is the same system measured ten times each instead of three, and it is
+there because three runs were not enough to see the spread. Two checklist items sit on a
+partial-credit boundary and flip between 0.5 and 1.0 from run to run — on our reference,
+whether the audit cites the specific screening counts behind a collider argument; on the
+external one, whether it names the duration gradient explicitly. Nothing about the model
+path changed between the 5.5s and the 5.0s, and the judge only ever sees the audit text,
+so this is spread, not a regression (F-58, F-63). The honest figure is the one with the
+wider sample. Every run is stored in `eval/results/` and reproducible with one command.
 
 ---
 

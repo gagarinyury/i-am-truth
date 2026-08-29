@@ -29,6 +29,7 @@ import hashlib
 import json
 import os
 import pathlib
+import uuid
 
 BUCKET = os.environ.get("TRUTH_BUCKET", "i-am-truth-runs-merci-prod")
 PREFIX = "audits"
@@ -40,9 +41,15 @@ BACKEND = os.environ.get("TRUTH_STORE", "gcs")
 
 
 def new_id(report: dict) -> str:
-    """Идентификатор разбора: время + 6 знаков хеша источника."""
+    """Идентификатор разбора: время + 6 знаков, различающих одновременные разборы.
+
+    Хеш берётся от источника И от случайного значения. Только от источника было
+    нельзя: у входа `{"text": ...}` метаданных нет, seed выходил пустым, и все
+    такие разборы получали один и тот же хвост `e3b0c4` — два разбора в одну
+    секунду затирали друг друга. То же и для двух прогонов одного DOI.
+    """
     meta = report.get("meta") or {}
-    seed = str(meta.get("doi") or meta.get("title") or "")[:200]
+    seed = str(meta.get("doi") or meta.get("title") or "")[:200] + uuid.uuid4().hex
     h = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:6]
     return dt.datetime.now().strftime("audit-%Y%m%d-%H%M%S-") + h
 
@@ -60,7 +67,11 @@ def put(report: dict, audit_id: str = None) -> dict:
     «сделано вид, что сохранено».
     """
     audit_id = audit_id or new_id(report)
-    body = json.dumps(report, ensure_ascii=False, indent=2)
+    # allow_nan=False: с `inf` или `nan` в отчёте наружу уходил бы литерал
+    # `Infinity`, невалидный JSON для всех потребителей, кроме Python. Пусть
+    # лучше запись честно провалится, чем в хранилище ляжет то, что нельзя
+    # прочитать.
+    body = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False)
     if BACKEND == "gcs":
         try:
             _bucket().blob(f"{PREFIX}/{audit_id}.json").upload_from_string(

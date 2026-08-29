@@ -100,7 +100,7 @@ def recompute(computed: dict) -> dict | None:
     stated_nnt = _first_number(computed.get("nnt"))
 
     def verdict(stated, fn, tol):
-        if stated is None:
+        if stated is None or fn is None:
             return "not_stated"
         return "match" if abs(abs(stated) - abs(fn)) <= tol else "mismatch"
 
@@ -109,13 +109,15 @@ def recompute(computed: dict) -> dict | None:
     # модуль и слово по знаку, иначе на одной строке стоят −1.02 и +98.1, и надо
     # держать в голове две противоположные конвенции.
     harm = fn_ard_pp > 0
+    nnt = rep["nnt"]
     return {
         "basis": basis,
         "counts": counts,
         "absolute_risk_difference_pp": round(fn_ard_pp, 4),
-        "nnt": rep["nnt"],
-        "nnt_abs": abs(rep["nnt"]),
-        "nnt_kind": "number needed to harm" if harm else "number needed to treat",
+        "nnt": nnt,
+        "nnt_abs": None if nnt is None else abs(nnt),
+        "nnt_kind": ("no difference in risk" if nnt is None else
+                     "number needed to harm" if harm else "number needed to treat"),
         "adjusted": False,
         "risk_exposed": rep["risk_exposed"],
         "risk_control": rep["risk_control"],

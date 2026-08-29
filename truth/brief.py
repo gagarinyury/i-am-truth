@@ -48,12 +48,24 @@ def render(report: dict) -> str:
     L.append(f"- Tables parsed: {tb.get('main', 0)} in the paper, "
              f"{tb.get('appendix', 0)} in the appendix.")
     if v:
-        L.append(f"- Numbers checked against the source: **{v.get('total', 0)}**, "
-                 f"of which {v.get('verified', 0)} matched with their label "
-                 f"({_pct(v.get('verified', 0), v.get('total', 0))}), "
-                 f"{v.get('found_but_label_mismatch', 0)} were found without it, "
-                 f"{v.get('unverified', 0)} were not found at all, "
-                 f"{v.get('group_mismatch', 0)} appeared attached to the wrong group.")
+        total_n = v.get("total", 0)
+        missing = v.get("unverified", 0)
+        found = total_n - missing
+        L.append(f"- Numbers taken from the report and searched for in the paper: "
+                 f"**{total_n}** — {found} found, **{missing} not found at all**.")
+        L.append(f"- Of those found, {v.get('verified', 0)} also had at least "
+                 f"{int((v.get('label_threshold') or 0.5) * 100)}% of the words of "
+                 f"their description standing beside them"
+                 + (f" (median agreement {v['label_match_median']})"
+                    if v.get("label_match_median") is not None else "")
+                 + ". Wording is not identity: this is a strength, not a verdict.")
+        gd, gu = v.get("group_checked"), v.get("group_undecided")
+        if gd is not None:
+            L.append(f"- The group check ruled on {gd} of {gd + (gu or 0)} numbers"
+                     + ("; it stayed silent on the rest rather than guessing, so the "
+                        "count of inversions below says nothing about them."
+                        if gu else ".")
+                     + f" Inversions found: {v.get('group_mismatch', 0)}.")
     if report.get("caveat"):
         L.append(f"- ⚠️ {report['caveat']}")
     L.append("")

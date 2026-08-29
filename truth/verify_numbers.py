@@ -11,6 +11,7 @@
   python3 eval/verify_numbers.py --claims claims.json --source статья.xml
 """
 import argparse
+import collections
 import json
 import re
 import sys
@@ -73,19 +74,45 @@ def number_variants(num: str) -> list:
     return sorted(("-" if neg else "") + v for v in out)
 
 
-def find_number(num: str, source: str) -> dict:
-    """Ищет число в источнике дословно, во всех допустимых написаниях."""
+# Сколько вхождений одного числа осматривать. Числа вроде «2.1» встречаются в
+# статье десятками раз; проверять все — дорого и бессмысленно, но проверять одно
+# первое — неверно (замер 29.08: 76% найденных чисел встречаются больше одного
+# раза, медиана 2, максимум 118, F-63).
+MAX_OCCURRENCES = 40
+
+
+def find_occurrences(num: str, source: str, limit: int = MAX_OCCURRENCES) -> list:
+    """Все вхождения числа с их окружением.
+
+    Раньше возвращалось первое, и на нём же строились проверка метки и проверка
+    группы. Это значит, что число сверялось с произвольным местом документа: если
+    «19.7» стоит в статье шесть раз, метка проверялась у первого вхождения, а
+    принадлежало число, возможно, шестому. Отсюда шли и ложные `label mismatch`,
+    и невозможность поймать настоящую инверсию.
+    """
+    out = []
     for v in number_variants(num):
         # границы: число не должно быть частью более длинного числа
         pat = re.compile(r"(?<![\d.,])" + re.escape(v) + r"(?![\d])")
-        m = pat.search(source)
-        if m:
+        for m in pat.finditer(source):
             # окно широкое: заголовок строки таблицы или подраздела может стоять
             # заметно раньше самого числа (поймано на реальном файле 27.08)
             s = max(0, m.start() - CONTEXT_BEFORE)
-            return {"found": True, "as": v,
-                    "context": " ".join(source[s:m.end() + CONTEXT_AFTER].split())}
-    return {"found": False, "as": None, "context": None}
+            out.append({"as": v, "start": m.start(),
+                        "context": " ".join(source[s:m.end() + CONTEXT_AFTER].split())})
+            if len(out) >= limit:
+                return out
+        if out:
+            # написание найдено — другие варианты того же числа не нужны
+            break
+    return out
+
+
+def find_number(num: str, source: str) -> dict:
+    """Первое вхождение. Оставлено для совместимости с зондами в `eval/`."""
+    occ = find_occurrences(num, source, limit=1)
+    return ({"found": True, "as": occ[0]["as"], "context": occ[0]["context"]}
+            if occ else {"found": False, "as": None, "context": None})
 
 
 # Группы сравнения и их написания. Настраивается под предметную область.
@@ -123,19 +150,137 @@ def _patterns(groups):
     return _COMPILED[key]
 
 
-def check_label(label: str, context: str, min_words: int = 1) -> bool:
-    """Проверяет, что рядом с числом стоит его метка (строка/столбец таблицы).
+# Слова, которые не несут смысла метки. Список короткий и намеренно не
+# «оптимизированный»: без него доля совпадения набивается служебными словами —
+# `the`, `and`, `for` проходили прежний фильтр наравне с `Charlson`.
+STOPWORDS = {
+    "the", "and", "for", "with", "from", "that", "this", "was", "were", "are",
+    "not", "but", "all", "any", "its", "their", "there", "which", "who", "whom",
+    "into", "than", "then", "over", "under", "between", "among", "per", "each",
+    "both", "such", "may", "can", "has", "had", "have", "been", "being", "its",
+    "after", "before", "during", "within", "without", "about", "also", "more",
+    "most", "less", "least", "some", "other", "others", "used", "using", "use",
+}
+
+
+def label_words(label: str) -> list:
+    """Значимые слова метки: длиннее двух букв и не служебные."""
+    return [w for w in re.findall(r"\w+", (label or "").lower())
+            if len(w) > 2 and w not in STOPWORDS]
+
+
+def word_counts(source: str) -> "collections.Counter":
+    """Частоты слов документа. Считаются один раз на разбор."""
+    return collections.Counter(re.findall(r"\w+", source.lower()))
+
+
+# Ширина окна вокруг числа — она же вероятностная мера «слово попалось случайно».
+WINDOW = CONTEXT_BEFORE + CONTEXT_AFTER
+
+
+def word_weight(word: str, counts, source_len: int) -> float:
+    """Сколько значит совпадение этого слова: 1 - вероятность попасть случайно.
+
+    Стоп-лист общих слов проблему не решает: замер показал, что метку
+    подтверждали `risk` и `group` — слова предметные, но встречающиеся в статье
+    сотни раз, так что рядом с любым числом они стоят почти наверняка. Значимость
+    слова определяется не списком, а документом: если слово встречается n раз в
+    тексте длиной L, вероятность застать его в окне шириной W около n·W/L.
+    `Charlson` при пяти вхождениях в 300 000 знаков весит почти 1, `group` при
+    двухстах — почти 0. Список остаётся только для служебных слов языка.
+    """
+    if not source_len:
+        return 1.0
+    n = counts.get(word, 0)
+    if n <= 0:
+        return 1.0
+    # Вероятность, что хотя бы одно из n вхождений попадёт в окно шириной W:
+    # 1 - (1 - W/L)^n. Прямое произведение n·W/L, стоявшее здесь сначала, — его
+    # линейное приближение, годное только при W << L. На коротком источнике оно
+    # даёт больше единицы и обнуляет вес у всех слов сразу, включая осмысленные:
+    # на синтетическом тексте в полторы тысячи знаков измерять становилось нечего.
+    q = 1.0 - min(1.0, WINDOW / source_len)
+    return max(0.0, q ** n)
+
+
+def label_overlap(label: str, context: str, counts=None,
+                  source_len: int = 0) -> float:
+    """Доля значимых слов метки, стоящих рядом с числом. 0.0-1.0.
+
+    Прежняя проверка была булевой и требовала **одного** совпавшего слова длиннее
+    двух букв. Замер 29.08 показал, чего она стоит: выдуманные метки вроде «Mean
+    age at the index date in the unexposed group» получали статус VERIFIED на
+    числе, к которому не имели отношения, а медианная доля реально совпавших слов
+    у подтверждённых чисел равнялась 0.23 (F-63). Доля возвращается наружу и
+    попадает в отчёт: «сверено» — это утверждение о силе совпадения, и сила должна
+    быть видна, а не спрятана в булевом флаге.
+    """
+    words = label_words(label)
+    if not words or not context:
+        return 0.0
+    ctx = context.lower()
+    if counts is None:
+        # Без частот документа — равные веса; так зовут пробы и тесты.
+        return sum(1 for w in words if w in ctx) / len(words)
+    if source_len and WINDOW >= source_len * MAX_WINDOW_SHARE:
+        # Окно вокруг числа покрывает заметную часть документа: «рядом с числом»
+        # здесь означает «где-то в тексте», и совпадение слов не сообщает ничего.
+        # Так бывает на коротком входе `{"text": ...}`. Честный ответ — «мерить
+        # нечем», а не ноль: ноль был бы обвинением без оснований.
+        return None
+    weights = {w: word_weight(w, counts, source_len) for w in set(words)}
+    total_w = sum(weights.values())
+    if total_w < MIN_INFORMATIVE_WEIGHT:
+        # Ни одно слово метки не различает мест документа. Так бывает в двух
+        # случаях: метка целиком из слов, которые в статье повсюду, — и документ
+        # короче окна вокруг числа, когда «рядом» означает «где угодно». В обоих
+        # мера бессмысленна, и правильный ответ — «не берусь судить», а не ноль.
+        # Ноль здесь означал бы обвинение в потере метки, которого нет оснований
+        # выдвигать (поймано на коротком синтетическом источнике 29.08).
+        return None
+    return sum(weights[w] for w in set(words) if w in ctx) / total_w
+
+
+# Порог подтверждения метки — 0.5, и это не граница между «верно» и «неверно».
+#
+# Замер 29.08 на разборе `10.1136/bmj-2023-076990` (440 чисел; контроль — та же
+# метка, приставленная к чужому числу того же отчёта):
+#
+#   порог   свои проходят   чужие проходят
+#   0.3         72%              24%
+#   0.4         37%              11%
+#   0.5         26%               8%
+#   0.7         12%               3%
+#
+# Медиана у своих 0.36, у чужих 0.12. Распределения **перекрываются**, отношение
+# держится около 3× на всех порогах, и точки, где одно кончается и начинается
+# другое, не существует. Причина видна из самих данных: метка — это описание,
+# сформулированное моделью, а не строка из статьи, и требовать дословного
+# совпадения половины её слов с текстом вокруг числа неправомерно.
+#
+# Отсюда вывод, который важнее самого порога: **совпадение слов не является
+# проверкой метки**, оно измеряет силу согласия и не выносит вердикта. Поэтому
+# доля совпадения возвращается наружу числом, медиана попадает в сводку, а порог
+# 0.5 выбран в сторону строгости и назван честно — при нём мимо проходит 8%
+# заведомо чужих меток (F-63).
+LABEL_THRESHOLD = 0.5
+
+# Ниже этой суммы весов метка ничего не различает — см. `label_overlap`.
+MIN_INFORMATIVE_WEIGHT = 0.05
+
+# Доля документа, начиная с которой окно вокруг числа перестаёт что-либо выделять.
+MAX_WINDOW_SHARE = 0.5
+
+
+def check_label(label: str, context: str, threshold: float = LABEL_THRESHOLD,
+                counts=None, source_len: int = 0) -> bool:
+    """Стоит ли рядом с числом его метка.
 
     D-14 п.3: «19.7» само по себе ничего не значит, значение имеет
     «Charlson >=5, группа GLP-1, 19.7%». Сверяется пара, а не голое значение.
     """
-    if not label or not context:
-        return False
-    words = [w for w in re.findall(r"\w+", label.lower()) if len(w) > 2]
-    if not words:
-        return False
-    ctx = context.lower()
-    return sum(1 for w in words if w in ctx) >= min_words
+    m = label_overlap(label, context, counts, source_len)
+    return m is not None and m >= threshold
 
 
 def check_group(claim: dict, context: str, matched: str, groups=None) -> str:
@@ -190,7 +335,14 @@ def check_group(claim: dict, context: str, matched: str, groups=None) -> str:
 
 def verify(claims: list, source_text: str) -> dict:
     src = normalise(source_text)
+    counts, src_len = word_counts(src), len(src)
     results, verified, unverified, unlabelled, inverted = [], 0, 0, 0, 0
+    unjudged = 0        # числа, у которых силу метки измерить нечем
+    # Покрытие проверки группы. Без него «0 инверсий» читается как «проверили —
+    # инверсий нет», а на деле означало «проверка отказалась отвечать»: на разборе
+    # BMJ вердикт был вынесен для 0 чисел из 442, потому что маркеры групп заданы
+    # под предметную область (F-63).
+    group_seen = {"ok": 0, "mismatch": 0, "unknown": 0}
     for c in claims:
         num = str(c.get("value", "")).strip()
         label = c.get("label", "")
@@ -199,29 +351,67 @@ def verify(claims: list, source_text: str) -> dict:
         if num in TRIVIAL:
             results.append({**c, "status": "SKIPPED_TRIVIAL"})
             continue
-        hit = find_number(num, src)
+        occ = find_occurrences(num, src)
         grp = "unknown"
-        if not hit["found"]:
+        if not occ:
             status = "UNVERIFIED"      # D-14 п.2: в расчёты не идёт
             unverified += 1
+            results.append({**c, "status": status, "group_check": grp,
+                            "matched_as": None, "context": None,
+                            "label_match": 0.0, "occurrences": 0})
+            continue
+
+        # Из всех вхождений числа берётся то, рядом с которым метка совпадает
+        # сильнее всего. Проверять первое попавшееся неверно: число живёт в статье
+        # в среднем в двух местах, и «не та» позиция давала и ложные обвинения в
+        # потере метки, и невозможность увидеть настоящую инверсию (F-63).
+        best = max(occ, key=lambda o: (label_overlap(label, o["context"],
+                                                     counts, src_len) or -1.0))
+        match = label_overlap(label, best["context"], counts, src_len)
+        grp = check_group(c, best["context"], best["as"])
+        if grp == "mismatch":
+            status = "GROUP_MISMATCH"   # число есть, но у другой группы — инверсия
+            inverted += 1
+        elif match is None:
+            # Мера неприменима — число найдено, о метке ничего не сказано.
+            status = "VERIFIED"
+            unjudged += 1
+            verified += 1
+        elif label and match < LABEL_THRESHOLD:
+            status = "FOUND_LABEL_MISMATCH"
+            unlabelled += 1
         else:
-            grp = check_group(c, hit["context"], hit["as"])
-            if grp == "mismatch":
-                status = "GROUP_MISMATCH"   # число есть, но у другой группы — инверсия
-                inverted += 1
-            elif label and not check_label(label, hit["context"]):
-                status = "FOUND_LABEL_MISMATCH"
-                unlabelled += 1
-            else:
-                status = "VERIFIED"
-                verified += 1
+            status = "VERIFIED"
+            verified += 1
+        if grp in group_seen:
+            group_seen[grp] += 1
         results.append({**c, "status": status, "group_check": grp,
-                        "matched_as": hit["as"], "context": hit["context"]})
+                        "matched_as": best["as"], "context": best["context"],
+                        "label_match": None if match is None else round(match, 3),
+                        "occurrences": len(occ)})
+    checked = [r for r in results if r["status"] != "SKIPPED_TRIVIAL"]
+    matches = sorted(r["label_match"] for r in checked
+                     if r["status"] != "UNVERIFIED" and r.get("label_match") is not None)
+    decided = group_seen["ok"] + group_seen["mismatch"]
     return {
-        "summary": {"total": len(results), "verified": verified,
-                    "unverified": unverified,
-                    "group_mismatch": inverted,
-                    "found_but_label_mismatch": unlabelled},
+        "summary": {
+            "total": len(results), "verified": verified,
+            "unverified": unverified,
+            "group_mismatch": inverted,
+            "found_but_label_mismatch": unlabelled,
+            # Сила совпадения метки, а не только её факт.
+            "label_match_median": (round(matches[len(matches) // 2], 3)
+                                   if matches else None),
+            "label_threshold": LABEL_THRESHOLD,
+            # Числа, для которых силу метки измерить нечем: документ короче окна
+            # или метка состоит из слов, встречающихся в нём повсюду.
+            "label_not_judged": unjudged,
+            # Сколько чисел проверка группы реально рассудила. Это число обязано
+            # стоять рядом с `group_mismatch`, иначе ноль инверсий выглядит как
+            # результат проверки, а не как её отказ.
+            "group_checked": decided,
+            "group_undecided": group_seen["unknown"],
+        },
         "claims": results,
     }
 

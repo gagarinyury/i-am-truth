@@ -18,6 +18,7 @@ characteristics · exposed». Таких слов в научной статье
   python3 tests/test_claim_labels.py
 """
 import pathlib
+import statistics
 import re
 import sys
 
@@ -59,6 +60,20 @@ FINDINGS = {
 }
 
 SOURCE = (
+    # текст добит до реалистичной длины: окно вокруг числа (380
+    # знаков) обязано быть заметно уже документа, иначе «рядом с числом»
+    # означает «где угодно» и сила совпадения метки не измеряется (F-63)
+    "Methods. Patients were identified in the claims database between January "
+    "2019 and December 2024 and followed until the first qualifying event, "
+    "death, disenrolment or the end of the study window. Covariates were "
+    "measured in the year before the index date and included age, sex, "
+    "region, smoking status, body mass index, prior imaging and the number "
+    "of outpatient visits. Propensity scores were estimated by logistic "
+    "regression and used for one-to-one nearest neighbour matching without "
+    "replacement inside a calliper of 0.2 standard deviations. Analyses were "
+    "repeated after excluding the first six months of follow-up and after "
+    "restricting the cohort to patients with at least two recorded visits. "
+
     "Appendix Table A2. History of breast cancer: No GLP-1 1,197 (7.8), "
     "GLP-1 907 (5.9). "
     "Table 1. Charlson comorbidity 5+ very high: GLP-1 3,008 (19.7), "
@@ -87,6 +102,20 @@ FINDINGS_TWO_ARMS = {
 }
 
 SOURCE_TWO_ARMS = (
+    # текст добит до реалистичной длины: окно вокруг числа (380
+    # знаков) обязано быть заметно уже документа, иначе «рядом с числом»
+    # означает «где угодно» и сила совпадения метки не измеряется (F-63)
+    "Methods. Patients were identified in the claims database between January "
+    "2019 and December 2024 and followed until the first qualifying event, "
+    "death, disenrolment or the end of the study window. Covariates were "
+    "measured in the year before the index date and included age, sex, "
+    "region, smoking status, body mass index, prior imaging and the number "
+    "of outpatient visits. Propensity scores were estimated by logistic "
+    "regression and used for one-to-one nearest neighbour matching without "
+    "replacement inside a calliper of 0.2 standard deviations. Analyses were "
+    "repeated after excluding the first six months of follow-up and after "
+    "restricting the cohort to patients with at least two recorded visits. "
+
     "Table 2. Baseline characteristics by allocation. "
     "Baseline upper limb muscle tone: Control group 1.29, Intervention group 1.14. "
     "Standardized mean difference 0.37 before matching."
@@ -146,13 +175,24 @@ def checks(res, name):
         fails.append(f"ложная инверсия групп ({s['group_mismatch']} шт.), "
                      f"например {bad['value']} — {bad['label'][:50]!r}")
 
-    # 4. Сверка вообще работает: большинство чисел подтверждено
-    share = s["verified"] / total
-    if share < 0.5:
-        fails.append(f"подтверждено лишь {s['verified']}/{s['total']} ({share:.0%})")
+    # 4. Метка реально описывает своё число.
+    #
+    # Раньше здесь стояла доля статуса VERIFIED, но после F-63 этот статус зависит
+    # от порога, а порог — от того, насколько слова метки редки в конкретном
+    # документе. Инвариант, который проверка обязана держать, от порога не зависит:
+    # **сила совпадения у самодостаточной метки должна быть заметно выше, чем у
+    # метки из имён полей схемы**. Её и меряем.
+    scored = [c["label_match"] for c in claims if c.get("label_match") is not None]
+    med = statistics.median(scored) if scored else None
+    if med is None:
+        fails.append("силу совпадения метки не удалось измерить ни на одном числе")
+    elif med < 0.3:
+        fails.append(f"медианная сила совпадения метки {med:.2f} — метки не "
+                     f"описывают свои числа")
 
-    print(f"  {name}: VERIFIED {s['verified']}/{s['total']} "
-          f"({share:.0%}) · метка не совпала {s['found_but_label_mismatch']} · "
+    print(f"  {name}: медиана совпадения метки "
+          f"{'—' if med is None else f'{med:.2f}'} · VERIFIED {s['verified']}/"
+          f"{s['total']} · метка не совпала {s['found_but_label_mismatch']} · "
           f"инверсий {s['group_mismatch']}")
     return fails
 

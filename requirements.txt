@@ -10,3 +10,5 @@ google-cloud-storage==3.13.1
 python-multipart==0.0.32
 pdfplumber==0.11.10
 google-adk==2.8.0
+# нужен eval/harness.py — на чистой машине замеры без него не воспроизводятся
+pyyaml==6.0.2

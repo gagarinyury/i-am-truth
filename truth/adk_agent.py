@@ -23,6 +23,7 @@ D-09), либо не считать вовсе. Здесь она вызывае
     result = adk_agent.run(pdf_bytes=..., paper_text=..., meta=...)
 """
 import asyncio
+import contextvars
 import json
 import os
 import pathlib
@@ -47,7 +48,15 @@ os.environ.setdefault("GOOGLE_CLOUD_LOCATION", critic.LOCATION)
 # Источник для инструмента сверки. Кладётся сюда перед запуском: ADK передаёт
 # инструментам только аргументы модели, а тащить весь текст статьи через них —
 # значит просить модель его же и процитировать, что лишает проверку смысла.
-_SOURCE = {"text": ""}
+# Источник для инструмента самопроверки. Хранится в ContextVar, а не в модульном
+# словаре: сервис обрабатывает запросы конкурентно, и на глобальной переменной два
+# одновременных разбора через ADK перетирали источник друг друга — числа статьи A
+# сверялись бы с текстом статьи B, а завершение любого из них обнуляло источник у
+# второго. Это ровно тот класс подмены, который проект ищет у чужих работ, и он же
+# был запрещён себе для временных файлов (комментарий в pipeline.py, D-14).
+# ContextVar изолирует значение по контексту исполнения: `asyncio.run` в каждом
+# потоке заводит свой, и задачи внутри него наследуют копию.
+_SOURCE: contextvars.ContextVar = contextvars.ContextVar("truth_adk_source", default="")
 
 
 # --------------------------------------------------------------------------- tools
@@ -99,9 +108,10 @@ def check_number_in_source(value: str, label: str) -> dict:
         value: the number as you intend to write it, e.g. "19.7".
         label: what the number refers to, e.g. "Charlson 5+ in the GLP-1 group".
     """
-    if not _SOURCE["text"]:
+    src = _SOURCE.get()
+    if not src:
         return {"status": "NO_SOURCE", "note": "source text was not loaded"}
-    r = verify_numbers.verify([{"value": str(value), "label": label}], _SOURCE["text"])
+    r = verify_numbers.verify([{"value": str(value), "label": label}], src)
     c = r["claims"][0]
     return {"status": c["status"], "context": (c.get("context") or "")[:300]}
 
@@ -191,7 +201,7 @@ def run(paper_text: str, pdfs: list = None, source_text: str = None,
     а здесь повторяется весь прогон, если из ADK всё-таки прилетела ошибка исчерпания
     квоты. Один упавший прогон из трёх на замере — достаточная причина.
     """
-    _SOURCE["text"] = source_text or paper_text
+    token = _SOURCE.set(source_text or paper_text)
     delay = 15
     try:
         for i in range(attempts):
@@ -206,4 +216,4 @@ def run(paper_text: str, pdfs: list = None, source_text: str = None,
                 time.sleep(delay)
                 delay *= 2
     finally:
-        _SOURCE["text"] = ""
+        _SOURCE.reset(token)

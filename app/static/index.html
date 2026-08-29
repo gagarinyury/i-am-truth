@@ -69,7 +69,10 @@ section h2{margin:0 0 14px;font-size:13px;letter-spacing:.09em;text-transform:up
 .cell b{display:block;font-size:23px;font-weight:650;letter-spacing:-.02em}
 .cell span{font-size:12.5px;color:var(--dim)}
 .cell.ok b{color:var(--low)} .cell.warn b{color:var(--mid)} .cell.bad b{color:var(--high)}
-a.brief{display:inline-block;padding:8px 14px;border:1px solid var(--line);\n  border-radius:8px;text-decoration:none;font-size:13px;font-weight:550}\na.brief:hover{border-color:var(--dim)}\n.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
+a.brief{display:inline-block;padding:8px 14px;border:1px solid var(--line);
+  border-radius:8px;text-decoration:none;font-size:13px;font-weight:550}
+a.brief:hover{border-color:var(--dim)}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:600}
 .p-high{background:var(--high-soft);color:var(--high)}
 .p-mid{background:var(--mid-soft);color:var(--mid)}
 .p-low{background:var(--low-soft);color:var(--low)}
@@ -351,16 +354,38 @@ function render(d){
   }
 
   /* verification — the point of the whole thing */
+  /* What this block may and may not claim. Finding a number in the source is a
+     reliable result. Judging whether the description next to it is *the same*
+     description is not: the label is the model's phrasing, the paper's is its own,
+     and word overlap between them separates right from wrong only about threefold
+     (F-63). So the strong finding leads, the weak one is reported as a strength
+     rather than a verdict, and the group check states its own coverage — zero
+     inversions out of zero decisions is not evidence of anything. */
+  const gDecided = v.group_checked, gUndecided = v.group_undecided,
+        gKnown = gDecided!==undefined;
   h += `<section>
-    <h2>Every number checked against the source</h2>
+    <h2>Every number searched for in the source</h2>
     <div class="grid">
-      <div class="cell ok"><b>${confirmed}</b><span>confirmed with its label</span></div>
-      <div class="cell"><b>${located}</b><span>found, label unclear</span></div>
-      <div class="cell ${missing?"warn":"ok"}"><b>${missing}</b><span>not found in source</span></div>
-      <div class="cell ${inverted?"bad":"ok"}"><b>${inverted}</b><span>groups inverted</span></div>
+      <div class="cell ok"><b>${checked-missing}</b><span>found in the paper</span></div>
+      <div class="cell ${missing?"warn":"ok"}"><b>${missing}</b><span>not found at all</span></div>
+      <div class="cell"><b>${confirmed}</b><span>description also matches</span></div>
+      <div class="cell ${inverted?"bad":""}"><b>${gKnown&&!gDecided?"—":inverted}</b><span>${
+        gKnown&&!gDecided?"group check did not apply":"attached to the wrong group"}</span></div>
     </div>
-    <p class="muted" style="margin-top:10px">${checked} numbers extracted from the report and searched
-    in the paper together with what they describe. A value that cannot be found is never used in a calculation.</p>
+    <p class="muted" style="margin-top:10px">${checked} numbers were taken out of the report and
+    searched for in the paper. A value that cannot be found is never used in a calculation — that
+    part is a plain fact about the document.</p>
+    <p class="muted" style="margin-top:8px">The third figure is weaker and is labelled as such:
+    it counts numbers where at least ${Math.round((v.label_threshold??0.5)*100)}% of the words of
+    the model's own description also appear beside the number in the paper${
+      v.label_match_median!==undefined&&v.label_match_median!==null
+        ? `; the median across all found numbers is ${v.label_match_median}` : ""}.
+    Wording is not identity: the same fact can be phrased two ways, so a low score here is a
+    reason to look, not a verdict.</p>
+    ${gKnown?`<p class="muted" style="margin-top:8px">The group check ruled on
+      <b>${gDecided}</b> of ${gDecided+gUndecided} numbers${gDecided?"":" — none"}.
+      ${gDecided?"":"Its markers are written for the comparison arms of a particular field, and this paper names its arms differently, so it stayed silent rather than guessing. "}
+      A count of zero inversions means nothing where the check never ran.</p>`:""}
     ${(d.unverified_numbers||[]).length?`<div class="nums">${
       d.unverified_numbers.slice(0,14).map(n=>`<span class="num" title="${esc(n.label)}">${esc(n.value)}</span>`).join("")
     }</div>`:""}
