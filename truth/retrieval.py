@@ -81,8 +81,12 @@ def assess_level(meta: dict, has_fulltext: bool, has_appendix: bool) -> dict:
     else:
         lvl = "L3"
     out = {"level": lvl, **LEVELS[lvl]}
-    if lvl != "L1":
-        out["missing"] = ("appendix tables — without them the audit rests on generic "
-                          "design properties rather than numbers from this paper, and "
-                          "there is nothing to check it against (F-44)")
+    if lvl == "L2":
+        out["missing"] = ("appendix tables — the body of the paper is here, but baseline "
+                          "tables and sensitivity analyses usually are not, and findings "
+                          "resting on them cannot be checked (F-44)")
+    elif lvl == "L3":
+        out["missing"] = ("full text and appendix tables — with only the abstract there "
+                          "are no numbers from this paper to check the audit against "
+                          "(F-44)")
     return out

@@ -318,15 +318,17 @@ function render(d){
       <h2>Recomputed by a function, not by the model</h2>
       <div class="grid">
         <div class="cell"><b>${esc(rc.absolute_risk_difference_pp)} pp</b><span>absolute risk difference</span></div>
-        <div class="cell"><b>${esc(rc.nnt)}</b><span>${rc.nnt<0?"number needed to harm":"number needed to treat"}</span></div>
+        <div class="cell"><b>${esc(rc.nnt_abs??Math.abs(rc.nnt))}</b><span>${esc(rc.nnt_kind||"number needed to treat")}</span></div>
         <div class="cell"><b>${esc(rc.rr)}</b><span>risk ratio (${esc((rc.rr_ci95||[]).join("–"))})</span></div>
         <div class="cell"><b>${esc(rc.e_value_point)}</b><span>E-value (CI ${esc(rc.e_value_ci)})</span></div>
       </div>
       <p class="muted" style="margin:12px 0 0">
         ${agree(ag.absolute_risk_difference)} risk difference — the model wrote
         ${ms.absolute_risk_difference??"nothing"}, the function gets ${esc(rc.absolute_risk_difference_pp)}.
-        ${agree(ag.nnt)} NNT — model ${ms.nnt??"nothing"}, function ${esc(rc.nnt)}.
+        ${agree(ag.nnt)} ${esc(rc.nnt_kind||"NNT")} — the model wrote
+        ${ms.nnt??"nothing"}, the function gets ${esc(rc.nnt_abs??Math.abs(rc.nnt))}.
       </p>
+      ${rc.note?`<p class="muted" style="margin:8px 0 0"><b>${esc(rc.note)}</b></p>`:""}
       <p class="muted" style="margin:8px 0 0">
         ${rc.independent
           ? `Computed from the four counts the model copied out of the paper — ${esc(rc.counts.exposed_events)}/${esc(rc.counts.exposed_total)} against ${esc(rc.counts.control_events)}/${esc(rc.counts.control_total)} — and those four numbers are checked against the source below. The recomputation is therefore independent of the model's arithmetic.`

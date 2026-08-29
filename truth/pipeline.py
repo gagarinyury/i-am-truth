@@ -40,21 +40,34 @@ def _supplementary_text(blob: bytes) -> str:
     Обвинить в галлюцинации того, кто не галлюцинировал, — та же ошибка, которую
     продукт создан ловить.
     """
-    import xml.etree.ElementTree as ET
     out = []
     try:
         z = zipfile.ZipFile(io.BytesIO(blob))
     except zipfile.BadZipFile:
         return ""
     for name in z.namelist():
-        if not name.lower().endswith(".docx"):
-            continue
-        try:
-            dz = zipfile.ZipFile(io.BytesIO(z.read(name)))
-            xml = dz.read("word/document.xml").decode("utf-8", "replace")
-            out.append(re.sub(r"<[^>]+>", " ", xml))
-        except Exception:                                    # noqa: BLE001
-            continue
+        low = name.lower()
+        if low.endswith(".docx"):
+            try:
+                dz = zipfile.ZipFile(io.BytesIO(z.read(name)))
+                xml = dz.read("word/document.xml").decode("utf-8", "replace")
+                out.append(re.sub(r"<[^>]+>", " ", xml))
+            except Exception:                                # noqa: BLE001
+                continue
+        elif low.endswith(".pdf"):
+            # Приложение бывает и PDF — у BMJ это штатный формат («web only»).
+            # Разбирали только .docx, и такие статьи молча падали с L1 на L2:
+            # уровень оказывался свойством нашего добытчика, а не статьи (F-60).
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as fh:
+                fh.write(z.read(name))
+                tmp_path = fh.name
+            try:
+                if has_text_layer(tmp_path):
+                    out.append(pdf_text(tmp_path))
+            except Exception:                                # noqa: BLE001
+                pass
+            finally:
+                os.unlink(tmp_path)
     return "\n".join(out)
 
 
@@ -77,7 +90,23 @@ def _tables_from_supplementary(blob: bytes) -> list:
     except zipfile.BadZipFile:
         return tables
     for name in z.namelist():
-        if not name.lower().endswith(".docx"):
+        low = name.lower()
+        if low.endswith(".pdf"):
+            # Тот же разбор, что для принесённого пользователем PDF: парсер уже
+            # есть, писать второй незачем.
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as fh:
+                fh.write(z.read(name))
+                tmp_path = fh.name
+            try:
+                for t in extract_pdf(tmp_path):
+                    t["source_file"] = name
+                    tables.append(t)
+            except Exception:                                # noqa: BLE001
+                pass
+            finally:
+                os.unlink(tmp_path)
+            continue
+        if not low.endswith(".docx"):
             continue
         # Файл обязан быть уникальным: батч гоняет статьи в несколько потоков,
         # а фиксированный путь означает, что таблицы одной статьи попадут в разбор
@@ -330,6 +359,21 @@ def verify_findings(findings: dict, source_text: str) -> dict:
     return verify(uniq, source_text)
 
 
+CAVEAT = {
+    "L2": ("The body of the paper was retrieved, and the numbers quoted from it were "
+           "checked — but the appendix was not. Baseline tables, sensitivity analyses "
+           "and subgroup results usually live there, and a finding that rests on them "
+           "cannot be checked here. CONFIRMED stays out of reach not because the "
+           "reasoning is weaker, but because part of the evidence was never in front "
+           "of it (F-44)."),
+    "L3": ("This audit ran on the abstract alone. Findings at this level rest on "
+           "generic design properties rather than numbers from the document: there is "
+           "nothing to verify because there is nothing to quote. The direction of bias "
+           "may still be named correctly — but a correct guess is not evidence, so "
+           "CONFIRMED is unreachable here (F-44)."),
+}
+
+
 def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
               engine: str = "direct", tool_calls: list = None,
               agents: dict = None, engine_note: str = None) -> dict:
@@ -369,12 +413,11 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
         "unverified_numbers": [c for c in (ver["claims"] if ver else [])
                                if c["status"] in ("UNVERIFIED", "GROUP_MISMATCH")][:20],
         "max_confidence": gathered["level"]["max_confidence"],
-        "caveat": (None if lvl == "L1" else
-                   "This audit ran on incomplete data. Findings at this level rest on "
-                   "generic design properties rather than numbers from the document: "
-                   "there is nothing to verify because there is nothing to quote. The "
-                   "direction of bias may still be named correctly — but a correct guess "
-                   "is not evidence, so CONFIRMED is unreachable here (F-44)."),
+        # Предупреждение пишется под уровень. Один текст на L2 и L3 противоречил
+        # собственной странице: на L2 он утверждал «нечего цитировать», а рядом
+        # стояли сотни сверенных с документом чисел (найдено 29.08 на
+        # 10.1136/bmj-2023-076990, F-60).
+        "caveat": CAVEAT.get(lvl),
         "usage": usage,
         "engine": engine,
     }

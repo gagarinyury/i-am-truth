@@ -94,11 +94,15 @@ def render(report: dict) -> str:
         L.append("|---|---|---|---|")
         L.append(f"| absolute risk difference | {rc.get('absolute_risk_difference_pp')} pp | "
                  f"{ms.get('absolute_risk_difference')} | {ag.get('absolute_risk_difference')} |")
-        L.append(f"| number needed to treat/harm | {rc.get('nnt')} | {ms.get('nnt')} | "
+        L.append(f"| {rc.get('nnt_kind', 'number needed to treat')} | "
+                 f"{rc.get('nnt_abs', rc.get('nnt'))} | {ms.get('nnt')} | "
                  f"{ag.get('nnt')} |")
         L.append(f"| risk ratio | {rc.get('rr')} ({', '.join(str(x) for x in rc.get('rr_ci95', []))}) | — | — |")
         L.append(f"| E-value | {rc.get('e_value_point')} (CI {rc.get('e_value_ci')}) | — | — |")
         L.append("")
+        if rc.get("note"):
+            L.append(f"*{rc['note']}.*")
+            L.append("")
         L.append("Independent of the model's arithmetic." if rc.get("independent") else
                  "The 2×2 counts were recovered from the model's own arithmetic, so this "
                  "is a consistency check rather than an independent one.")

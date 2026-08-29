@@ -104,11 +104,19 @@ def recompute(computed: dict) -> dict | None:
             return "not_stated"
         return "match" if abs(abs(stated) - abs(fn)) <= tol else "mismatch"
 
+    # Знаки ARD и NNT по построению противоположны: разность рисков пишется
+    # «экспозиция минус контроль», а NNT — от снижения риска. Читателю выдаётся
+    # модуль и слово по знаку, иначе на одной строке стоят −1.02 и +98.1, и надо
+    # держать в голове две противоположные конвенции.
+    harm = fn_ard_pp > 0
     return {
         "basis": basis,
         "counts": counts,
         "absolute_risk_difference_pp": round(fn_ard_pp, 4),
         "nnt": rep["nnt"],
+        "nnt_abs": abs(rep["nnt"]),
+        "nnt_kind": "number needed to harm" if harm else "number needed to treat",
+        "adjusted": False,
         "risk_exposed": rep["risk_exposed"],
         "risk_control": rep["risk_control"],
         "rr": rep["rr"],
@@ -116,6 +124,11 @@ def recompute(computed: dict) -> dict | None:
         "odds_ratio": rep["odds_ratio"],
         "e_value_point": rep["e_value_point"],
         "e_value_ci": rep["e_value_ci"],
+        # Оценка сырая: она сложена из четырёх чисел таблицы 2×2 и никаких поправок
+        # не знает. Без этой пометки читатель сравнит её с опубликованным
+        # скорректированным эффектом и решит, что мы его подтвердили.
+        "note": ("crude, unadjusted — computed from the raw 2×2 counts only; the "
+                 "paper's own adjusted estimate is a different quantity"),
         "model_said": {"absolute_risk_difference": stated_ard, "nnt": stated_nnt},
         "agreement": {
             "absolute_risk_difference": verdict(stated_ard, fn_ard_pp, TOL_PP),
