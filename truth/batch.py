@@ -45,8 +45,14 @@ STORAGE_FAILURES = []
 
 
 def save(path: str, obj: dict) -> bool:
-    """Возвращает True, если запись реально ушла в облако."""
-    data = json.dumps(obj, ensure_ascii=False, indent=2)
+    """Возвращает True, если запись реально ушла в облако.
+
+    `allow_nan=False` — то же правило, что в `store.put`, и по той же причине:
+    с `inf` или `nan` в отчёте в бакет лёг бы литерал `Infinity`, невалидный
+    JSON для всех потребителей, кроме Python. Раньше проверка стояла в одном из
+    двух мест записи, то есть закрывала половину риска.
+    """
+    data = json.dumps(obj, ensure_ascii=False, indent=2, allow_nan=False)
     try:
         _storage().bucket(BUCKET).blob(path).upload_from_string(
             data, content_type="application/json")

@@ -1,0 +1,34 @@
+# Прогон тестов на каждый push и pull request.
+#
+# Почему это вообще заведено. Пятнадцать тестов существовали и запускались
+# вручную по одному, а README называл два из них. Тест, который никто не
+# запускает, — это не проверка, а комментарий с кавычками; проект, который
+# требует от чужих статей воспроизводимости, начинает с себя.
+#
+# Сеть здесь не нужна и не используется: ни один тест не ходит в Europe PMC и
+# не зовёт модель. Замеры продукта (`eval/`) — другое дело, они стоят вызовов
+# Vertex и в CI не идут намеренно.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"    # та же версия, что в Dockerfile
+      - name: install
+        # Ставится то же, что в образ, — версии зафиксированы по проверенному
+        # окружению, и расходиться CI с продом здесь не должен.
+        run: pip install --no-cache-dir -r requirements.txt
+      - name: tests
+        run: python3 tests/run_all.py
+      - name: self-test of the stats functions
+        # `stats_tool` сверяется с опубликованными значениями VanderWeele & Ding
+        # при прямом запуске; это отдельная проверка, и её тоже надо гонять.
+        run: python3 -m truth.stats_tool

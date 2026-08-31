@@ -27,7 +27,7 @@ import zipfile
 
 from . import cells, confidence, critic, retrieval, subagents, verify_numbers
 from .docx_tables import extract as extract_docx
-from .jats_tables import parse_tables, to_claims
+from .jats_tables import parse_tables
 from .pdf_tables import extract as extract_pdf
 from .pdf_tables import extract_text as pdf_text
 from .pdf_tables import has_text_layer, is_appendix

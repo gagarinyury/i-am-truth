@@ -13,7 +13,7 @@ Stats Tool — арифметика эпидемиологических мер.
   граница CI 0.822 -> E 1.73 (наш QBA, посчитанный вручную ранее).
 """
 import math
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 
 def e_value(rr: float) -> float:

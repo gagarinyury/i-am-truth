@@ -20,7 +20,50 @@ W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
 def cell_text(tc) -> str:
-    return "".join(t.text or "" for t in tc.iter(f"{W}t")).strip()
+    """Текст ячейки — без текста вложенных в неё таблиц.
+
+    `ElementTree.iter()` рекурсивен, и это здесь ловушка. Прежний код собирал
+    `tc.iter(w:t)`, поэтому таблица внутри ячейки втягивалась в текст самой
+    ячейки: `OUTER-1` превращалось в `OUTER-1INNER-AINNER-B`. Дальше из этой
+    строки `cells.build_index` делал подпись строки, то есть **адрес числа** —
+    а адрес объявлен решением, а не шкалой. Испорченный адрес хуже
+    отсутствующего: он выглядит проверкой.
+
+    Поэтому текст берётся только из абзацев, лежащих в ячейке напрямую.
+    """
+    return "".join(t.text or "" for p in tc.findall(f"{W}p")
+                   for t in p.iter(f"{W}t")).strip()
+
+
+def _rows_of(tbl) -> list:
+    """Строки таблицы — только её собственные.
+
+    `tbl.iter(w:tr)` тоже рекурсивен и возвращал вдобавок строки вложенных
+    таблиц, а `tr.iter(w:tc)` — их ячейки, и они приписывались внешней строке.
+    Одна таблица с одной вложенной давала четыре колонки вместо двух и лишнюю
+    строку-дубль. Прямые дети такой ошибки не делают.
+    """
+    return [[cell_text(tc) for tc in tr.findall(f"{W}tc")]
+            for tr in tbl.findall(f"{W}tr")]
+
+
+def _nested(tbl):
+    """Таблицы, вложенные в ячейки этой. Выдаются отдельными, а не теряются:
+    в приложениях так свёрстаны подтаблицы по подгруппам, и числа в них
+    настоящие."""
+    for tr in tbl.findall(f"{W}tr"):
+        for tc in tr.findall(f"{W}tc"):
+            for inner in tc.findall(f"{W}tbl"):
+                yield inner
+                yield from _nested(inner)
+
+
+def _table(tbl, caption: str) -> dict | None:
+    rows = [r for r in _rows_of(tbl) if any(c for c in r)]
+    if not rows:
+        return None
+    return {"caption": caption, "rows": rows,
+            "n_rows": len(rows), "n_cols": max(len(r) for r in rows)}
 
 
 def extract(path: str) -> list:
@@ -34,12 +77,13 @@ def extract(path: str) -> list:
             if re.match(r"^(e?Table|Supplementary Table|Appendix Table)\s*[Ss]?\d+", txt):
                 caption = txt
         elif el.tag == f"{W}tbl":
-            rows = [[cell_text(tc) for tc in tr.iter(f"{W}tc")]
-                    for tr in el.iter(f"{W}tr")]
-            rows = [r for r in rows if any(c for c in r)]
-            if rows:
-                tables.append({"caption": caption, "rows": rows,
-                               "n_rows": len(rows), "n_cols": max(len(r) for r in rows)})
+            t = _table(el, caption)
+            if t:
+                tables.append(t)
+                for inner in _nested(el):
+                    nt = _table(inner, f"{caption} (nested)".strip())
+                    if nt:
+                        tables.append(nt)
                 caption = ""
     return tables
 

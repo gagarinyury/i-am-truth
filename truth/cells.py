@@ -117,9 +117,6 @@ def build_index(tables: list) -> dict:
                              cells[0] if cells else "")
             for i, cell in enumerate(cells):
                 col = cols[i] if i < len(cols) else f"col{i}"
-                # Подпись строки сама себе адресом не является.
-                if cell is row_label and i == 0:
-                    pass
                 for raw in NUM.findall(cell):
                     idx.setdefault(_norm(raw), []).append({
                         "table": name, "row": row_label, "column": col,
@@ -229,19 +226,3 @@ def column_conflict(label: str, cell: dict):
             "note": "the label names another column of the same table, and that column "
                     "holds a different value for this row — so the number belongs to a "
                     "different arm than the one claimed"}
-
-
-def _covered(header: str, label: str) -> float:
-    """Доля значимых слов ЗАГОЛОВКА, стоящих в метке модели.
-
-    Направление важно и выбрано не наугад. Заголовок колонки короткий и точный
-    («GLP-1», «Control»), метка модели длинная и описательная («Charlson 5+ in the
-    GLP-1 group»). Доля слов метки в заголовке всегда мала — «GLP-1» покрывает
-    треть метки и при полном согласии. Доля слов заголовка в метке ведёт себя
-    правильно: «GLP-1» покрыт целиком, «Control» не покрыт вовсе.
-    """
-    hw = label_words(header)
-    if not hw:
-        return 0.0
-    low = (label or "").lower()
-    return sum(1 for w in hw if w in low) / len(hw)
