@@ -107,14 +107,16 @@ curl -X POST $URL/analyze \
 
 That DOI is an open-access paper: the service pulls the JATS full text **and 35 appendix
 tables**, runs a seven-domain ROBINS-E assessment across three agents, and looks up every
-number it reports in the source. Measured on the live service, 29.08, revision 00015:
-**level L1, 566 numbers looked up — all 566 found in the paper, none missing**; the
-absolute risk difference recomputed by a function from the 2×2 counts (9.8919 pp,
-NNH 10.1) and agreeing with the model's own figures; and the whole thing kept at
-[`/audits/audit-20260829-154707-f58847`](https://i-am-truth-242136767009.us-central1.run.app/audits/audit-20260829-154707-f58847).
+number it reports in the source. Measured on the live service, 31.08, revision 00016:
+**level L1, 2 main tables and 35 from the appendix, 365 numbers looked up — all 365 found
+in the paper, none missing**; the absolute risk difference recomputed by a function from
+the 2×2 counts (9.8919 pp, NNH 10.1) and agreeing with the model's own figures; the
+E-value computed from the paper's own adjusted hazard ratio rather than from the raw
+counts (**1.56**); and the whole thing kept at
+[`/audits/audit-20260831-094123-0b6344`](https://i-am-truth-242136767009.us-central1.run.app/audits/audit-20260831-094123-0b6344).
 
 That same run is also where the direction tally earns its place: the model's overall
-verdict came out `away_from_null` while four of its own domains pointed the other way and
+verdict came out `away_from_null` while three of its own domains pointed the other way and
 only two pointed with it. The report says `contradicts` instead of quietly printing the
 verdict.
 
@@ -128,28 +130,37 @@ thesis.
 
 So each find is now weighed against the document's own numbers: how many distinct values
 of that shape it already contains gives the chance of a match, and `−log2` of it gives the
-find in bits. Re-verified with that layer, the same audit reads: **566 numbers searched,
-566 found, of which 87 carry six bits or more** — a value that a document this size would
-not hold by accident. The median find is worth 1.9 bits. The 87 are the evidence; the rest
-is arithmetic about the document. A number that "would have shown up anyway" now scores
-zero by measurement rather than by sitting on a hand-written list of trivial values, and
-the count of what was searched and what was found finally agree (they did not before:
-92 numbers were skipped silently and still counted in the total).
+find in bits. In the run above: **365 numbers searched, 365 found, of which 40 carry six
+bits or more** — a value that a document this size would not hold by accident. The median
+find is worth 1.9 bits. The 40 are the evidence; the rest is arithmetic about the document.
+A number that "would have shown up anyway" now scores zero by measurement rather than by
+sitting on a hand-written list of trivial values, and the count of what was searched and
+what was found finally agree — they did not before, when numbers were skipped silently and
+still counted in the total.
 
-**Where each number actually sits.** 32 of them were pinned to a specific table cell whose
+**Where each number actually sits.** 21 of them were pinned to a specific table cell whose
 row and column agree with what the model said the number was — an address, not a
-resemblance. 527 more sit somewhere in a parsed table without being pinned to one cell,
+resemblance. 331 more sit somewhere in a parsed table without being pinned to one cell,
 because the model's label for them is a whole sentence quoting several numbers at once,
-and no measure can say which cell each came from. 7 live only in running prose.
+and no measure can say which cell each came from. The rest live only in running prose.
 
 **And what each conclusion rests on, separately.** One number for the whole audit hides the
-thing that matters, so the report now scores every part on its own. In this run **8 of 10
-parts** cite at least one distinctive number — and the two that do not are named:
-*Post-exposure interventions* and *Selection of the reported result*. They may still be
-right; they rest on general properties of the design, and that is a different kind of
-claim, so it is printed rather than averaged away. Twelve sentences of the audit's own
-prose are flagged the same way — found by walking the text and looking up every number in
-it, with no second model asked.
+thing that matters, so the report now scores every part on its own. In this run **6 of 10
+parts** cite at least one distinctive number — and the four that do not are named, starting
+with *Confounding*, the domain the whole verdict leans on. They may still be right; they
+rest on general properties of the design, and that is a different kind of claim, so it is
+printed rather than averaged away. Nine sentences of the audit's own prose are flagged the
+same way — found by walking the text and looking up every number in it, with no second
+model asked.
+
+**And when the paper is not open at all, this is what it looks like.**
+[`/audits/audit-20260831-094008-1ea21b`](https://i-am-truth-242136767009.us-central1.run.app/audits/audit-20260831-094008-1ea21b)
+is a paper Europe PMC holds but does not release the full text for. The service used to
+answer such a request with an HTTP 500 — it called an endpoint the documentation reserves
+for the open-access subset. It now returns a report that says `L3`, names the reason
+(`isOpenAccess=N`) in a retrieval log alongside every other source it tried, and grounds
+**2 of 10 parts** instead of 6. Sixteen of the 58 numbers the model wrote are **not in the
+abstract at all**, and they are listed. That is the product working, not failing.
 
 These figures have been re-measured three times rather than rewritten, and every time the
 reason was a defect in the instrument, not in the audit. First the label of a number was
