@@ -20,7 +20,7 @@ import re
 import tempfile
 import zipfile
 
-from . import cells, critic, retrieval, subagents
+from . import cells, critic, retrieval, subagents, verify_numbers
 from .docx_tables import extract as extract_docx
 from .jats_tables import parse_tables, to_claims
 from .pdf_tables import extract as extract_pdf
@@ -309,17 +309,37 @@ def gather(doi: str = None, text: str = None, uploads: list = None) -> dict:
             "appendix_tables": appendix, "level": level}
 
 
-def tables_as_text(gathered: dict, limit: int = 40) -> str:
-    """Таблицы в текст для подачи модели. Приложения идут первыми: замер показал,
-    что именно они меняют направление вывода (F-26)."""
+def tables_as_text(gathered: dict, limit: int = 40, rows: int | None = 40) -> str:
+    """Таблицы в текст. Приложения идут первыми: замер показал, что именно они
+    меняют направление вывода (F-26).
+
+    Два потребителя, и пределы у них РАЗНЫЕ по существу, а не по недосмотру.
+
+    Модели подаётся усечённое: у вызова есть цена и окно, и сорок строк таблицы —
+    компромисс между полнотой и бюджетом.
+
+    Верификатору подаётся всё (`limit=None, rows=None`). Он не модель, токенов не
+    платит, и усечение для него — не экономия, а ложное обвинение: число из
+    сорок пятой строки eTable честно процитировано моделью, лежит в разобранной
+    ячейке, а в источнике сверки его нет, и отчёт печатает его в графе «не
+    найдено в статье вовсе». Обвинить в галлюцинации того, кто не
+    галлюцинировал, — та же ошибка, которую продукт создан ловить, и уже пятый
+    её случай за проект (после F-41 и трёх в приложениях). Базовая таблица
+    характеристик на сорок с лишним строк — норма, а L1-приложение и есть то,
+    ради чего всё построено.
+    """
+    def _rows(t):
+        rr = t["rows"] if rows is None else t["rows"][:rows]
+        return "\n".join(" | ".join(r) for r in rr)
+
     out = []
-    for t in gathered["appendix_tables"][:limit]:
-        rows = "\n".join(" | ".join(r) for r in t["rows"][:40])
-        out.append(f"### ПРИЛОЖЕНИЕ: {t.get('caption','')}\n{rows}")
-    for t in gathered["jats_tables"][:limit]:
+    for t in (gathered["appendix_tables"] if limit is None
+              else gathered["appendix_tables"][:limit]):
+        out.append(f"### ПРИЛОЖЕНИЕ: {t.get('caption','')}\n{_rows(t)}")
+    for t in (gathered["jats_tables"] if limit is None
+              else gathered["jats_tables"][:limit]):
         head = " | ".join(t["columns"])
-        rows = "\n".join(" | ".join(r) for r in t["rows"][:40])
-        out.append(f"### {t.get('label','')} {t.get('caption','')}\n{head}\n{rows}")
+        out.append(f"### {t.get('label','')} {t.get('caption','')}\n{head}\n{_rows(t)}")
     return "\n\n".join(out)
 
 
@@ -439,10 +459,10 @@ def verify_findings(findings: dict, source_text: str, tables: list = None) -> di
         if k not in seen:
             seen.add(k); uniq.append(c)
     res = verify(uniq, source_text)
-    return _attach_cells(res, tables)
+    return _attach_cells(res, tables, source_text)
 
 
-def _attach_cells(res: dict, tables: list) -> dict:
+def _attach_cells(res: dict, tables: list, source_text: str = "") -> dict:
     """Шаг 4б: у числа есть не окрестность, а адрес — если оно из таблицы.
 
     Прежняя проверка метки сравнивала формулировку модели со словами в окне 380
@@ -457,15 +477,52 @@ def _attach_cells(res: dict, tables: list) -> dict:
     Здесь же чинится проверка групп. Она стояла на выражениях, вшитых под первую
     статью проекта, и на живом разборе выносила вердикт для 4 чисел из 474.
     Заголовки колонок — это и есть названия рук, взятые из самого документа.
+
+    ## Второй рубеж против ложного «не найдено»
+
+    Раньше здесь стояло `if UNVERIFIED: located = "absent"; continue` — и это
+    значило, что вердикт «числа в статье нет вовсе» выносился, ни разу не
+    заглянув в индекс ячеек, построенный по тем же таблицам. Индекс мог это
+    число содержать. Корень чинится тем, что верификатор получает нерезаные
+    таблицы (см. `tables_as_text`), но полагаться на одно только отсутствие
+    усечения нельзя: между разбором таблицы и текстовым поиском стоит ещё
+    `normalise`, склейка ячейки и границы числа, и любая из них может развести
+    два представления одного значения.
+
+    Поэтому обвинение снимается адресом. Реабилитация полная, а не косметическая:
+    числу пересчитывается вес улики от того же распределения документа, оно
+    входит в `found` и в `strong` наравне с прочими, и сводка пересобирается.
+    Половинчатая реабилитация — оставить `evidence_bits = 0` — молча уронила бы
+    обеспеченность вывода в `grounding`, то есть перенесла бы ложное обвинение
+    с числа на домен.
+
+    Чего реабилитация НЕ даёт: у такого числа нет окрестности в тексте, значит
+    нет ни совпадения метки, ни проверки группы. Так и записано —
+    `label_match: None`, `group_check: "unknown"`, `found_via: "table_cell"`.
     """
     idx = cells.build_index(tables)
     if not idx:
         return res
     in_cell = in_table = 0
+    rescued = 0
+    shapes = None
     for c in res["claims"]:
         if c.get("status") == "UNVERIFIED":
-            c["located"] = "absent"
-            continue
+            if cells._norm(c.get("value", "")) not in idx:
+                c["located"] = "absent"
+                continue
+            # Число стоит в разобранной ячейке — обвинять его не в чем.
+            if shapes is None:
+                shapes = verify_numbers.document_shapes(
+                    verify_numbers.normalise(source_text or ""))
+            c["status"] = "VERIFIED"
+            c["found_via"] = "table_cell"
+            c["evidence_bits"] = verify_numbers.evidence_bits(c["value"], shapes)
+            c["chance"] = round(verify_numbers.chance_rate(c["value"], shapes), 4)
+            c["note"] = ("found in a parsed table cell but not in the flat text of the "
+                         "document; the label and the group could not be checked, "
+                         "because a cell has no surrounding prose")
+            rescued += 1
         cell = cells.locate(c["value"], c.get("label", ""), idx)
         if not cell:
             # Число есть в документе, но не в разобранной таблице: проза,
@@ -492,6 +549,22 @@ def _attach_cells(res: dict, tables: list) -> dict:
     # `text` — только в прозе. `absent` — нет вовсе.
     s["in_cell"] = in_cell
     s["in_table_address_unmatched"] = in_table
+    if rescued:
+        # Сводка пересобирается по фактическим статусам, а не правится
+        # приращениями: приращения расходятся с `claims` при первой же новой
+        # ветке, и тогда отчёт спорит сам с собой.
+        found = [c for c in res["claims"] if c["status"] != "UNVERIFIED"]
+        bits = sorted(c.get("evidence_bits") or 0.0 for c in found)
+        s["total"] = len(res["claims"])
+        s["found"] = len(found)
+        s["unverified"] = s["total"] - s["found"]
+        s["verified"] = sum(1 for c in found if c["status"] == "VERIFIED")
+        s["strong"] = sum(1 for b in bits if b >= verify_numbers.STRONG_BITS)
+        s["evidence_bits_total"] = round(sum(bits), 1)
+        s["evidence_bits_median"] = bits[len(bits) // 2] if bits else None
+        # Число обязано быть видно: если оно не ноль, значит текстовый поиск и
+        # разбор таблиц разошлись, и это дефект инструмента, а не свойство статьи.
+        s["found_only_in_table_cell"] = rescued
     return res
 
 
@@ -533,8 +606,13 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
     # «3.04» превращается в «3 . 04». Разбор таблиц склеивает ячейку правильно,
     # поэтому он и есть надёжный источник цифр. Четвёртый случай ложного обвинения
     # за проект (после F-41 и двух в приложениях) — и снова найден замером.
+    # Пределов здесь нет ни на число таблиц, ни на длину каждой: верификатор не
+    # модель, окна у него нет, и любое усечение оборачивается обвинением в
+    # выдумывании числа, которое честно стоит в сорок пятой строке eTable
+    # (см. `tables_as_text`). Прежние `limit=200` и молчаливые `rows[:40]`
+    # выглядели как щедрый запас, а были потолком.
     src = gathered["source_text"]
-    tbl_text = tables_as_text(gathered, limit=200)
+    tbl_text = tables_as_text(gathered, limit=None, rows=None)
     all_tables = list(gathered["appendix_tables"]) + list(gathered["jats_tables"])
     ver = (verify_findings(findings, f"{src}\n\n{tbl_text}", all_tables)
            if findings else None)
