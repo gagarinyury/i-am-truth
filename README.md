@@ -547,6 +547,45 @@ path changed between the 5.5s and the 5.0s, and the judge only ever sees the aud
 so this is spread, not a regression (F-58, F-63). The honest figure is the one with the
 wider sample. Every run is stored in `eval/results/` and reproducible with one command.
 
+### After the 31.08 fixes — measured, not asserted
+
+The audit of the code described under *Evidence levels* changed what layer 4 sees, so it
+had to be re-measured rather than argued about. Three fresh runs per reference, stored in
+`eval/results/bench-20260831-*.json`:
+
+| | McDonald (ours, 6 pts) | Cheng (external, 4 pts) |
+|---|---|---|
+| judge, three runs 31.08 | 5.0 · 5.5 · 6.0 — median **5.5** | 3.0 · 3.0 · 3.5 — median **3.0** |
+| for comparison, 29.08 | ten runs, median 5.0 | eleven runs, median 3.5 |
+
+**Neither difference is a result, and saying otherwise would repeat the mistake this
+section exists to record.** Three runs against ten cannot establish a move in either
+direction on a scale where half the checklist items flip between 0.5 and 1.0 — that is
+the same lesson as F-64, one column to the left. The numbers are here because they were
+measured; the honest reading is that the score did not visibly move.
+
+What did move is what the verifier can see, and that is not a matter of opinion:
+
+| | before 31.08 | after |
+|---|---|---|
+| numbers looked up | 365 | 452–570 |
+| carrying ≥ 6 bits | 40 | 143–158 (McDonald), 33–58 (Cheng) |
+| pinned to a table cell | 21 | 26–30 (McDonald), 8–14 (Cheng) |
+| not found at all | 0 of 365 | 2–9 |
+
+The verifier used to be handed tables truncated at forty rows; it now gets all of them,
+so both the numbers it can confirm and the ones it must report missing went up. **The
+last row is the one to read.** "0 not found out of 365" looked like a perfect score and
+was closer to a blind spot — a document of that size returns an invented value about a
+third of the time anyway. A handful of genuine misses is a verifier that can still say no.
+
+And the statuses, which did not exist before this revision: on McDonald 3–4 conclusions
+of ten reach `CONFIRMED`; on Cheng **none do**, though both papers are L1. That is not
+a defect, it is the instrument reporting its own reach — Cheng's appendix arrives as PDF,
+its cells parse worse (8–14 addresses against 26–30), and without an address the same
+evidence only supports `SUPPORTED`. A system that scored both papers alike here would be
+telling us less, not more.
+
 ---
 
 ## Hackathon requirements
