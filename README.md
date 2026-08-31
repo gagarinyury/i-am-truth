@@ -127,11 +127,13 @@ counts (**1.56**); and the whole thing kept at
 
 Every part of that report also carries a status now — `CONFIRMED`, `SUPPORTED`,
 `INDICATIVE` or `UNVERIFIED` — assigned by the rule described under *Evidence levels*
-below, not by the model. That run predates the rule, so the counts for this DOI are
-quoted from the runs stored in `eval/results/` rather than recomputed here: a status
-depends on which numbers carry a cell address, and that cannot be reconstructed from a
-saved summary without the per-number records. Numbers this README cannot check, it does
-not print.
+below, not by the model. Measured on revision 00017, the same DOI, 31.08:
+[`/audits/audit-20260831-142811-5e0ff7`](https://i-am-truth-242136767009.us-central1.run.app/audits/audit-20260831-142811-5e0ff7)
+— **410 numbers looked up, 409 found, one not in the paper at all, 64 carrying six bits
+or more and 34 pinned to a cell**, and of the ten parts of the audit **1 confirmed,
+3 supported, 6 indicative**. Six of ten resting on numbers the document would contain
+anyway is not a flattering line, and it is the point: the tool says which of its own
+conclusions it cannot back, instead of averaging them into one reassuring figure.
 
 That same run is also where the direction tally earns its place: the model's overall
 verdict came out `away_from_null` while three of its own domains pointed the other way and
