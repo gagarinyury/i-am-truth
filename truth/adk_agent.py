@@ -31,11 +31,25 @@ import time
 
 from google.adk.agents import LlmAgent, ParallelAgent
 from google.adk.runners import InMemoryRunner
-from google.adk.workflow._retry_config import RetryConfig
 from google.genai import types
 
 from . import critic, verify_numbers
+
+# `RetryConfig` берётся из публичного `google.adk.workflow`, где он объявлен в
+# `__all__`, а не из `google.adk.workflow._retry_config`, откуда его тянули
+# раньше. Подчёркнутый модуль — не обещание совместимости: его переименование
+# уронило бы ADK-путь целиком на любом минорном обновлении, а `pipeline.run`
+# поймал бы это общим `except` и молча ушёл на прямой путь с подписью «ADK не
+# отработал», то есть авария каркаса выглядела бы как свойство ADK.
+#
+# Отсутствие класса тоже не должно ронять граф: повторы при 429 — улучшение, а
+# не условие работы, и без них остаётся внешний повтор всего прогона в `run`.
 from .stats_tool import TwoByTwo, e_value
+
+try:
+    from google.adk.workflow import RetryConfig
+except ImportError:                                          # pragma: no cover
+    RetryConfig = None
 
 HERE = pathlib.Path(__file__).resolve().parent
 APP = "i_am_truth"
@@ -129,8 +143,8 @@ def build_graph(model: str = None) -> ParallelAgent:
     # инструментами делают по несколько раундов каждый — на третьем прогоне ADK-путь
     # так и упал. У ADK свой клиент, наш backoff из critic.call его не покрывает,
     # поэтому retry объявляется здесь же, в графе.
-    retry = RetryConfig(max_attempts=4, initial_delay=8.0, max_delay=120.0,
-                        backoff_factor=2.0)
+    retry = (RetryConfig(max_attempts=4, initial_delay=8.0, max_delay=120.0,
+                         backoff_factor=2.0) if RetryConfig else None)
     critic_agent = LlmAgent(
         name="critic_robins_e",
         model=m,
