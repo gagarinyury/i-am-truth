@@ -206,11 +206,12 @@ def find_occurrences(num: str, source: str, limit: int = MAX_OCCURRENCES) -> lis
     return out
 
 
-def find_number(num: str, source: str) -> dict:
-    """Первое вхождение. Оставлено для совместимости с зондами в `eval/`."""
-    occ = find_occurrences(num, source, limit=1)
-    return ({"found": True, "as": occ[0]["as"], "context": occ[0]["context"]}
-            if occ else {"found": False, "as": None, "context": None})
+# Здесь стояла `find_number` — «первое вхождение», с подписью «оставлено для
+# совместимости с зондами в `eval/`». Ни один зонд её не звал: оправдание было
+# правдоподобным и непроверяемым, а функция мёртвой. Смотреть на первое
+# вхождение вдобавок неверно по существу — 76% найденных чисел встречаются в
+# статье больше одного раза (F-63), и `find_occurrences` заменила её именно
+# поэтому. История правки записана в docs/02-verified-facts.md.
 
 
 # Группы сравнения и их написания. Настраивается под предметную область.

@@ -114,5 +114,35 @@ t = TwoByTwo(100, 100, 50, 100)
 check("TwoByTwo.odds_ratio → None", t.odds_ratio() is None)
 check("TwoByTwo.report не бросает", isinstance(t.report(), dict))
 
+# Зеркальные вырожденные таблицы обязаны отвечать одинаково. Страж покрывал `b`
+# и `c`, но не `d`: при исходе у всех в КОНТРОЛЕ формула доходила до конца и
+# возвращала `0.0` — предел верный, но выданный как обычное значение, мимо
+# списка `undefined`. Насыщенная рука экспозиции при этом честно говорила «не
+# определено». Правило «величина, которой нет, выражается отсутствием» либо
+# симметрично, либо это не правило.
+print("\nзеркальные вырожденные таблицы отвечают одинаково")
+DEGENERATE = {
+    "исход у всех в экспозиции (b=0)": (100, 100, 50, 100),
+    "исход у всех в контроле (d=0)": (50, 100, 100, 100),
+    "нет событий в экспозиции (a=0)": (0, 100, 50, 100),
+    "нет событий в контроле (c=0)": (50, 100, 0, 100),
+    "обе руки насыщены": (100, 100, 100, 100),
+}
+for name, cs in DEGENERATE.items():
+    tt = TwoByTwo(*cs)
+    check(f"{name}: OR не определено", tt.odds_ratio() is None, str(tt.odds_ratio()))
+    rep = tt.report()
+    check(f"{name}: сказано в undefined", "odds_ratio" in (rep.get("undefined") or []),
+          str(rep.get("undefined")))
+    check(f"{name}: отчёт сериализуется", json.dumps(rep, allow_nan=False) is not None)
+
+# Обратная сторона: у нормальной таблицы шансы обязаны считаться, иначе страж
+# съел бы не только вырожденные случаи. Число сверено с эталоном проекта.
+good_or = TwoByTwo(247, 15264, 353, 15264)
+check("обычная таблица: OR 0.6948", round(good_or.odds_ratio(), 4) == 0.6948,
+      str(good_or.odds_ratio()))
+check("обычная таблица: undefined пуст",
+      not (good_or.report().get("undefined") or []))
+
 print(f"\n{ok}/{total}")
 sys.exit(0 if ok == total else 1)

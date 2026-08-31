@@ -455,9 +455,12 @@ figure is **two runs per case for ADK, not three**: ADK scores 5.0 and 5.5 on ou
 (median 5.25) against a median of 5.0 over ten direct runs, and 3.5 twice on the external
 one against a direct median of 3.5. Two runs do not establish a difference, and the earlier
 claim of "three runs each, median 5.5 for both" over-reported what the repository holds.
-What is visible is wall-clock: ADK takes about twice as long. So ADK is available via
-`engine: "adk"` and is **not** the default: making it the default for the sake of a line
-in a submission would sell as an improvement something we measured as a tie (F-46).
+What is visible is wall-clock, and "about twice as long" — which this paragraph said until
+31.08 — understated it: the stored ADK runs take 137 and 291 seconds against 28–128 for the
+direct path (median 40.5), so three- to sevenfold. So ADK is available via `engine: "adk"`
+and is **not** the default: making it the default for the sake of a line in a submission
+would sell as an improvement something we have no measurement to call an improvement — and
+would cost the user several minutes per paper to do it (F-46).
 
 ---
 
