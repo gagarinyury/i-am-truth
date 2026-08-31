@@ -113,6 +113,32 @@ def owners(findings: dict, claims: list) -> dict:
     return out
 
 
+def numbers_by_owner(findings: dict) -> dict:
+    """Те же владельцы, но с самими числами, а не со счётчиками.
+
+    Отдельной функцией, а не полем в `owners`, намеренно: числа нужны для одной
+    задачи — спросить, есть ли у вывода число с адресом ячейки (`confidence`), —
+    и складывать сотню значений в каждую строку отчёта ради этого не стоит.
+    Ключи совпадают с `owners`, иначе две части отчёта разъедутся.
+    """
+    if not findings:
+        return {}
+    out = {}
+    ov = findings.get("overall")
+    if ov:
+        acc = []; _numbers_in(ov, acc)
+        out["overall"] = set(acc)
+    for dm in findings.get("domains") or []:
+        acc = []; _numbers_in(dm, acc)
+        out[f"domain:{dm.get('id')}"] = set(acc)
+    for name, sub in (findings.get("subagents") or {}).items():
+        if not isinstance(sub, dict) or sub.get("error"):
+            continue
+        acc = []; _numbers_in(sub, acc)
+        out[f"subagent:{name}"] = set(acc)
+    return out
+
+
 # Предложение отделяется от предыдущего только тогда, когда перед точкой стоит
 # буква или скобка. В научном тексте «p < 0.001. The» и «Table 2. Baseline» иначе
 # рвутся по десятичной точке и по номеру таблицы.

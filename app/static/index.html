@@ -325,7 +325,8 @@ function render(d){
     <p class="muted">${esc(m.journal||"")}${m.doi?" · "+esc(m.doi):""}${m.pmcid?" · "+esc(m.pmcid):""}</p>
     <div class="lvl" style="margin-top:14px">
       <span class="tag">${esc(lv.level||"?")}</span>
-      <span>${esc(lv.name||"")} — ceiling <b>${esc(cap(d.max_confidence||""))}</b></span>
+      <span>${esc(lv.name||"")} — nothing below may be rated above
+        <b>${esc(cap(d.max_confidence||""))}</b></span>
     </div>
     <div class="grid">
       <div class="cell"><b>${tb.main??0}</b><span>main tables</span></div>
@@ -506,19 +507,34 @@ function render(d){
   if(gr){
     const rows = Object.entries(gr);
     const backed = rows.filter(([,x])=>x.grounded).length;
+    /* Статус — не украшение рядом с обеспеченностью, а её вывод по правилу из
+       truth/confidence.py, ограниченный сверху уровнем добытых данных. До этого
+       «ceiling CONFIRMED» стоял на шкале, на которой не было ни одного значения. */
+    const conf = d.confidence||{}, cs = d.confidence_summary||null;
     h += `<section>
       <h2>What each conclusion rests on</h2>
       <p class="muted" style="margin:0 0 12px">${backed} of ${rows.length} parts of this
       audit cite at least one number distinctive enough that a document this size would
       not contain it by chance. The rest may still be right — but they rest on general
       properties of the design, and that should be visible rather than averaged away.</p>
-      <table class="ret"><tbody>${rows.map(([k,x])=>`<tr>
-        <td>${x.grounded?'<span class="pill p-low">grounded</span>'
-                        :'<span class="pill p-mid">no distinctive number</span>'}</td>
+      ${cs?`<p class="muted" style="margin:0 0 12px">${
+        ["CONFIRMED","SUPPORTED","INDICATIVE","UNVERIFIED"].map(k=>
+          `<b>${(cs.counts||{})[k]||0}</b> ${k.toLowerCase()}`).join(" · ")}${
+        cs.capped_by_level?` — ${cs.capped_by_level} held below what their evidence would
+          support, because only ${esc(lv.level||"")} of the paper was retrieved`:""}.
+        ${esc(cs.note||"")}</p>`:""}
+      <table class="ret"><tbody>${rows.map(([k,x])=>{
+        const st = (conf[k]||{}).status || (x.grounded?"SUPPORTED":"UNVERIFIED");
+        const cls = st==="CONFIRMED" ? "p-low" : st==="SUPPORTED" ? "p-low"
+                  : st==="INDICATIVE" ? "p-mid" : "p-high";
+        const capd = (conf[k]||{}).capped_from;
+        return `<tr>
+        <td><span class="pill ${cls}" title="${esc((conf[k]||{}).why||"")}">${esc(st)}</span>${
+          capd?`<br><span class="muted" style="font-size:11px">capped from ${esc(capd)}</span>`:""}</td>
         <td><b>${esc(x.title||k)}</b></td>
         <td class="muted">${x.numbers} numbers · ${x.found} found${
           x.missing?` · <b>${x.missing} not found</b>`:""} · ${x.strong} carrying weight</td>
-      </tr>`).join("")}</tbody></table>
+      </tr>`;}).join("")}</tbody></table>
     </section>`;
   }
 

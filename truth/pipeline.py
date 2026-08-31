@@ -12,6 +12,11 @@ Layer 0 — оркестратор. Сквозной путь от DOI или т
 Ключевое: уровень доказательности не прячется, а выносится в отчёт. На L2 и L3
 находки не могут получить статус CONFIRMED — это следует из замера F-26, где
 ошибка направления confounding держалась на обоих нижних уровнях.
+
+Потолок применяется в `confidence.assign`, шаг 6. До этого он был словом: поле
+`max_confidence` печаталось в интерфейсе и в брифе, а статуса не получал ни один
+вывод, и запрет «выше CONFIRMED нельзя» держался тавтологически — нечему было
+нарушать его. Тот же дефект, что F-55.
 """
 import concurrent.futures as cf
 import io
@@ -20,7 +25,7 @@ import re
 import tempfile
 import zipfile
 
-from . import cells, critic, retrieval, subagents, verify_numbers
+from . import cells, confidence, critic, retrieval, subagents, verify_numbers
 from .docx_tables import extract as extract_docx
 from .jats_tables import parse_tables, to_claims
 from .pdf_tables import extract as extract_pdf
@@ -243,14 +248,35 @@ def gather(doi: str = None, text: str = None, uploads: list = None) -> dict:
                 "appendix_tables": got["appendix"], "level": level,
                 "pdfs": got["pdfs"]}
 
-    if text and not doi:
-        return {"meta": {"found": False, "doi": None, "status": "not_asked"},
-                "source_text": text, "jats_tables": [], "appendix_tables": [],
+    if text:
+        # Условие было `text and not doi`, и при обоих полях управление уходило
+        # в ветку DOI, а `text` не использовался **нигде**. Пользователь приносил
+        # полный текст статьи, которую добыть не удалось, добавлял к нему DOI
+        # ради метаданных — и получал 422 «текст статьи получить неоткуда».
+        # Молча выбросить принесённое хуже, чем отказаться его принять.
+        meta = (retrieval.lookup(doi) if doi else
+                {"found": False, "doi": None, "status": "not_asked"})
+        journal = [{"source": "caller", "status": "ok" if text.strip() else "empty"}]
+        if doi:
+            journal.append({"source": "europepmc.search", "status": meta.get("status"),
+                            **({"note": meta["error"]} if meta.get("error") else {})})
+        # Уровень остаётся низшим, и это не оплошность. Уровень описывает, что
+        # именно у нас в руках, а про строку в поле `text` неизвестно ничего:
+        # полный ли это текст, есть ли в нём приложение, не пересказ ли это.
+        # Файл такого вопроса не оставляет — там видно и структуру, и таблицы, —
+        # поэтому путь B уровень поднимает, а голый текст нет. Иначе уровень
+        # поднимался бы утверждением приславшего, то есть перестал бы что-либо
+        # обеспечивать.
+        return {"meta": meta, "source_text": text,
+                "jats_tables": [], "appendix_tables": [],
                 "level": {"level": "L3", **retrieval.LEVELS["L3"],
-                          "retrieval": [{"source": "caller", "status": "ok"}],
-                          "note": "text supplied directly; the evidence level cannot be "
-                                  "established, so the lowest one is assumed until shown "
-                                  "otherwise"}}
+                          "retrieval": journal,
+                          "source": "текст передан вызывающим",
+                          "note": "text supplied directly; nothing about it can be "
+                                  "checked — not its completeness, not whether an "
+                                  "appendix came with it — so the lowest level is "
+                                  "assumed until a file shows otherwise. Send the PDF "
+                                  "instead (path B) to reach L1"}}
 
     meta = retrieval.lookup(doi)
     journal = [{"source": "europepmc.search", "status": meta.get("status"),
@@ -627,6 +653,13 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
     # документа, а какой на общих словах, — а вся идея продукта в этом различии.
     ground = grounding.owners(findings, ver["claims"]) if ver else None
     weak = grounding.statements(findings, ver["claims"]) if ver else None
+    # Статус доверия каждому выводу. До сих пор `max_confidence` был потолком
+    # шкалы, на которой не стояло ни одного значения: ни один вывод нигде не
+    # получал статуса, и утверждение «ниже L1 CONFIRMED недостижим» было верным
+    # тавтологически. Тот же дефект, что F-55.
+    conf = (confidence.assign(ground, grounding.numbers_by_owner(findings),
+                              ver["claims"], gathered["level"])
+            if ver and ground else None)
 
     lvl = gathered["level"]["level"]
     out = {
@@ -638,6 +671,8 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
         "recomputed": recalc,
         "direction_summary": dirs,
         "grounding": ground,
+        "confidence": conf,
+        "confidence_summary": confidence.summarise(conf),
         "weakly_grounded_statements": weak,
         "parse_error": parse_error,
         "verification": ver["summary"] if ver else None,

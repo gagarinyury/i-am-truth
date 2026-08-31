@@ -14,10 +14,6 @@
 """
 import datetime as dt
 
-CEILING = {"CONFIRMED": "confirmed", "SUPPORTED": "supported",
-           "INDICATIVE": "indicative"}
-
-
 def _pct(part, whole):
     return f"{part / whole * 100:.0f}%" if whole else "—"
 
@@ -50,7 +46,9 @@ def render(report: dict) -> str:
     L.append("## What this audit stands on")
     L.append("")
     L.append(f"- **Evidence level {lv.get('level', '?')}** — {lv.get('name', '')}. "
-             f"Ceiling of confidence: **{report.get('max_confidence', '?')}**.")
+             f"No conclusion here may be rated above **{report.get('max_confidence', '?')}**: "
+             f"the ceiling is applied to every part of the audit below, and where it "
+             f"actually bites, the table says so.")
     L.append(f"- Tables parsed: {tb.get('main', 0)} in the paper, "
              f"{tb.get('appendix', 0)} in the appendix.")
     if v:
@@ -193,13 +191,29 @@ def render(report: dict) -> str:
                  f"chance. The rest may still be right — they rest on general properties "
                  f"of the design, and that is a different kind of claim.")
         L.append("")
-        L.append("| part | numbers | found | not found | carrying weight | |")
+        conf = report.get("confidence") or {}
+        cs = report.get("confidence_summary") or {}
+        if cs:
+            c = cs.get("counts") or {}
+            L.append(f"Status, by the rule in `truth/confidence.py`: "
+                     + ", ".join(f"**{c.get(k, 0)} {k.lower()}**"
+                                 for k in ("CONFIRMED", "SUPPORTED", "INDICATIVE",
+                                           "UNVERIFIED"))
+                     + (f". {cs['capped_by_level']} of them are held below what their "
+                        f"evidence would support, because only "
+                        f"{lv.get('level')} of the paper was retrieved."
+                        if cs.get("capped_by_level") else ".")
+                     + f" {cs.get('note', '')}")
+            L.append("")
+        L.append("| part | status | numbers | found | not found | carrying weight |")
         L.append("|---|---|---|---|---|---|")
         for k, x in gr.items():
-            L.append(f"| {x.get('title', k)} | {x.get('numbers', 0)} | "
+            st = (conf.get(k) or {}).get("status", "—")
+            if (conf.get(k) or {}).get("capped_from"):
+                st += f" (capped from {conf[k]['capped_from']})"
+            L.append(f"| {x.get('title', k)} | {st} | {x.get('numbers', 0)} | "
                      f"{x.get('found', 0)} | {x.get('missing', 0)} | "
-                     f"{x.get('strong', 0)} | "
-                     f"{'grounded' if x.get('grounded') else '—'} |")
+                     f"{x.get('strong', 0)} |")
         L.append("")
 
     weak = report.get("weakly_grounded_statements") or []

@@ -29,7 +29,8 @@ from pydantic import BaseModel
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from truth import __version__, brief, critic, pipeline, retrieval, store  # noqa: E402
+from truth import (__version__, brief, confidence, critic, pipeline,  # noqa: E402
+                   retrieval, store)
 from truth.batch import BUCKET                                # noqa: E402
 
 PROMPT = (pathlib.Path(__file__).resolve().parent.parent
@@ -166,6 +167,13 @@ def levels():
                 "направление смещения она называет верно и на абстракте, — а потому, "
                 "что обосновать его там нечем: находки опираются на общие свойства "
                 "дизайна, а не на числа из документа (F-44).",
+        "how_the_ceiling_is_applied":
+            "Потолок — не подпись, а ограничение на шкале, значения которой "
+            "проставляются по правилу в truth/confidence.py: вывод получает "
+            "CONFIRMED, только если под ним есть число с весом улики не ниже "
+            "шести бит, стоящее в ячейке с сошедшимся адресом. Где потолок "
+            "реально понизил статус, отчёт пишет capped_from.",
+        "statuses": confidence.WHY,
     }
 
 

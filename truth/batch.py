@@ -86,6 +86,7 @@ def analyse_one(doi: str, prompt: str, run_id: str) -> dict:
             "classification": (res["findings"] or {}).get("classification"),
             "domains": len((res["findings"] or {}).get("domains", [])),
             "verification": res["verification"],
+            "confidence": ((res.get("confidence_summary") or {}).get("counts") or {}),
             "unverified": len(res.get("unverified_numbers") or []),
         }
         save(f"{run_id}/papers/{doi.replace('/', '_')}.json", res)
@@ -117,7 +118,16 @@ def run_batch(dois: list, run_id: str = None) -> dict:
         "finished": dt.datetime.now().isoformat(timespec="seconds"),
         "total": len(dois), "succeeded": len(ok), "failed": len(rows) - len(ok),
         "by_level": by_level,
-        "confirmable": sum(1 for r in ok if r["max_confidence"] == "CONFIRMED"),
+        # Раньше здесь стояло `max_confidence == "CONFIRMED"` под именем
+        # `confirmable` — то есть считались статьи, которым потолок ПОЗВОЛЯЛ бы
+        # такой статус, а это ровно те же статьи, что и `by_level["L1"]`, только
+        # под другим именем. Теперь считается, сколько выводов статус реально
+        # получили: потолок и достижение — разные вещи, и путать их в сводке
+        # батча значит отчитываться удвоенной строкой.
+        "ceiling_confirmed": sum(1 for r in ok if r["max_confidence"] == "CONFIRMED"),
+        "conclusions_confirmed": sum((r.get("confidence") or {}).get("CONFIRMED", 0)
+                                     for r in ok),
+        "conclusions_total": sum(sum((r.get("confidence") or {}).values()) for r in ok),
         "numbers_checked": sum((r["verification"] or {}).get("total", 0) for r in ok),
         "numbers_unverified": sum((r["verification"] or {}).get("unverified", 0)
                                   for r in ok),
