@@ -98,12 +98,22 @@ The same audit is available over HTTP:
 ```bash
 URL=https://i-am-truth-242136767009.us-central1.run.app
 
-curl $URL/health
+curl $URL/health          # says whether a key is required: "auth": "key" | "open"
 
 curl -X POST $URL/analyze \
      -H 'Content-Type: application/json' \
+     -H "X-API-Key: $TRUTH_KEY" \
      -d '{"doi": "10.1136/jitc-2025-014726"}'
 ```
+
+**Why there is a key on that one call.** Reading is open — `/audits/<id>`, `/levels` and
+every report linked from this page need nothing, because evidence behind a password is
+not evidence. Running an audit is closed, because each one is three Gemini calls on
+somebody's quota, and a public URL in a public README makes that everyone's decision but
+ours. Ask for a key if you want to run one; the stored reports below are readable as
+they are. The service also refuses more than two audits at a time (`429`, with
+`Retry-After`) — one takes 40 to 130 seconds, and a queue of them exhausts the quota
+before it exhausts the container.
 
 That DOI is an open-access paper: the service pulls the JATS full text **and 35 appendix
 tables**, runs a seven-domain ROBINS-E assessment across three agents, and looks up every
@@ -114,6 +124,14 @@ the 2×2 counts (9.8919 pp, NNH 10.1) and agreeing with the model's own figures;
 E-value computed from the paper's own adjusted hazard ratio rather than from the raw
 counts (**1.56**); and the whole thing kept at
 [`/audits/audit-20260831-094123-0b6344`](https://i-am-truth-242136767009.us-central1.run.app/audits/audit-20260831-094123-0b6344).
+
+Every part of that report also carries a status now — `CONFIRMED`, `SUPPORTED`,
+`INDICATIVE` or `UNVERIFIED` — assigned by the rule described under *Evidence levels*
+below, not by the model. That run predates the rule, so the counts for this DOI are
+quoted from the runs stored in `eval/results/` rather than recomputed here: a status
+depends on which numbers carry a cell address, and that cannot be reconstructed from a
+saved summary without the per-number records. Numbers this README cannot check, it does
+not print.
 
 That same run is also where the direction tally earns its place: the model's overall
 verdict came out `away_from_null` while three of its own domains pointed the other way and
@@ -264,6 +282,31 @@ justifies the same conclusion with a number from the document (7.8% vs 5.9%, Tab
 A correct guess is not evidence, so only the second one is allowed to be called
 confirmed (F-44).
 
+**And until 31.08 that paragraph was a claim about a mechanism that did not exist.**
+The ceiling was printed on screen and in the brief, `/levels` explained it, this README
+argued for it — and no conclusion anywhere was ever assigned a status. There was nothing
+for the ceiling to cap. `brief.CEILING` was declared and never used; `batch` counted a
+field called `confirmable` that was simply the number of L1 papers under another name.
+A ceiling over an empty scale is exactly the kind of unbacked claim this tool exists to
+find, and it is the second time the project has caught one in itself (the first was
+F-55, where "recomputed by a function" showed the model's own arithmetic).
+
+The scale now has values on it. `truth/confidence.py` gives every part of the audit —
+the overall verdict, each of the seven domains, each sub-agent — one of four statuses,
+derived from what layer 4 already measured and asking the model nothing:
+
+| Status | What has to be true |
+|---|---|
+| `CONFIRMED` | a number under it is worth ≥ 6 bits **and** sits in a table cell whose row and column agree with what the audit says it is |
+| `SUPPORTED` | such a number exists, but in running prose — no cell to pin it to |
+| `INDICATIVE` | numbers were cited and found, but all of a shape this document would contain anyway |
+| `UNVERIFIED` | no numbers cited, or none of them are in the paper |
+
+`UNVERIFIED` is not an accusation. A conclusion about study design legitimately cites no
+numbers; what would be wrong is printing `CONFIRMED` beside it. The level's ceiling then
+lowers any status it has to and **never raises one** — where it bit, the report says
+`capped_from` and why.
+
 **How often each level is reachable** — also measured, not assumed (F-21, F-24, F-25,
 sample of 40 papers of the class): Europe PMC serves full text for 27.5%, and where it
 does, appendices arrive in 9 cases out of 11. Adding publisher PDFs where the publisher
@@ -374,6 +417,18 @@ copied out of the paper; those four numbers go through the same source check as 
 other number, the function does the arithmetic, and the model's own figures are shown
 beside the function's with a match/mismatch verdict.
 
+The function also refuses. Until 31.08 the strict check — events must not exceed the arm
+— guarded only the *fallback* path, where the counts are recovered from a string the
+model wrote; the primary path, the one whose output is labelled "independent of the
+model's arithmetic", required only that the four numbers be positive. So
+`exposed_events: 2000` against `exposed_total: 100` went straight through and printed a
+risk of 2000%, an odds ratio of −1.05 and a risk difference of 1950 percentage points,
+under a heading claiming a function had checked it. Impossible counts are now rejected
+with the reason in the report; degenerate but legitimate ones — everyone in an arm had
+the outcome — are computed as far as they go, and the odds ratio comes back `null` with
+`undefined` naming it, instead of a `ZeroDivisionError` that used to return HTTP 500
+after three paid Vertex calls.
+
 This paragraph used to be a claim rather than a fact. Until 29.08 `stats_tool` was
 imported by the pipeline and never called on the default path: the arithmetic on screen
 was the model's, under a heading that said otherwise. It was found by comparing an
@@ -422,9 +477,15 @@ python3 eval/harness.py report
 ```
 
 ```bash
-python3 tests/test_parallel_isolation.py
-python3 tests/test_normalise_math.py
+python3 tests/run_all.py            # all of them, non-zero exit on any failure
+python3 tests/run_all.py cells      # just the ones whose name matches
+python3 -m truth.stats_tool         # the arithmetic against published values
 ```
+
+None of these touch the network or call a model: they cost nothing and need no
+credentials. They also run on every push (`.github/workflows/tests.yml`) — which they did
+not until 31.08, when fifteen test files existed, were run by hand one at a time, and
+this README named two of them. A test nobody runs is a comment with quotation marks.
 
 The McDonald PDF is not in the repository — it is under the publisher's copyright. Put
 it in `eval/pdf/mcdonald.pdf` (that path is gitignored) and `bench.py` will find it;
