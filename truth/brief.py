@@ -66,9 +66,11 @@ def render(report: dict) -> str:
                      f"chance: a value of that shape would be present in a document "
                      f"this size less than once in "
                      f"{2 ** int(v.get('strong_bits_threshold', 6)):.0f} times. "
-                     f"The median find is worth {v.get('evidence_bits_median')} bits — "
-                     f"the rest is arithmetic about the document, not evidence about "
-                     f"the paper.")
+                     f"The median find is worth {v.get('evidence_bits_median')} bits. "
+                     f"That weight establishes only that the value came from this paper "
+                     f"rather than from the shape of any paper — whether it means what "
+                     f"the audit says it means is a separate question, answered by the "
+                     f"cell address and the group check, which cover far less.")
         if v.get("in_cell") is not None:
             L.append(f"- **{v['in_cell']}** of them were located in a specific table "
                      f"cell whose row and column agree with what the model said the "

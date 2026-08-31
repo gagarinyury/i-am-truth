@@ -150,7 +150,15 @@ So each find is now weighed against the document's own numbers: how many distinc
 of that shape it already contains gives the chance of a match, and `−log2` of it gives the
 find in bits. In the run above: **365 numbers searched, 365 found, of which 40 carry six
 bits or more** — a value that a document this size would not hold by accident. The median
-find is worth 1.9 bits. The 40 are the evidence; the rest is arithmetic about the document.
+find is worth 1.9 bits.
+
+**And it is worth being exact about what those 40 establish**, because the tempting
+sentence here is wrong. Six bits say the value came from *this* paper rather than from
+the shape of any paper. They say nothing about whether it means what the audit says it
+means — that is a different question, answered by the cell address and the group check,
+and both of those cover far less (21 of 365 and 5 of 365 on the run above). Treating
+"came from here" as "means what was claimed" would be exactly the substitution this tool
+exists to catch.
 A number that "would have shown up anyway" now scores zero by measurement rather than by
 sitting on a hand-written list of trivial values, and the count of what was searched and
 what was found finally agree — they did not before, when numbers were skipped silently and
