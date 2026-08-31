@@ -132,6 +132,8 @@ footer a{color:var(--accent)}
   <div class="sub">
     <label><input type="radio" name="eng" value="direct" checked> direct pipeline</label>
     <label><input type="radio" name="eng" value="adk"> Google ADK graph</label>
+    <span id="keybox" hidden>· <input type="password" id="key" placeholder="access key"
+      autocomplete="off" style="min-width:150px;flex:0 0 auto;padding:6px 9px;font-size:12px"></span>
   </div>
   <div class="examples">
     Try: <code data-doi="10.1136/jitc-2025-014726">10.1136/jitc-2025-014726</code> ·
@@ -158,9 +160,25 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const cap = s => String(s ?? "").replace(/_/g," ");
 
+/* The key field appears only when the service actually asks for one. A password
+   box on an open service is theatre; its absence on a closed one is a dead end. */
 fetch("/health").then(r=>r.json()).then(d=>{
-  $("#ver").textContent = `${d.model} on Vertex AI · Cloud Run · v${d.version}`;
+  $("#ver").textContent = `${d.model} on Vertex AI · Cloud Run · v${d.version}`
+                        + (d.auth === "key" ? " · key required" : "");
+  if(d.auth === "key"){
+    $("#keybox").hidden = false;
+    try{ $("#key").value = localStorage.getItem("truth_key") || ""; }catch(e){}
+    $("#key").oninput = () => { try{ localStorage.setItem("truth_key", $("#key").value); }catch(e){} };
+  }
 }).catch(()=>{});
+
+/* Ключ живёт только в браузере читателя: он не уходит никуда, кроме этого же
+   сервиса, и не попадает в отчёт. localStorage может быть недоступен (приватное
+   окно, запрет на сайт-данные) — тогда поле просто не запоминается. */
+const authHeaders = () => {
+  const k = ($("#key") && $("#key").value || "").trim();
+  return k ? {"X-API-Key": k} : {};
+};
 
 /* ---------- input ---------- */
 let picked = [];
@@ -218,10 +236,11 @@ $("#f").onsubmit = async ev => {
       picked.forEach(f => fd.append("files", f));
       if(doi) fd.append("doi", doi);
       fd.append("engine", engine);
-      r = await fetch("/analyze/upload", {method:"POST", body:fd});
+      r = await fetch("/analyze/upload", {method:"POST", body:fd,
+        headers: authHeaders()});
     }else{
       r = await fetch("/analyze", {method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{"Content-Type":"application/json", ...authHeaders()},
         body: JSON.stringify({doi, engine})});
     }
     const d = await r.json();
