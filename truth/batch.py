@@ -69,13 +69,17 @@ def save(path: str, obj: dict) -> bool:
 
 
 def search_dois(query: str, limit: int) -> list:
-    """Список DOI по запросу Europe PMC."""
+    """Список DOI по запросу Europe PMC.
+
+    Идёт через `retrieval._get`, а не своим `urlopen`: темп и повтор при 503
+    написаны там, и обходить их в единственном месте, откуда стартует
+    трёхпоточный батч, — значит держать правило ровно там, где оно не нужно, и
+    нарушать там, где нужно.
+    """
     url = (f"{retrieval.EPMC}/search?query={urllib.parse.quote(query)}"
            f"&format=json&resultType=core&pageSize={min(limit, 100)}")
-    req = urllib.request.Request(url, headers=retrieval.UA)
-    with urllib.request.urlopen(req, timeout=60) as r:
-        d = json.loads(r.read())
-    return [x["doi"] for x in d.get("resultList", {}).get("result", [])
+    d = retrieval._get(url, attempts=3)
+    return [x["doi"] for x in (d.get("resultList") or {}).get("result", [])
             if x.get("doi")][:limit]
 
 

@@ -58,6 +58,7 @@ CONFIRMED» и в брифе строкой «Ceiling of confidence». README, `
 доказывает, что оно взято из этой статьи и оттуда, откуда сказано. Что вывод,
 построенный на нём, правилен, не доказывает ничто в этом файле.
 """
+from .grounding import CONTESTED
 from .verify_numbers import STRONG_BITS
 
 # Порядок от сильного к слабому. Индекс в списке — сила статуса.
@@ -100,6 +101,11 @@ def _cap(status: str, ceiling: str) -> str:
 def _addressed(numbers: set, claims: list) -> bool:
     """Есть ли среди чисел вывода хоть одно с адресом ячейки и весом улики."""
     for c in claims or []:
+        # Оспоренное число адресом не спасается: ячейка у него есть, но значение
+        # приписано другой группе или взято с обратным знаком, и `CONFIRMED`
+        # рядом с таким выводом означал бы, что адрес важнее направления.
+        if c.get("status") in CONTESTED:
+            continue
         if c.get("located") != "cell":
             continue
         if (c.get("evidence_bits") or 0.0) < STRONG_BITS:

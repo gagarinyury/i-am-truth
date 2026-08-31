@@ -10,9 +10,12 @@ Layer 1 — получение статьи и определение уровн
   L3  только абстракт и метаданные     4.0 / 6
   L0  не добыто ничего                 разбор не запускается
 
-На живой статье целиком (опубликованный PDF, а не подготовленный вход) L1 даёт
-3.5-4.5 / 6, медиана 3.5 — числа там надо ещё найти (F-43). Доступность уровней:
-Europe PMC отдаёт full-text для 27.5% статей класса, объединение каналов ~55% (F-25).
+На живой статье целиком (опубликованный PDF, а не подготовленный вход) цена другая:
+одиночный критик давал 3.5-4.5 / 6, медиана 3.5 — числа там надо ещё найти (F-43), а
+нынешние три прохода дают 5.0-6.0, медиана 5.5 по шестнадцати прогонам
+(`eval/bench.py report`, 31.08). Здесь стояло только первое число, и оно устарело на
+два суб-агента. Доступность уровней: Europe PMC отдаёт full-text для 27.5% статей
+класса, объединение каналов ~55% (F-25).
 
 Ниже L1 находки не опираются на числа из документа и потому непроверяемы —
 это не предположение, а результат замера.
@@ -55,19 +58,43 @@ UA = {"User-Agent": "i-am-truth/0.1 (methodology audit)"}
 # шесть пунктов, три прогона 27–28.08 — F-40. Указан диапазон и медиана: разброс между
 # прогонами реален и скрывать его нечестно. Числа из пятибалльной эпохи (до F-32) сюда
 # переносить нельзя — знаменатель изменился, а баллы нет.
+# ⚠️ `measured_score` получен ХАРНЕСОМ на подготовленных входах `eval/inputs/`:
+# файл отдаётся модели напрямую, добычи и сверки чисел в этом замере нет. Продукт
+# целиком на живой статье даёт другое — на том же эталоне медиана 5.5 из 6 по
+# шестнадцати прогонам (`eval/bench.py report`). Числа не взаимозаменяемы, и до
+# 31.08 `/levels` отдавал первое без указания, откуда оно: читатель API видел цену
+# уровня, относящуюся к эксперименту, которого он не запускал. Поэтому источник
+# замера теперь стоит в самом поле — рядом со значением, а не в README.
+_HARNESS = "harness on prepared inputs (eval/inputs/), 3 runs, no retrieval step"
+
 LEVELS = {
     "L1": {"name": "full text + appendix tables", "max_confidence": "CONFIRMED",
-           "measured_score": "5.0-6.0 / 6 (median 6.0)"},
+           "measured_score": "5.0-6.0 / 6 (median 6.0)", "measured_by": _HARNESS},
     "L2": {"name": "full text, no appendices", "max_confidence": "PLAUSIBLE-UNVERIFIED",
-           "measured_score": "4.0-5.0 / 6 (median 4.5)"},
+           "measured_score": "4.0-5.0 / 6 (median 4.5)", "measured_by": _HARNESS},
     "L3": {"name": "abstract only", "max_confidence": "PLAUSIBLE-UNVERIFIED",
-           "measured_score": "3.5-4.0 / 6 (median 4.0)"},
+           "measured_score": "3.5-4.0 / 6 (median 4.0)", "measured_by": _HARNESS},
     # Дна у решётки не было: «не добыто ничего» попадало в тот же `else`, что и
     # «есть абстракт», и пустой источник объявлялся уровнем L3 с подписью «разбор
     # шёл по одному абстракту». Уровень, который нечем обеспечить, — это не
     # низкий уровень, это его отсутствие, и называться он должен иначе.
     "L0": {"name": "nothing retrieved", "max_confidence": "NONE",
-           "measured_score": "— (the audit does not run at this level)"},
+           "measured_score": "— (the audit does not run at this level)",
+           "measured_by": "not applicable"},
+}
+
+# Тот же продукт, измеренный целиком: DOI или файл на входе, отчёт на выходе, всё
+# как у пользователя. Медианы по ВСЕМ сохранённым прогонам `eval/results/` на
+# 31.08, пересчёт командой `python3 eval/bench.py report`. Оба эталона доезжают до
+# L1, поэтому разложения по уровням здесь нет и быть не может: это цена продукта,
+# а не цена уровня.
+END_TO_END = {
+    "how": "eval/bench.py — retrieval, tables, three agents, number verification",
+    "mcdonald-2026 (ours, 6 points)": "5.0-6.0 (median 5.5), n=16, level L1",
+    "cheng-2024 (external, 4 points)": "3.0-3.5 (median 3.5), n=20, level L1",
+    "note": ("These are not comparable with `measured_score` above: that one is the "
+             "model on a prepared file, this one is the whole product on a real "
+             "paper, where the numbers have to be found before they can be used."),
 }
 
 

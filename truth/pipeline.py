@@ -27,6 +27,7 @@ import zipfile
 
 from . import cells, confidence, critic, retrieval, subagents, verify_numbers
 from .docx_tables import extract as extract_docx
+from .docx_tables import read_limited
 from .jats_tables import parse_tables
 from .pdf_tables import extract as extract_pdf
 from .pdf_tables import extract_text as pdf_text
@@ -55,8 +56,8 @@ def _supplementary_text(blob: bytes) -> str:
         low = name.lower()
         if low.endswith(".docx"):
             try:
-                dz = zipfile.ZipFile(io.BytesIO(z.read(name)))
-                xml = dz.read("word/document.xml").decode("utf-8", "replace")
+                dz = zipfile.ZipFile(io.BytesIO(read_limited(z, name)))
+                xml = read_limited(dz, "word/document.xml").decode("utf-8", "replace")
                 out.append(re.sub(r"<[^>]+>", " ", xml))
             except Exception:                                # noqa: BLE001
                 continue
@@ -65,7 +66,7 @@ def _supplementary_text(blob: bytes) -> str:
             # Разбирали только .docx, и такие статьи молча падали с L1 на L2:
             # уровень оказывался свойством нашего добытчика, а не статьи (F-60).
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as fh:
-                fh.write(z.read(name))
+                fh.write(read_limited(z, name))
                 tmp_path = fh.name
             try:
                 if has_text_layer(tmp_path):
@@ -82,7 +83,9 @@ def _docx_text(blob: bytes) -> str:
     что там на входе zip-архив приложений Europe PMC, а здесь сам документ."""
     try:
         z = zipfile.ZipFile(io.BytesIO(blob))
-        xml = z.read("word/document.xml").decode("utf-8", "replace")
+        # Предел на распакованный размер: см. `docx_tables.read_limited`. Файл
+        # приходит от пользователя, и 25 МБ сжатого — это сколько угодно в памяти.
+        xml = read_limited(z, "word/document.xml").decode("utf-8", "replace")
     except Exception:                                        # noqa: BLE001
         return ""
     return re.sub(r"<[^>]+>", " ", xml)
@@ -101,7 +104,7 @@ def _tables_from_supplementary(blob: bytes) -> list:
             # Тот же разбор, что для принесённого пользователем PDF: парсер уже
             # есть, писать второй незачем.
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as fh:
-                fh.write(z.read(name))
+                fh.write(read_limited(z, name))
                 tmp_path = fh.name
             try:
                 for t in extract_pdf(tmp_path):
@@ -119,7 +122,7 @@ def _tables_from_supplementary(blob: bytes) -> list:
         # другой — молча, без ошибки. Это ровно тот класс подмены, который продукт
         # создан ловить у чужих работ, и нарушение D-14 внутри себя.
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as fh:
-            fh.write(z.read(name))
+            fh.write(read_limited(z, name))
             tmp_path = fh.name
         try:
             for t in extract_docx(tmp_path):
@@ -369,6 +372,75 @@ def tables_as_text(gathered: dict, limit: int = 40, rows: int | None = 40) -> st
     return "\n\n".join(out)
 
 
+# Предел входа модели, в знаках. Величина не «на всякий случай»: у вызова есть
+# окно и цена, а замер на живых статьях показывает, насколько он близок. На
+# `10.1136/jitc-2025-014726` (2 основные таблицы и 35 приложения) вход собирается
+# в 340 807 знаков — 85% предела, — и статья с приложением вдвое крупнее вышла бы
+# за него.
+MODEL_INPUT_LIMIT = 400_000
+
+
+def compose_input(gathered: dict, limit: int = MODEL_INPUT_LIMIT) -> tuple:
+    """Вход модели и честная запись о том, что в него не поместилось.
+
+    Порядок частей — не оформление, а следствие замера. Таблицы приложения решают
+    исход разбора (F-26), поэтому они идут ПЕРВЫМИ, а усечение приходится на текст
+    статьи. Раньше было наоборот: строка собиралась как `текст + таблицы`, и
+    обрезка `paper[:400000]` срезала хвост, то есть ровно приложение. Внутри блока
+    таблиц приложения и так стояли первыми — забота, которая ничего не давала,
+    потому что весь блок лежал за пределом.
+
+    Молчаливого усечения здесь больше нет. Уровень доказательности описывает
+    ДОБЫЧУ, а не то, что доехало до модели, и если эти две вещи разошлись, читатель
+    обязан это видеть: иначе L1 в шапке отчёта означал бы «приложение добыто», а
+    под ним стоял бы разбор, приложения не видевший.
+
+    Возвращает `(paper, model_input)`, где второе — запись для отчёта.
+    """
+    src = (gathered.get("source_text") or "").strip()
+    tbl = tables_as_text(gathered)
+    head = "## ТАБЛИЦЫ (приложение первым)\n\n"
+    body = "\n\n## ТЕКСТ СТАТЬИ\n\n"
+
+    if not tbl:
+        kept = src[:limit]
+        note = {"limit": limit, "tables_chars": 0, "source_chars": len(src),
+                "tables_kept": 0, "source_kept": len(kept),
+                "truncated": len(src) > limit}
+        if note["truncated"]:
+            note["note"] = ("the paper's text was cut to fit the model's input; there "
+                            "were no parsed tables to protect")
+        return kept, note
+
+    block = head + tbl
+    room = limit - len(block) - len(body)
+    if room <= 0:
+        # Таблицы сами по себе не помещаются. Текст не берём вовсе: между прозой и
+        # таблицами приложения замер выбрал таблицы, и выбор не меняется оттого,
+        # что их стало много.
+        kept_tbl = block[:limit]
+        return kept_tbl, {
+            "limit": limit, "tables_chars": len(tbl), "source_chars": len(src),
+            "tables_kept": len(kept_tbl) - len(head), "source_kept": 0,
+            "truncated": True,
+            "note": ("the parsed tables alone exceed the model's input, so the running "
+                     "text was not sent at all and the tables themselves are cut. The "
+                     "verifier still sees everything — it has no window (D-14)"),
+        }
+
+    kept_src = src[:room]
+    paper = block + body + kept_src
+    note = {"limit": limit, "tables_chars": len(tbl), "source_chars": len(src),
+            "tables_kept": len(tbl), "source_kept": len(kept_src),
+            "truncated": len(kept_src) < len(src)}
+    if note["truncated"]:
+        note["note"] = (f"the tables were sent in full and {len(src) - len(kept_src)} "
+                        f"characters of running text did not fit. The evidence level "
+                        f"describes what was retrieved, not what reached the model, so "
+                        f"the difference is printed rather than assumed away")
+    return paper, note
+
+
 def verify_findings(findings: dict, source_text: str, tables: list = None) -> dict:
     """Шаг 4 — D-14: каждое число из разбора сверяется с первоисточником.
 
@@ -402,7 +474,8 @@ def verify_findings(findings: dict, source_text: str, tables: list = None) -> di
     # подпись строки таблицы, а не имя поля схемы.
     NAMING = ("name", "characteristic", "title", "label", "table", "source_table",
               "why", "mechanism", "statement")
-    NUM = re.compile(r"\d{1,3}(?:[  ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+")
+    # Шаблон общий с верификатором, включая знак: см. `verify_numbers.NUM_PATTERN`.
+    NUM = verify_numbers.NUM
 
     def self_contained(node, obj_context, path):
         """Метка для чисел внутри строки node: подпись объекта + сам текст."""
@@ -431,7 +504,7 @@ def verify_findings(findings: dict, source_text: str, tables: list = None) -> di
             # этой альтернативы из него выдёргивалось «0001», которого в тексте нет
             # как отдельного числа, — модель получала UNVERIFIED за точную цитату.
             for raw in NUM.findall(node):
-                num = raw.replace(",", "").replace(" ", "").replace("\u00a0", "")
+                num = verify_numbers.norm_value(raw)
                 claims.append({"value": num,
                                "label": self_contained(node, obj_context, path)})
     walk(findings or {})
@@ -484,7 +557,13 @@ def verify_findings(findings: dict, source_text: str, tables: list = None) -> di
         k = (c["value"], c["label"])
         if k not in seen:
             seen.add(k); uniq.append(c)
-    res = verify(uniq, source_text)
+    # Имена рук берутся из заголовков колонок самой статьи и добавляются к
+    # словарю маркеров. Зачем: словарь общий, а руки в каждой работе называются
+    # своими словами, и на живых разборах проверка выносила вердикт для 81 числа
+    # из 457 и 60 из 474 — «ноль инверсий» относилось к пятой части чисел.
+    # Замер прибавки — в docs/02-verified-facts.md, F-65.
+    groups = verify_numbers.groups_with(verify_numbers.markers_from_tables(tables))
+    res = verify(uniq, source_text, groups)
     return _attach_cells(res, tables, source_text)
 
 
@@ -619,7 +698,8 @@ CAVEAT = {
 
 def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
               engine: str = "direct", tool_calls: list = None,
-              agents: dict = None, engine_note: str = None) -> dict:
+              agents: dict = None, engine_note: str = None,
+              model_input: dict = None) -> dict:
     """Сборка отчёта — одна на оба движка.
 
     Сверка чисел (шаг 4) стоит здесь, а не внутри движка, намеренно: чем бы разбор
@@ -667,6 +747,10 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
         "level": gathered["level"],
         "tables": {"main": len(gathered["jats_tables"]),
                    "appendix": len(gathered["appendix_tables"])},
+        # Что из добытого физически дошло до модели. Стоит рядом с уровнем
+        # намеренно: уровень описывает добычу, и без этой строки «L1» читалось бы
+        # как «модель видела приложение», чего усечение не гарантирует.
+        "model_input": model_input,
         "findings": findings,
         "recomputed": recalc,
         "direction_summary": dirs,
@@ -676,8 +760,11 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
         "weakly_grounded_statements": weak,
         "parse_error": parse_error,
         "verification": ver["summary"] if ver else None,
+        # Три исхода, и каждый читателю нужен: числа нет в статье; число есть, но
+        # у другой группы; число есть, но с обратным знаком.
         "unverified_numbers": [c for c in (ver["claims"] if ver else [])
-                               if c["status"] in ("UNVERIFIED", "GROUP_MISMATCH")][:20],
+                               if c["status"] in ("UNVERIFIED", "GROUP_MISMATCH",
+                                                  "SIGN_MISMATCH")][:20],
         "max_confidence": gathered["level"]["max_confidence"],
         # Предупреждение пишется под уровень. Один текст на L2 и L3 противоречил
         # собственной странице: на L2 он утверждал «нечего цитировать», а рядом
@@ -705,10 +792,11 @@ def run(doi: str = None, text: str = None, prompt: str = None,
     параллельность декларативно. Прямой путь стоит по умолчанию не потому, что
     он лучше по баллам, а потому, что быстрее.
 
-    Что измерено на сохранённых прогонах `eval/results/`, медиана балла судьи:
+    Что измерено на сохранённых прогонах `eval/results/`, медиана балла судьи —
+    пересчёт по всему репозиторию на 31.08, а не по подвыборке:
 
-      McDonald   ADK 5.25 (n=2)   прямой 5.5 (n=16)
-      Cheng      ADK 3.5  (n=2)   прямой 3.5 (n=20)
+      McDonald (наш эталон, 6 пунктов)   ADK 5.25 (n=2)   прямой 5.5 (n=16)
+      Cheng    (внешний,   4 пункта)      ADK 3.5  (n=2)   прямой 3.5 (n=20)
 
     **Двух прогонов не хватает, чтобы утверждать различие или его отсутствие.**
     Здесь стояло «по баллам пути равноценны, медиана 5.5/6 у обоих» — число
@@ -718,13 +806,20 @@ def run(doi: str = None, text: str = None, prompt: str = None,
     утверждение о собственном продукте, не обеспеченное собственными данными.
 
     Твёрдо измерено только время: ADK шёл 137 и 291 с, прямой путь укладывается
-    в 28-128 с (медиана 40). Сравнение по времени честное, по баллам — нет.
+    в 28.3-128.4 с (медиана 40.5 по 36 прогонам). Сравнение по времени честное,
+    по баллам — нет.
+
+    Эти же числа стоят в `app/main.AnalyzeRequest` и в README. До 31.08 они
+    расходились: README называл медиану прямого пути 5.0 по десяти прогонам,
+    докстрока — 5.5 по шестнадцати, комментарий в сервисе — 5.5 без выборки. Все
+    три были верны для своей подвыборки и противоречили друг другу для читателя,
+    поэтому теперь считаются по всему репозиторию одной командой
+    `python3 eval/bench.py report`.
     """
     gathered = gather(doi=doi, text=text, uploads=uploads)
-    paper = gathered["source_text"]
-    tbl = tables_as_text(gathered)
-    if tbl:
-        paper = f"{paper}\n\n## ТАБЛИЦЫ\n\n{tbl}"
+    # Сборка и усечение — в одном месте и по одному правилу: таблицы приложения
+    # переживают предел, текст статьи уступает ему первым. См. `compose_input`.
+    paper, model_input = compose_input(gathered)
 
     # Пустой вход в модель — не разбор, а его имитация, и стоит он трёх вызовов
     # Vertex. Проверка стоит здесь, а не в обработчике HTTP, потому что через
@@ -738,7 +833,7 @@ def run(doi: str = None, text: str = None, prompt: str = None,
         # они пользуются во время рассуждения, а не после него.
         try:
             from . import adk_agent
-            a = adk_agent.run(paper_text=paper[:400000],
+            a = adk_agent.run(paper_text=paper,
                               pdfs=gathered.get("pdfs"),
                               source_text=gathered["source_text"])
             findings = subagents.merge_into_confounding(
@@ -749,7 +844,8 @@ def run(doi: str = None, text: str = None, prompt: str = None,
                              usage=None, engine="adk", tool_calls=a.get("tool_calls"),
                              agents={k: {"via": "adk"} for k in
                                      ("critic_robins_e", "baseline_comparability",
-                                      "time_related_biases")})
+                                      "time_related_biases")},
+                             model_input=model_input)
         except Exception as e:                               # noqa: BLE001
             # Падать целиком из-за каркаса нельзя: у прямого пути тот же результат
             # по баллам (F-46), он просто выражен кодом. Отмечаем подмену в отчёте,
@@ -764,11 +860,11 @@ def run(doi: str = None, text: str = None, prompt: str = None,
     # документ под другим углом. Два вызова Vertex одновременно укладываются в лимит
     # (429 начинается с пятого подряд, F-11), у каждого свой backoff.
     with cf.ThreadPoolExecutor(max_workers=3) as ex:
-        f_main = ex.submit(critic.critique, paper[:400000], prompt,
+        f_main = ex.submit(critic.critique, paper, prompt,
                            pdfs=gathered.get("pdfs"))
-        f_base = ex.submit(subagents.baseline_comparability, paper[:400000],
+        f_base = ex.submit(subagents.baseline_comparability, paper,
                            gathered.get("pdfs"))
-        f_time = ex.submit(subagents.time_related_biases, paper[:400000],
+        f_time = ex.submit(subagents.time_related_biases, paper,
                            gathered.get("pdfs"))
         result = f_main.result()
         baseline = f_base.result()
@@ -790,4 +886,4 @@ def run(doi: str = None, text: str = None, prompt: str = None,
                              (timing or {}).get("_usage")
                              or {"error": (timing or {}).get("error")},
                      },
-                     engine_note=engine_note)
+                     engine_note=engine_note, model_input=model_input)

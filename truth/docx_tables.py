@@ -18,6 +18,45 @@ import xml.etree.ElementTree as ET
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
+# Предел на РАСПАКОВАННЫЙ размер члена архива.
+#
+# Зачем. Сервис ограничивал загрузку 25 МБ — но 25 МБ сжатого .docx это
+# произвольно много распакованного: `word/document.xml` состоит из повторяющейся
+# разметки и жмётся в сотни раз. Проверка стояла на том размере, который виден
+# снаружи, а в память читалось то, что внутри: `z.read("word/document.xml")` без
+# всякого предела, тремя разными местами (здесь, `pipeline._docx_text` и
+# `pipeline._supplementary_text`). Контейнер с двумя слотами разбора кладётся
+# одним запросом.
+#
+# 64 МБ — не «на всякий случай»: самый тяжёлый .docx-приложение из виденных в
+# проекте распаковывается в 3.4 МБ, то есть запас почти двадцатикратный, а
+# документа, где текста статьи больше шестидесяти мегабайт, не существует.
+#
+# Проверяются ОБА размера — объявленный в оглавлении и фактически прочитанный.
+# Объявленный дешёв, но он всего лишь число в заголовке архива и может лгать;
+# читать без предела, доверившись ему, значит не проверять вовсе.
+MAX_UNCOMPRESSED = 64 * 1024 * 1024
+
+
+class TooLarge(RuntimeError):
+    """Член архива распаковывается во что-то, чего мы не станем держать в памяти."""
+
+
+def read_limited(z, name: str, limit: int = MAX_UNCOMPRESSED) -> bytes:
+    """Член zip-архива с пределом на распакованный размер."""
+    try:
+        declared = z.getinfo(name).file_size
+    except KeyError:
+        declared = 0
+    if declared > limit:
+        raise TooLarge(f"{name}: {declared} байт после распаковки, предел {limit}")
+    with z.open(name) as fh:
+        data = fh.read(limit + 1)
+    if len(data) > limit:
+        raise TooLarge(f"{name}: больше {limit} байт после распаковки — "
+                       f"оглавление архива объявляло {declared}")
+    return data
+
 
 def cell_text(tc) -> str:
     """Текст ячейки — без текста вложенных в неё таблиц.
@@ -68,7 +107,7 @@ def _table(tbl, caption: str) -> dict | None:
 
 def extract(path: str) -> list:
     with zipfile.ZipFile(path) as z:
-        root = ET.fromstring(z.read("word/document.xml"))
+        root = ET.fromstring(read_limited(z, "word/document.xml"))
     body = root.find(f"{W}body")
     tables, caption = [], ""
     for el in body:

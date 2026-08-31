@@ -30,11 +30,12 @@ REPORT = {"meta": {"doi": "10.1136/jitc-2025-014726", "title": "Тест"},
 main.pipeline.run = lambda **kw: dict(REPORT)
 client = TestClient(main.app)
 
-ok = 0
+ok = total = 0
 
 
 def check(name, cond, detail=""):
-    global ok
+    global ok, total
+    total += 1
     ok += bool(cond)
     print(f"  {'✓' if cond else '✗'} {name}{(' — ' + detail) if detail else ''}")
 
@@ -62,7 +63,17 @@ check("архив совпадает с показанным полностью"
 
 lst = client.get("/audits").json()
 check("разбор виден в списке", aid in lst.get("audits", []))
-check("несуществующий разбор — 404", client.get("/audits/audit-нет").status_code == 404)
+# Два разных отказа, и путать их нельзя: правильно составленного разбора может не
+# быть (404), а неправильно составленный до хранилища не доходит вовсе (400) —
+# идентификатор попадает в путь файла и в имя объекта GCS.
+check("несуществующий, но правильный идентификатор — 404",
+      client.get("/audits/audit-20260101-000000-abcdef").status_code == 404)
+check("кривой идентификатор — 400, до хранилища не доходит",
+      client.get("/audits/audit-нет").status_code == 400)
+check("попытка выйти из каталога — 400",
+      client.get("/audits/..%2F..%2Fetc%2Fpasswd").status_code in (400, 404))
+check("бриф проверяет идентификатор так же",
+      client.get("/audits/audit-нет/brief.md").status_code == 400)
 
 # Отказ хранилища не должен ронять ответ: разбор уже стоил вызовов Vertex.
 store.LOCAL = pathlib.Path("/proc/недоступно")
@@ -72,5 +83,7 @@ check("при отказе хранилища ответ всё равно от�
       f"stored={broken.json().get('stored')}")
 check("отказ хранилища виден в ответе", broken.json().get("stored") == "none")
 
-print(f"\n{ok}/11 проверок пройдено")
-sys.exit(0 if ok == 11 else 1)
+# Счётчик проверок не зашивается числом: добавленная проверка иначе валит тест,
+# который прошёл, — и правится подгонкой константы, а не разбором причины.
+print(f"\n{ok}/{total} проверок пройдено")
+sys.exit(0 if ok == total else 1)

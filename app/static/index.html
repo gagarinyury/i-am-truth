@@ -130,8 +130,14 @@ footer a{color:var(--accent)}
     <div id="fnames" class="muted" style="margin-top:6px"></div>
   </div>
   <div class="sub">
-    <label><input type="radio" name="eng" value="direct" checked> direct pipeline</label>
-    <label><input type="radio" name="eng" value="adk"> Google ADK graph</label>
+    <!-- Время у путей разное, и это единственное, что о них измерено твёрдо:
+         прямой путь 28-128 с (медиана 41), ADK — 137 и 291 с на двух сохранённых
+         прогонах. Молчать об этом здесь значит предлагать выбор, цена которого
+         выясняется через пять минут ожидания. -->
+    <label><input type="radio" name="eng" value="direct" checked> direct pipeline
+      <span class="muted">· 30-130 s</span></label>
+    <label><input type="radio" name="eng" value="adk"> Google ADK graph
+      <span class="muted">· 2-5 min, agents get tools</span></label>
     <span id="keybox" hidden>· <input type="password" id="key" placeholder="access key"
       autocomplete="off" style="min-width:150px;flex:0 0 auto;padding:6px 9px;font-size:12px"></span>
   </div>
@@ -335,6 +341,11 @@ function render(d){
       <div class="cell"><b>${d.engine==="adk"?"ADK":"direct"}</b><span>engine</span></div>
     </div>
     ${d.caveat?`<p class="muted" style="margin-top:12px">${esc(d.caveat)}</p>`:""}
+    ${(d.model_input&&d.model_input.truncated)?`<p class="muted" style="margin-top:12px">
+      ⚠️ <b>Not all of it reached the model.</b> ${esc(d.model_input.note||"")}
+      (tables ${d.model_input.tables_kept} of ${d.model_input.tables_chars} characters,
+      text ${d.model_input.source_kept} of ${d.model_input.source_chars}). The verifier
+      below still saw everything: it has no window.</p>`:""}
     ${(lv.retrieval||[]).length?`<details style="margin-top:12px">
       <summary class="muted" style="cursor:pointer">Where this level came from — every source tried</summary>
       ${retrievalLog(lv.retrieval)}</details>`:""}
@@ -406,7 +417,7 @@ function render(d){
       </div>
       <p class="muted" style="margin:12px 0 0">
         ${agree(ag.absolute_risk_difference)} risk difference — the model wrote
-        ${ms.absolute_risk_difference??"nothing"}, the function gets ${esc(rc.absolute_risk_difference_pp)}.
+        ${esc(ms.absolute_risk_difference??"nothing")}, the function gets ${esc(rc.absolute_risk_difference_pp)}.
         ${agree(ag.nnt)} ${esc(rc.nnt_kind||"NNT")} — the model wrote
         ${esc(num(ms.nnt))==="—"?"nothing":esc(num(ms.nnt))}, the function gets ${esc(num(rc.nnt_abs))}.
       </p>
@@ -490,6 +501,12 @@ function render(d){
       ${v.in_table_address_unmatched||0} more sit somewhere in a parsed table without
       being pinned to one cell: the model's label for them is a whole sentence quoting
       several numbers at once, and no measure can say which cell each came from.</p>`:""}
+    ${v.sign_mismatch!==undefined?`<p class="muted" style="margin-top:8px">
+      <b>${v.sign_mismatch}</b> of them appear in the paper only with the <b>opposite
+      sign</b>. For a risk difference the sign is the direction, so a match on the digits
+      alone would be a false confirmation — the same class of error as an inverted group.
+      Unlike the group check, this one applies to every number: a count of zero here is a
+      result, not a silence.</p>`:""}
     ${gKnown?`<p class="muted" style="margin-top:8px">The group check ruled on
       <b>${gDecided}</b> of ${gDecided+gUndecided} numbers${gDecided?"":" — none"}.
       ${gDecided?"":"Its markers are written for the comparison arms of a particular field, and this paper names its arms differently, so it stayed silent rather than guessing. "}

@@ -30,6 +30,9 @@ import yaml
 from google import genai
 from google.genai import types
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from truth.critic import parse_json_answer                       # noqa: E402
+
 ROOT = pathlib.Path(__file__).resolve().parent
 GT_DIR = ROOT / "ground_truth"
 IN_DIR = ROOT / "inputs"
@@ -78,24 +81,9 @@ def load_prompt(version: str) -> str:
     return strip_html_comments(path.read_text())
 
 
-def parse_json_answer(raw: str):
-    """Модель просили отдать голый JSON, но иногда приходит в ```-заборе."""
-    if raw is None:
-        return None, "пустой ответ (возможно, весь бюджет ушёл в thinking)"
-    t = raw.strip()
-    fence = re.search(r"```(?:json)?\s*(.*?)```", t, flags=re.DOTALL)
-    if fence:
-        t = fence.group(1).strip()
-    try:
-        return json.loads(t), None
-    except json.JSONDecodeError as e:
-        start, end = t.find("{"), t.rfind("}")
-        if start != -1 and end > start:
-            try:
-                return json.loads(t[start:end + 1]), None
-            except json.JSONDecodeError:
-                pass
-        return None, f"не JSON: {e}"
+# Разбор ответа модели живёт в `truth.critic` и импортирован выше. Здесь лежала
+# его вторая копия — та же логика, свой текст ошибки; расхождение таких копий
+# заметно не тогда, когда их правят, а тогда, когда правят одну.
 
 
 # ---------------------------------------------------------------- прогон

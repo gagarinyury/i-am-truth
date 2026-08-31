@@ -340,10 +340,18 @@ abstract.
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com \
                        artifactregistry.googleapis.com aiplatform.googleapis.com
 
-gcloud run deploy i-am-truth --source . --region us-central1 --allow-unauthenticated
+gcloud run deploy i-am-truth --source . --region us-central1 \
+       --allow-unauthenticated --timeout=900
 ```
 
 The default Cloud Run service account reaches Vertex AI without extra role setup.
+
+**`--timeout=900` is not padding.** Cloud Run's default request timeout is 300 seconds,
+and the stored ADK runs take 137 and 291 (`eval/results/bench-20260828-1715*`), while a
+direct run that hits Vertex's 429 waits up to 8+16+32+64 seconds inside its own retry
+before it even starts over. With the default, the ADK button in the UI is a coin toss
+that ends in a 504 after the model has already been paid for. The service still refuses
+a third concurrent audit, so a longer timeout does not widen the exposure.
 
 ### Background batch over a corpus
 
@@ -450,14 +458,22 @@ A tool built to catch unbacked claims has no business keeping one.
 plain code. `truth/adk_agent.py` expresses the same audit as a Google ADK
 `ParallelAgent`, where the three agents additionally get *tools* — the risk calculator and
 a source-checker they can call mid-reasoning, instead of learning about a bad number
-afterwards from layer 4. Measured on the stored runs in `eval/results/` — and the honest
-figure is **two runs per case for ADK, not three**: ADK scores 5.0 and 5.5 on our reference
-(median 5.25) against a median of 5.0 over ten direct runs, and 3.5 twice on the external
-one against a direct median of 3.5. Two runs do not establish a difference, and the earlier
-claim of "three runs each, median 5.5 for both" over-reported what the repository holds.
+afterwards from layer 4. Measured over **every** stored run in `eval/results/`, recounted on 31.08 with
+`python3 eval/bench.py report`:
+
+| Case | ADK | direct |
+|---|---|---|
+| McDonald (ours, 6 pts) | 5.25 — n=2 | **5.5** — n=16 |
+| Cheng (external, 4 pts) | 3.5 — n=2 | **3.5** — n=20 |
+
+The honest figure is **two runs per case for ADK, not three**, and two runs do not
+establish a difference either way. Those medians were quoted three different ways in three
+places until 31.08 — 5.0 over ten runs here, 5.5 over sixteen in the pipeline docstring,
+5.5 with no sample size in the service — each true of its own subset and contradictory to
+anyone reading two of them. They are now counted over the whole repository by one command.
 What is visible is wall-clock, and "about twice as long" — which this paragraph said until
-31.08 — understated it: the stored ADK runs take 137 and 291 seconds against 28–128 for the
-direct path (median 40.5), so three- to sevenfold. So ADK is available via `engine: "adk"`
+31.08 — understated it: the stored ADK runs take 137 and 291 seconds against 28.3–128.4 for
+the direct path (median 40.5 over 36 runs), so three- to sevenfold. So ADK is available via `engine: "adk"`
 and is **not** the default: making it the default for the sake of a line in a submission
 would sell as an improvement something we have no measurement to call an improvement — and
 would cost the user several minutes per paper to do it (F-46).
@@ -479,6 +495,16 @@ python3 eval/bench.py run --engine adk # same, through the ADK graph
 python3 eval/bench.py report           # table + medians
 ```
 
+**`eval/probes/rescore_offline.py` — layer 4 alone, on runs already stored.** It takes
+the `findings` of a saved run, re-fetches the paper, and re-runs the verification. No
+model call, so a change to the verifier can be measured for the price of the network
+rather than three Vertex calls. The sign check and the group-marker coverage in the
+audit below were measured with it.
+
+```bash
+python3 eval/probes/rescore_offline.py --case cheng-2024
+```
+
 **`eval/harness.py` — the model on a prepared input.** Feeds a file from `eval/inputs/`
 straight to the model and judges the answer. It cannot see retrieval or verification, and
 that is the point: it is the tool for comparing prompts and evidence levels.
@@ -495,10 +521,18 @@ python3 tests/run_all.py cells      # just the ones whose name matches
 python3 -m truth.stats_tool         # the arithmetic against published values
 ```
 
-None of these touch the network or call a model: they cost nothing and need no
-credentials. They also run on every push (`.github/workflows/tests.yml`) — which they did
+None of these call a model: they cost nothing and need no credentials. Two of them
+do reach Europe PMC — `test_parallel_isolation`, which parses three papers serially
+and in parallel to catch cross-contamination, and `test_appendix_pdf`, which pulls a
+supplement that ships as a single PDF. This paragraph claimed "none of these touch
+the network" until 31.08, and so did the runner's own docstring and the CI comment;
+the claim was simply false. Both files now **skip with a warning** when Europe PMC is
+unavailable instead of failing, because a red build caused by somebody else's outage
+is a false accusation against our own code — the same error this tool exists to
+catch. They also run on every push (`.github/workflows/tests.yml`) — which they did
 not until 31.08, when fifteen test files existed, were run by hand one at a time, and
 this README named two of them. A test nobody runs is a comment with quotation marks.
+There are 23 files now; the five newest are listed at the end of the next section.
 
 The McDonald PDF is not in the repository — it is under the publisher's copyright. Put
 it in `eval/pdf/mcdonald.pdf` (that path is gitignored) and `bench.py` will find it;
@@ -591,6 +625,75 @@ its cells parse worse (8–14 addresses against 26–30), and without an address
 evidence only supports `SUPPORTED`. A system that scored both papers alike here would be
 telling us less, not more.
 
+### The second code audit, later the same day
+
+The first audit of the day (above) was followed by a second one over the whole
+codebase, held to the same rule: read the code, distrust the description. It found
+five defects and three places where the code contradicted this project's own prose.
+All are fixed, all are under test, and the full write-up with the numbers is F-67 in
+`docs/02-verified-facts.md`. Four are worth stating here.
+
+**A number's sign was not checked.** The number pattern started at `\d` in all three
+layers that used it, so the sign never reached the verifier:
+
+```python
+verify([{"value": "0.69", "label": "absolute risk difference"}],
+       "The absolute risk difference was -0.69 percentage points")   # → VERIFIED
+```
+
+A risk difference written in the opposite direction was confirmed against the source.
+That is the same class of error `check_group` was written for — an inverted direction —
+one floor down. The fix takes a minus into the number **only where it is a sign and not
+a range dash**: in `1.05-1.42` a digit precedes the dash, so the upper confidence limit
+stays positive; in `was -0.69` a space does. The opposite choice would have been worse
+than the defect, marking every other confidence limit as missing — a false accusation,
+which this project treats as costlier than a miss. Measured on both references
+afterwards: **0 sign mismatches on 460 and 476 numbers** — the guard catches nothing
+here and breaks nothing, and it exists because the failure was reproduced, not
+observed in the wild.
+
+**The input cut to fit the model removed the appendix.** The prompt was assembled as
+`text + tables` and then truncated to 400,000 characters. The appendix went first
+*inside* the table block, which bought nothing, because the whole block sat in the tail
+that got cut. The flagship paper assembles to **340,807 characters — 85% of the limit**;
+one with a larger appendix would have lost it silently while the report still said L1.
+Tables now go first, the truncation falls on the running text, and the report prints
+what actually reached the model. The verifier is unaffected: it has no window.
+
+**The group check is carried by a domain vocabulary, not by a mechanism.** `\bglp-1\b`
+sat in the shared marker list beside the word "exposed". Removing it drops the check
+from 81 rulings out of 457 to **4** on McDonald, and from 60 out of 474 to **0** on
+Cheng. So "0 inversions" on both references rests on both papers being about GLP-1.
+A second attempt — deriving arm names from the paper's own column headers, accepting a
+negation only when its base is a column of the same table — **measures zero on both
+references**: Cheng names its arms "GLP-1 RA", "Insulin", "Metformin", and no rule of
+language says which one is the comparator. The mechanism is kept, tested and reported
+as a negative result; the domain words are kept too, but moved into `DOMAIN_MARKERS`
+and replaceable through `TRUTH_GROUP_MARKERS` without touching code.
+
+**The upload limit measured the wrong size.** 25 MB is checked before the file is read
+into memory — carefully done — but that is the *compressed* size, while
+`word/document.xml` was read whole, in three places. It is repetitive markup and
+compresses hundreds of times over: **72 KB on disk expands to 75 MB**. There is now a
+limit on the decompressed size, checked against both the archive's declared figure and
+what is actually read, because the declared one can lie.
+
+Three of this project's own texts were also wrong. `tests/run_all.py`, the CI comment
+and this README all said the tests do not touch the network; two of them do, and one
+would have failed on somebody else's outage. The direct path's median was quoted three
+different ways in three files. And the comment justifying the evidence-weight measure
+claimed its assumption errs towards understating a find, when for a plausible
+hallucination — which is what the measure is read as guarding against — it errs the
+other way. That last one changed no code and is the most useful of the three: six bits
+separate a number taken from *this* paper from one that turned up by chance, and they
+do **not** separate it from a plausible invention. Saying otherwise would be the
+substitution this tool exists to catch.
+
+New tests from this audit: `test_sign.py`, `test_http_guards.py`, `test_model_input.py`,
+`test_group_markers.py`, `test_zip_limits.py`. `test_http_guards.py` covers what nothing
+covered before — the key, the upload limits, the concurrency limit and the refusal
+codes, i.e. exactly the logic that protects somebody else's Vertex quota.
+
 ---
 
 ## Hackathon requirements
@@ -612,7 +715,7 @@ telling us less, not more.
 | `truth/` | the product: pipeline, retrieval, parsers, critic, verifier, stats, batch |
 | `app/` | FastAPI service |
 | `eval/` | measurement harness, ground truth, inputs, run results |
-| `tests/` | parallel isolation; regression on comparison signs vs. markup (F-41) |
+| `tests/` | 23 files, all run on every push: number verification, statuses, HTTP guards, parallel isolation, regressions from every defect the project caught in itself |
 | `docs/` | facts, decisions, open questions, architecture *(Russian)* |
 | `STATE.md` | design intent, layer architecture, next step |
 | `TODO.md` | remaining work to submission, each item with its argument |

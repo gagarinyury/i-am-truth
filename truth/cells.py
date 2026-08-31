@@ -69,12 +69,12 @@ mortality, «36 months» — любым, где есть «36-month». Адре�
 `docx_tables` и `pdf_tables` дают одинаковую форму, а `jats_tables.to_claims`
 лежал импортированным в `pipeline` и не вызывался ни разу.
 """
-import re
-
 from .verify_numbers import label_overlap, label_words
 
-# Тот же паттерн числа, что в остальных слоях: с разделителями разрядов.
-NUM = re.compile(r"\d{1,3}(?:[  ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+")
+# Шаблон числа — общий с верификатором (`verify_numbers.NUM_PATTERN`): адрес ячейки
+# обязан искаться тем же правилом, каким число извлекалось из разбора, иначе
+# «-0.12» из таблицы и «-0.12» из отчёта окажутся разными строками.
+from .verify_numbers import NUM  # noqa: E402
 
 # Насколько метка модели должна совпасть с адресом ячейки, чтобы считать адрес
 # подтверждённым. Порог тот же, что у прежней проверки метки (0.5), и намеренно:
@@ -82,8 +82,7 @@ NUM = re.compile(r"\d{1,3}(?:[  ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+")
 CELL_THRESHOLD = 0.5
 
 
-def _norm(raw: str) -> str:
-    return str(raw).replace(",", "").replace(" ", "").replace(" ", "")
+from .verify_numbers import norm_value as _norm  # noqa: E402
 
 
 def _shape(t: dict):

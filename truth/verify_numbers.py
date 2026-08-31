@@ -14,6 +14,7 @@ import argparse
 import collections
 import json
 import math
+import os
 import re
 import sys
 import unicodedata
@@ -106,11 +107,26 @@ def number_variants(num: str) -> list:
 # тривиальных чисел для этого больше не нужно, их обнуляет измерение, а не наш
 # вкус. «15,264» весит около 12 бит: столько же, сколько стоит угадать его.
 #
-# ⚠️ Модель формы — допущение, и оно названо: она полагает значения внутри формы
-# равновероятными. В статьях это неверно — круглые числа и малые проценты
-# встречаются чаще прочих. Ошибка направлена в одну сторону: настоящих значений
-# формы «занято» больше, чем считает равномерная модель, поэтому вес получается
-# **заниженным**. Занижать информативность улики безопаснее, чем завышать.
+# ⚠️ Что именно измеряет эта величина и против чего она НЕ защищает.
+#
+# Числитель здесь измерен точно: это занятые значения самого документа, посчитанные
+# проходом по нему. Допущение сидит в знаменателе — мощность формы берётся так,
+# будто внутри формы все значения равновероятны. Отсюда `p` — вероятность совпасть
+# для числа, выбранного из формы **равномерно случайно**, и калибровка 29.08 ставила
+# ровно такой опыт: подставлялись случайные числа, доли сошлись (33% против 33%,
+# 1% против 1%).
+#
+# Здесь до 31.08 стояло, что допущение **занижает** вес и потому безопасно. Это
+# неверно, и направление важнее самой поправки. Модель не выдумывает числа
+# равномерно: она пишет правдоподобные — круглые, малые проценты, значения, похожие
+# на соседние в той же таблице, — то есть тяготеет ровно к тем клеткам формы,
+# которые документ уже занял. Для такого источника вероятность случайного совпадения
+# **выше** расчётной, а значит шесть бит скорее переоценивают улику, чем недооценивают.
+#
+# Поэтому граница читается так: вес улики отделяет число, взятое из этой статьи, от
+# числа, попавшегося по совпадению — и не отделяет его от правдоподобной
+# галлюцинации. Второе потребовало бы замера на выдумках самой модели, а не на
+# случайных подстановках, и такого замера у проекта нет.
 _NUM_IN_TEXT = re.compile(r"(?<![\d.,])(\d+)(?:\.(\d+))?(?![\d])")
 
 # Порог «сильной» улики. Не назначен, а взят из того же замера: формы, которые
@@ -175,35 +191,92 @@ def evidence_bits(num: str, shapes: dict) -> float:
 # раза, медиана 2, максимум 118, F-63).
 MAX_OCCURRENCES = 40
 
+# ------------------------------------------------------------------ знак числа
+#
+# Шаблон числа, общий для всех слоёв. До 31.08 он был выписан отдельно в
+# `pipeline`, `grounding` и `cells` тремя одинаковыми строками — и все три
+# начинались с `\d`, то есть **знака не видели вовсе**. Замер прямой:
+#
+#     verify([{"value": "0.69", "label": "absolute risk difference"}],
+#            "The absolute risk difference was -0.69 percentage points")
+#     → VERIFIED
+#
+# То есть разность рисков, записанная с противоположным знаком, подтверждалась
+# первоисточником. Это тот же класс, ради которого написана `check_group`, —
+# инверсия направления (F-12), — только пропущенный на уровень ниже: там ловилась
+# подмена группы, здесь беспрепятственно проходила подмена знака.
+#
+# Минус берётся в число только тогда, когда он **знак**, а не дефис диапазона.
+# Различает их предшествующий символ: в «1.05-1.42» перед дефисом стоит цифра, и
+# запрет `(?<![\d.,])` не даёт прочитать его как минус — верхняя граница
+# доверительного интервала остаётся положительной. В «was -0.69» перед минусом
+# пробел, и он читается как знак. Иначе цена была бы обратной и хуже: каждая
+# вторая граница ДИ в статье получала бы ложное «не найдено», а ложное обвинение
+# дороже пропуска — это правило проекта.
+NUM_PATTERN = (r"(?<![\d.,])-?(?:\d{1,3}(?:[\u00a0\u202f ,]\d{3})+(?:\.\d+)?"
+               r"|\d+(?:\.\d+)?|\.\d+)")
+NUM = re.compile(NUM_PATTERN)
+
+# Разделители разрядов, которые снимаются при сравнении значений. Список общий для
+# всех слоёв: до 31.08 каждый снимал свой набор, и «15 264» с тонким пробелом из
+# таблицы не сходилось с «15264» из разбора — число считалось разным в индексе
+# ячеек и в сводке.
+GROUP_SEPARATORS = (",", " ", "\u00a0", "\u202f")
+
+
+def norm_value(raw) -> str:
+    """Значение без разделителей разрядов. Знак остаётся: он часть числа."""
+    out = str(raw)
+    for sep in GROUP_SEPARATORS:
+        out = out.replace(sep, "")
+    return out
+
 
 def find_occurrences(num: str, source: str, limit: int = MAX_OCCURRENCES) -> list:
-    """Все вхождения числа с их окружением.
+    """Вхождения числа С ТЕМ ЖЕ ЗНАКОМ, что заявлен. Совместимая обёртка."""
+    same, _ = find_occurrences_signed(num, source, limit)
+    return same
 
-    Раньше возвращалось первое, и на нём же строились проверка метки и проверка
-    группы. Это значит, что число сверялось с произвольным местом документа: если
-    «19.7» стоит в статье шесть раз, метка проверялась у первого вхождения, а
-    принадлежало число, возможно, шестому. Отсюда шли и ложные `label mismatch`,
+
+def find_occurrences_signed(num: str, source: str,
+                            limit: int = MAX_OCCURRENCES) -> tuple:
+    """`(вхождения с тем же знаком, вхождения с противоположным)`.
+
+    Раньше возвращалось первое вхождение, и на нём же строились проверка метки и
+    проверка группы. Это значит, что число сверялось с произвольным местом
+    документа: если «19.7» стоит в статье шесть раз, метка проверялась у первого,
+    а принадлежало число, возможно, шестому. Отсюда шли и ложные `label mismatch`,
     и невозможность поймать настоящую инверсию.
+
+    Второй список — не диагностика, а вердикт: если число нашлось только с другим
+    знаком, «нашлось» о нём сказать нельзя. Возвращается отдельно, чтобы отчёт мог
+    назвать разницу словами вместо тихого UNVERIFIED — «числа нет в статье» и «в
+    статье оно с обратным знаком» это разные сведения, и второе сильнее.
     """
-    out = []
-    for v in number_variants(num):
+    num = str(num).strip()
+    want_neg = num.startswith("-")
+    core = num.lstrip("-")
+    same, opposite = [], []
+    for v in number_variants(core):
         # границы: число не должно быть частью более длинного числа
         # Хвостовой запрет включает «точка и цифра»: без него «247» находилось
         # внутри «247.83» и число-претендент подтверждалось чужой дробью. На
         # мере веса улики это сказывается прямо — завышает долю найденного.
-        pat = re.compile(r"(?<![\d.,])" + re.escape(v) + r"(?![\d]|\.\d)")
+        pat = re.compile(r"(?<![\d.,])(-?)" + re.escape(v) + r"(?![\d]|\.\d)")
         for m in pat.finditer(source):
             # окно широкое: заголовок строки таблицы или подраздела может стоять
             # заметно раньше самого числа (поймано на реальном файле 27.08)
-            s = max(0, m.start() - CONTEXT_BEFORE)
-            out.append({"as": v, "start": m.start(),
-                        "context": " ".join(source[s:m.end() + CONTEXT_AFTER].split())})
-            if len(out) >= limit:
-                return out
-        if out:
+            st = max(0, m.start() - CONTEXT_BEFORE)
+            hit = {"as": ("-" if m.group(1) else "") + v, "start": m.start(),
+                   "negative": bool(m.group(1)),
+                   "context": " ".join(source[st:m.end() + CONTEXT_AFTER].split())}
+            (same if bool(m.group(1)) == want_neg else opposite).append(hit)
+            if len(same) >= limit:
+                return same, opposite
+        if same or opposite:
             # написание найдено — другие варианты того же числа не нужны
             break
-    return out
+    return same, opposite
 
 
 # Здесь стояла `find_number` — «первое вхождение», с подписью «оставлено для
@@ -231,13 +304,130 @@ def find_occurrences(num: str, source: str, limit: int = MAX_OCCURRENCES) -> lis
 # показателя, а не про группу.
 ARM = r"(?:group|arm|cohort|patients|subjects|participants|users)"
 DEFAULT_GROUPS = {
-    "exposed": [rf"\bglp[-\s]?1\b", rf"\bexposed\b", rf"\bexposure\s+{ARM}\b",
+    "exposed": [rf"\bexposed\b", rf"\bexposure\s+{ARM}\b",
                 rf"\btreated\s+{ARM}\b", rf"\bintervention\s+{ARM}\b",
-                r"\bэкспон", r"\bгруппа\s+glp"],
+                r"\bэкспон"],
     "control": [rf"\bcontrol\s+{ARM}\b", r"\bcontrols\b", r"\bcomparator\b",
                 rf"\bcomparison\s+{ARM}\b", rf"\bunexposed\b",
                 r"\bконтрольн", r"\bгруппа\s+сравнени"],
 }
+
+# --------------------------------------------------- предметные маркеры
+#
+# Это словарь ОДНОЙ предметной области — класса статей, на котором проект
+# калибровался. Раньше `\bglp[-\s]?1\b` стоял в общем списке наравне со словом
+# «exposed», то есть название класса препаратов было вшито в продукт, объявленный
+# для биомедицины вообще.
+#
+# Замер 31.08 показал, сколько это на самом деле значит, и результат неприятный:
+# **на этих словах держится почти всё покрытие проверки групп**. Убрать их —
+# вердикт выносится для 4 чисел из 457 вместо 81 (McDonald) и для 0 из 474 вместо
+# 60 (Cheng). То есть строка «0 инверсий» на обоих эталонах обеспечена не общим
+# механизмом, а тем, что обе статьи про GLP-1.
+#
+# Поэтому слова остаются — выбрасывать работающее покрытие ради чистоты нельзя, —
+# но лежат отдельно, названы тем, что они есть, и заменяются файлом без правки
+# кода. Для другой области задайте свой набор через `TRUTH_GROUP_MARKERS`.
+DOMAIN_MARKERS = {
+    "exposed": [r"\bglp[-\s]?1\b", r"\bгруппа\s+glp"],
+    "control": [],
+}
+
+for _g, _al in DOMAIN_MARKERS.items():
+    DEFAULT_GROUPS.setdefault(_g, []).extend(_al)
+
+#
+# Файл задаётся `TRUTH_GROUP_MARKERS` и имеет вид `{"exposed": [...],
+# "control": [...]}` — регулярные выражения, дополняющие список выше, а не
+# заменяющие его. Отсутствие файла — норма, а не отказ.
+def _extra_markers() -> dict:
+    path = os.environ.get("TRUTH_GROUP_MARKERS", "").strip()
+    if not path:
+        return {}
+    try:
+        data = json.loads(open(path, encoding="utf-8").read())
+    except Exception:                                            # noqa: BLE001
+        # Молча продолжать нельзя: человек задал файл и вправе знать, что его не
+        # прочитали. Но и падать из-за настройки, без которой продукт работает,
+        # тоже неверно.
+        print(f"⚠️  TRUTH_GROUP_MARKERS: не прочитан {path}", file=sys.stderr)
+        return {}
+    return {g: [str(x) for x in (data.get(g) or [])] for g in ("exposed", "control")}
+
+
+for _g, _al in _extra_markers().items():
+    DEFAULT_GROUPS.setdefault(_g, []).extend(_al)
+
+
+# --------------------------------------------- имена рук из самого документа
+#
+# Зачем. Маркеры выше — это словарь, а руки исследования называются в каждой
+# статье своими словами: «Vaccinated / Unvaccinated», «GLP-1 / Non-GLP-1»,
+# «Users / Non-users». Отсюда покрытие проверки: на живых разборах вердикт
+# выносился для 81 числа из 457 и 60 из 474, то есть «ноль инверсий» относилось к
+# пятой части чисел.
+#
+# Правило, по которому имя принимается, одно и оно не догадывается ни о чём:
+# **заголовок считается названием руки, только если в той же таблице есть его
+# отрицание** — «Unvaccinated» рядом с «Vaccinated», «Non-users» рядом с «Users».
+# Пара «слово и его отрицание» — это и есть объявление двух рук, сделанное самим
+# документом; отрицание идёт в контроль, основа — в экспозицию.
+#
+# Проверка «основа тоже стоит колонкой» здесь несущая. Без неё префикс `un`
+# срезался бы у чего угодно («under 65» → «der 65»), и продукт начал бы выносить
+# обвинения в инверсии на основании опечатки в регулярном выражении. С ней
+# ложное срабатывание требует, чтобы в одной таблице стояли две колонки, одна из
+# которых буквально является отрицанием другой и при этом руками не является.
+_NEGATION = re.compile(r"^(?:non[-\s]?|un|no[-\s]+)(.{3,})$", re.I)
+# Хвосты, которыми заголовок обрастает в вёрстке: «(n = 15 264)», «, %», сноски.
+_HEAD_TAIL = re.compile(r"\s*(?:\(.*?\)|\[.*?\]|,.*|[*†‡§¶].*)\s*$")
+
+
+def _clean_header(raw: str) -> str:
+    """Заголовок колонки без хвостов вёрстки. Составной берётся по последнему
+    уровню: в «Before matching · Vaccinated» руку называет именно он."""
+    h = str(raw or "").split("·")[-1].strip()
+    h = _HEAD_TAIL.sub("", h).strip().lower()
+    return h if 1 < len(h) <= 40 else ""
+
+
+def markers_from_tables(tables: list) -> dict:
+    """Дополнительные маркеры групп, взятые из заголовков колонок документа.
+
+    Возвращает `{"exposed": [...], "control": [...]}` — регулярные выражения,
+    которые вызывающий добавляет к словарю. Пустой ответ — обычный исход и не
+    ошибка: если документ не назвал руки парой «слово и его отрицание», угадывать
+    их не из чего, и молчание здесь правильнее догадки.
+    """
+    exposed, control = set(), set()
+    for t in tables or []:
+        cols = [_clean_header(c) for c in (t.get("columns") or [])]
+        if not cols and t.get("rows"):
+            cols = [_clean_header(c) for c in t["rows"][0]]
+        present = {c for c in cols if c}
+        for c in present:
+            m = _NEGATION.match(c)
+            if not m:
+                continue
+            base = m.group(1).strip()
+            if base in present:
+                control.add(c)
+                exposed.add(base)
+    def _pat(name):
+        return r"\b" + re.escape(name) + r"\b"
+    return {"exposed": sorted(_pat(x) for x in exposed),
+            "control": sorted(_pat(x) for x in control)}
+
+
+def groups_with(extra: dict) -> dict:
+    """Словарь маркеров плюс имена, взятые из документа. Копия, не мутация:
+    `DEFAULT_GROUPS` общий на процесс, а таблицы у каждой статьи свои — дописывать
+    в общий словарь значило бы переносить руки одной статьи на разбор другой,
+    ровно тот класс подмены, который продукт ищет у чужих работ."""
+    if not extra or not (extra.get("exposed") or extra.get("control")):
+        return DEFAULT_GROUPS
+    return {g: list(DEFAULT_GROUPS.get(g, [])) + list(extra.get(g) or [])
+            for g in set(DEFAULT_GROUPS) | set(extra)}
 _COMPILED = {}
 
 
@@ -441,12 +631,13 @@ def check_group(claim: dict, context: str, matched: str, groups=None) -> str:
     return "mismatch"
 
 
-def verify(claims: list, source_text: str) -> dict:
+def verify(claims: list, source_text: str, groups: dict = None) -> dict:
     src = normalise(source_text)
     counts, src_len = word_counts(src), len(src)
     # Нулевое распределение документа — один проход, до всякой сверки.
     shapes = document_shapes(src)
     results, verified, unverified, unlabelled, inverted = [], 0, 0, 0, 0
+    flipped = 0         # число есть, но с противоположным знаком
     unjudged = 0        # числа, у которых силу метки измерить нечем
     # Покрытие проверки группы. Без него «0 инверсий» читается как «проверили —
     # инверсий нет», а на деле означало «проверка отказалась отвечать»: на разборе
@@ -458,9 +649,26 @@ def verify(claims: list, source_text: str) -> dict:
         label = c.get("label", "")
         if not num:
             continue
-        occ = find_occurrences(num, src)
+        occ, flip = find_occurrences_signed(num, src)
         bits = evidence_bits(num, shapes)
         grp = "unknown"
+        if not occ and flip:
+            # Значение в документе есть, но с противоположным знаком. Это не
+            # «не найдено» и тем более не подтверждение: у разности рисков и у
+            # стандартизованной разности знак и есть направление, и перепутать
+            # его — та же ошибка класса F-12, что инверсия группы.
+            best = max(flip, key=lambda o: (label_overlap(label, o["context"],
+                                                          counts, src_len) or -1.0))
+            flipped += 1
+            results.append({**c, "status": "SIGN_MISMATCH", "group_check": grp,
+                            "matched_as": best["as"], "context": best["context"],
+                            "label_match": None, "occurrences": 0,
+                            "evidence_bits": bits,
+                            "chance": round(chance_rate(num, shapes), 4),
+                            "note": ("the value appears in the paper with the opposite "
+                                     "sign; for a risk difference the sign is the "
+                                     "direction, so this is not a match")})
+            continue
         if not occ:
             status = "UNVERIFIED"      # D-14 п.2: в расчёты не идёт
             unverified += 1
@@ -477,7 +685,7 @@ def verify(claims: list, source_text: str) -> dict:
         best = max(occ, key=lambda o: (label_overlap(label, o["context"],
                                                      counts, src_len) or -1.0))
         match = label_overlap(label, best["context"], counts, src_len)
-        grp = check_group(c, best["context"], best["as"])
+        grp = check_group(c, best["context"], best["as"], groups)
         if grp == "mismatch":
             status = "GROUP_MISMATCH"   # число есть, но у другой группы — инверсия
             inverted += 1
@@ -524,6 +732,10 @@ def verify(claims: list, source_text: str) -> dict:
                                      if found_bits else None),
             "verified": verified,
             "group_mismatch": inverted,
+            # Числа, найденные в статье с противоположным знаком. Стоят отдельной
+            # строкой, а не в `unverified`: «нет в статье» и «есть, но наоборот» —
+            # разные сведения, и второе тревожнее.
+            "sign_mismatch": flipped,
             "found_but_label_mismatch": unlabelled,
             # Сила совпадения метки, а не только её факт.
             "label_match_median": (round(matches[len(matches) // 2], 3)

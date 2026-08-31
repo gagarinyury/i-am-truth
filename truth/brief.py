@@ -85,6 +85,13 @@ def render(report: dict) -> str:
                  + (f" (median agreement {v['label_match_median']})"
                     if v.get("label_match_median") is not None else "")
                  + ". Wording is not identity: this is a strength, not a verdict.")
+        if v.get("sign_mismatch") is not None:
+            # Знак — это направление. Строка стоит рядом с инверсией группы,
+            # потому что это тот же класс ошибки этажом ниже.
+            L.append(f"- **{v['sign_mismatch']}** of them are in the paper only with "
+                     f"the opposite sign. Unlike the group check below, this one runs "
+                     f"on every number, so a zero here is a result rather than a "
+                     f"silence.")
         gd, gu = v.get("group_checked"), v.get("group_undecided")
         if gd is not None:
             L.append(f"- The group check ruled on {gd} of {gd + (gu or 0)} numbers"
@@ -92,6 +99,14 @@ def render(report: dict) -> str:
                         "count of inversions below says nothing about them."
                         if gu else ".")
                      + f" Inversions found: {v.get('group_mismatch', 0)}.")
+    mi = report.get("model_input") or {}
+    if mi.get("truncated"):
+        # Уровень описывает добычу. Если до модели доехало не всё добытое, это
+        # обязано стоять здесь же, а не выясняться из полного JSON.
+        L.append(f"- ⚠️ Not all of the retrieved material reached the model: "
+                 f"{mi.get('note', '')} (tables {mi.get('tables_kept')} of "
+                 f"{mi.get('tables_chars')} characters, text {mi.get('source_kept')} "
+                 f"of {mi.get('source_chars')}). The verifier still saw everything.")
     if report.get("caveat"):
         L.append(f"- ⚠️ {report['caveat']}")
     L.append("")
