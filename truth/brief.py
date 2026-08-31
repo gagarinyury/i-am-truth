@@ -22,6 +22,12 @@ def _pct(part, whole):
     return f"{part / whole * 100:.0f}%" if whole else "—"
 
 
+def _num(x):
+    """Число или прочерк. `None` в таблице — это «величина не определена для этой
+    таблицы», и «—» говорит это, тогда как напечатанное `None` выглядит поломкой."""
+    return "—" if x is None else str(x)
+
+
 def render(report: dict) -> str:
     m = report.get("meta") or {}
     lv = report.get("level") or {}
@@ -124,20 +130,28 @@ def render(report: dict) -> str:
         L.append("")
         L.append("| quantity | function | the model said | |")
         L.append("|---|---|---|---|")
-        L.append(f"| absolute risk difference | {rc.get('absolute_risk_difference_pp')} pp | "
-                 f"{ms.get('absolute_risk_difference')} | {ag.get('absolute_risk_difference')} |")
+        L.append(f"| absolute risk difference | {_num(rc.get('absolute_risk_difference_pp'))} pp | "
+                 f"{_num(ms.get('absolute_risk_difference'))} | "
+                 f"{ag.get('absolute_risk_difference')} |")
         L.append(f"| {rc.get('nnt_kind', 'number needed to treat')} | "
-                 f"{rc.get('nnt_abs', rc.get('nnt'))} | {ms.get('nnt')} | "
+                 f"{_num(rc.get('nnt_abs', rc.get('nnt')))} | {_num(ms.get('nnt'))} | "
                  f"{ag.get('nnt')} |")
-        L.append(f"| risk ratio | {rc.get('rr')} ({', '.join(str(x) for x in rc.get('rr_ci95', []))}) | — | — |")
+        ci = rc.get("rr_ci95") or []
+        L.append(f"| risk ratio | {_num(rc.get('rr'))}"
+                 + (f" ({', '.join(str(x) for x in ci)})" if ci else "") + " | — | — |")
         ev = rc.get("e_value") or {}
         if ev.get("basis") == "adjusted":
             L.append(f"| E-value (on the paper's adjusted {ev.get('measure')}"
-                     f" {ev.get('reported')}) | {ev.get('point')} (CI {ev.get('ci')}) | — | — |")
+                     f" {ev.get('reported')}) | {_num(ev.get('point'))} "
+                     f"(CI {_num(ev.get('ci'))}) | — | — |")
         else:
-            L.append(f"| E-value | {rc.get('e_value_point')} "
-                     f"(CI {rc.get('e_value_ci')}) | — | — |")
+            L.append(f"| E-value | {_num(rc.get('e_value_point'))} "
+                     f"(CI {_num(rc.get('e_value_ci'))}) | — | — |")
         L.append("")
+        if rc.get("undefined"):
+            L.append(f"*Not defined for this table: {', '.join(rc['undefined'])} — "
+                     f"{rc.get('undefined_note', '')}.*")
+            L.append("")
         if rc.get("note"):
             L.append(f"*{rc['note']}.*")
             L.append("")

@@ -84,14 +84,25 @@ class TwoByTwo:
         return (self.exposed_events / self.exposed_total,
                 self.control_events / self.control_total)
 
-    def rr(self) -> float:
+    def rr(self) -> float | None:
+        """`None`, если в контрольной руке нет событий: делить не на что."""
         re, rc = self.risks()
-        return re / rc
+        return None if rc == 0 else re / rc
 
-    def odds_ratio(self) -> float:
+    def odds_ratio(self) -> float | None:
+        """`None`, когда шансы не определены.
+
+        Знаменатель `(total − events)` обращается в ноль, когда исход наступил у
+        всех в руке. Это законная таблица, а не мусор: RR, ARR и NNT для неё
+        считаются, и только шансы — нет. Раньше здесь летел `ZeroDivisionError`,
+        и он не оставался внутри: `recompute` его не ловил, и весь `POST /analyze`
+        отвечал 500 — после трёх оплаченных вызовов Vertex и полного разбора.
+        Тот же класс, что `inf` в `nnt` (см. ниже): величина, которой нет,
+        выражается её отсутствием, а не исключением и не бесконечностью.
+        """
         a, b = self.exposed_events, self.exposed_total - self.exposed_events
         c, d = self.control_events, self.control_total - self.control_events
-        return (a * d) / (b * c)
+        return None if b <= 0 or c <= 0 else (a * d) / (b * c)
 
     def arr(self) -> float:
         """Абсолютное снижение риска, в долях (не в процентах)."""
@@ -113,32 +124,62 @@ class TwoByTwo:
         """ДИ для RR методом Katz (лог-нормальное приближение)."""
         a, n1 = self.exposed_events, self.exposed_total
         c, n0 = self.control_events, self.control_total
-        if a == 0 or c == 0:
-            return (float("nan"), float("nan"))
+        rr = self.rr()
+        # `nan` больше не возвращается. Он не сравнивается ни с чем (`nan <= 1`
+        # ложно), поэтому проходил проверку «ДИ накрывает единицу» и уезжал в
+        # формулу E-value, а оттуда в JSON литералом `NaN`, невалидным для всех
+        # потребителей, кроме Python. Отсутствие интервала — это `None`.
+        if a == 0 or c == 0 or rr is None or rr <= 0:
+            return (None, None)
         se = math.sqrt(1 / a - 1 / n1 + 1 / c - 1 / n0)
         z = 1.959963985 if abs(level - 0.95) < 1e-9 else _z(level)
-        lr = math.log(self.rr())
+        lr = math.log(rr)
         return (math.exp(lr - z * se), math.exp(lr + z * se))
 
     def report(self) -> dict:
+        """Все меры разом. Величина, которая не определена, — `None`.
+
+        Ни одна ветка не поднимает исключение: отчёт собирается уже после того,
+        как за разбор заплачено тремя вызовами модели, и ронять его из-за
+        вырожденной таблицы значит терять всю работу ради одной клетки.
+        """
         re, rc = self.risks()
+        rr, orr, nnt = self.rr(), self.odds_ratio(), self.nnt()
         lo, hi = self.rr_ci()
-        return {
+        has_ci = lo is not None and hi is not None
+        if rr is None or rr <= 0:
+            ev_point = ev_ci = None
+        else:
+            ev_point = round(e_value(rr), 3)
+            ev_ci = (None if not has_ci else
+                     1.0 if lo <= 1.0 <= hi else
+                     # ДИ, накрывающий единицу, означает, что эффект вообще не
+                     # отделён от нуля: по VanderWeele & Ding E-value для такого
+                     # интервала равен 1 — достаточно сколь угодно слабого
+                     # конфаундера. Подставлять границу в формулу нельзя, она
+                     # вернёт >1 и заявит устойчивость, которой нет.
+                     round(e_value(hi if rr < 1 else lo), 3))
+        undefined = [k for k, v in (("rr", rr), ("odds_ratio", orr),
+                                    ("rr_ci95", lo), ("nnt", nnt)) if v is None]
+        out = {
             "risk_exposed": round(re, 6),
             "risk_control": round(rc, 6),
-            "rr": round(self.rr(), 4),
-            "rr_ci95": [round(lo, 4), round(hi, 4)],
-            "odds_ratio": round(self.odds_ratio(), 4),
+            "rr": None if rr is None else round(rr, 4),
+            "rr_ci95": [round(lo, 4), round(hi, 4)] if has_ci else None,
+            "odds_ratio": None if orr is None else round(orr, 4),
             "arr_pp": round(self.arr() * 100, 4),
-            "nnt": None if self.nnt() is None else round(self.nnt(), 1),
-            "e_value_point": round(e_value(self.rr()), 3),
-            # ДИ, накрывающий единицу, означает, что эффект вообще не отделён от
-            # нуля: по VanderWeele & Ding E-value для такого интервала равен 1 —
-            # достаточно сколь угодно слабого конфаундера. Подставлять границу в
-            # формулу нельзя, она вернёт >1 и заявит устойчивость, которой нет.
-            "e_value_ci": (1.0 if lo <= 1.0 <= hi else
-                           round(e_value(hi if self.rr() < 1 else lo), 3)),
+            "nnt": None if nnt is None else round(nnt, 1),
+            "e_value_point": ev_point,
+            "e_value_ci": ev_ci,
         }
+        if undefined:
+            # Какие меры не посчитались и почему — это результат, а не пробел:
+            # пустая клетка без объяснения читается как сбой.
+            out["undefined"] = undefined
+            out["undefined_note"] = (
+                "an arm in which every participant had the outcome has no odds, "
+                "and an arm with no events at all has no ratio to divide by")
+        return out
 
 
 def _z(level: float) -> float:

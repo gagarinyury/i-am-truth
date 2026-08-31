@@ -52,12 +52,50 @@ def _first_number(s) -> float | None:
     return _f(m.group(0)) if m else None
 
 
-def counts_from(computed: dict) -> tuple[dict, str] | tuple[None, None]:
-    """Четыре числа таблицы 2×2 и основание, на котором они получены."""
+def _impossible(a, n1, c, n0) -> str | None:
+    """Почему из этих четырёх чисел таблицы 2×2 не выходит. `None` — выходит.
+
+    Существует потому, что проверка стояла не на том пути. Путь `parsed` —
+    слабый, восстановленный из строки, которую написала модель, — требовал
+    `a <= n1 and c <= n0`. Путь `reported` — сильный, тот, чей результат отчёт
+    называет независимым от арифметики модели, — требовал только `> 0`. То есть
+    строгая проверка охраняла запасной вход, а парадный стоял открытым.
+
+    Чего это стоило. `{"exposed_events": 2000, "exposed_total": 100}` проходило
+    насквозь и печаталось в разделе «Recomputed by a function, not by the model»:
+    риск 2000%, отношение шансов −1.05, разность рисков 1950 процентных пунктов,
+    и подпись «independent of the model's arithmetic». Функция, объявленная
+    авторитетом над моделью, брала у модели что угодно.
+
+    Отказ — это результат, а не молчание: причина возвращается словами и уходит
+    в отчёт, потому что «событий больше, чем людей» — это находка о разборе,
+    и прятать её незачем.
+    """
+    if None in (a, n1, c, n0):
+        return "the model did not report all four counts of the 2×2 table"
+    if min(a, c) < 0 or min(n1, n0) <= 0:
+        return ("the counts are not a table: an arm cannot be empty and events "
+                "cannot be negative")
+    if a > n1 or c > n0:
+        return (f"more events than participants — exposed {a:g}/{n1:g}, "
+                f"control {c:g}/{n0:g}, which cannot both be true")
+    if a == 0 and c == 0:
+        return "no events in either arm — there is no risk to compare"
+    return None
+
+
+def counts_from(computed: dict) -> tuple[dict, str] | tuple[None, str]:
+    """Четыре числа таблицы 2×2 и основание, на котором они получены.
+
+    При отказе вторым элементом идёт причина, а не `None`: она попадает в отчёт.
+    """
     c = (computed or {}).get("counts") or {}
     keys = ("exposed_events", "exposed_total", "control_events", "control_total")
     vals = {k: _f(c.get(k)) for k in keys}
-    if all(v is not None and v > 0 for v in vals.values()):
+    reported_given = any(v is not None for v in vals.values())
+    why = _impossible(vals["exposed_events"], vals["exposed_total"],
+                      vals["control_events"], vals["control_total"])
+    if why is None:
         return {k: int(v) for k, v in vals.items()}, "reported"
 
     # Запасной путь: вытащить дроби из строки арифметики. Правильность разбора
@@ -67,13 +105,16 @@ def counts_from(computed: dict) -> tuple[dict, str] | tuple[None, None]:
     if len(fr) >= 2:
         a, n1 = _f(fr[0][0]), _f(fr[0][1])
         c2, n0 = _f(fr[1][0]), _f(fr[1][1])
-        if all(v and v > 0 for v in (a, n1, c2, n0)) and a <= n1 and c2 <= n0:
+        if _impossible(a, n1, c2, n0) is None:
             stated = _first_number((computed or {}).get("absolute_risk_difference"))
             got = (a / n1 - c2 / n0) * 100
             if stated is None or abs(abs(got) - abs(stated)) <= TOL_PP:
                 return ({"exposed_events": int(a), "exposed_total": int(n1),
                          "control_events": int(c2), "control_total": int(n0)}, "parsed")
-    return None, None
+    # Числа были, но противоречили друг другу — это сильнее, чем «их не было»,
+    # и говорится отдельно.
+    return None, (why if reported_given else
+                  "the 2×2 table could not be assembled from the model's output")
 
 
 def adjusted_e_value(computed: dict, control_risk: float = None) -> dict | None:
@@ -143,8 +184,11 @@ def recompute(computed: dict) -> dict | None:
         return None
     counts, basis = counts_from(computed)
     if not counts:
-        out = {"basis": "none", "note": "the 2×2 table could not be assembled from "
-                                        "the model's output, so nothing was recomputed"}
+        # Причина приходит из `counts_from` словами. «Таблица не собралась» и
+        # «в таблице событий больше, чем людей» — разные сведения о разборе, и
+        # второе читателю нужнее: это отказ от заведомо неверных чисел, а не
+        # отсутствие данных.
+        out = {"basis": "none", "note": f"{basis}, so nothing was recomputed"}
         # Скорректированная оценка может быть выписана и без таблицы 2×2 — тогда
         # доля событий неизвестна и редкость исхода предполагается. Это допущение
         # завышает E-value (см. `stats_tool.RARE_OUTCOME`), поэтому оно помечено
@@ -175,7 +219,7 @@ def recompute(computed: dict) -> dict | None:
     # держать в голове две противоположные конвенции.
     harm = fn_ard_pp > 0
     nnt = rep["nnt"]
-    return {
+    out = {
         "basis": basis,
         "counts": counts,
         "absolute_risk_difference_pp": round(fn_ard_pp, 4),
@@ -213,3 +257,9 @@ def recompute(computed: dict) -> dict | None:
         },
         "independent": basis == "reported",
     }
+    if rep.get("undefined"):
+        # Меры, которых для этой таблицы не существует, и почему. Пустая клетка
+        # без объяснения читается как сбой инструмента, а это свойство данных.
+        out["undefined"] = rep["undefined"]
+        out["undefined_note"] = rep["undefined_note"]
+    return out

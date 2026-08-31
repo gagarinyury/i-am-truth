@@ -159,6 +159,9 @@ footer a{color:var(--accent)}
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const cap = s => String(s ?? "").replace(/_/g," ");
+/* A quantity that does not exist for this table renders as a dash. Printing
+   "null" there reads as a broken tool; the dash reads as what it is. */
+const num = v => (v === null || v === undefined || Number.isNaN(v)) ? "—" : String(v);
 
 /* The key field appears only when the service actually asks for one. A password
    box on an open service is theatre; its absence on a closed one is a dead end. */
@@ -393,20 +396,22 @@ function render(d){
       <h2>Recomputed by a function, not by the model</h2>
       <div class="grid">
         <div class="cell"><b>${esc(rc.absolute_risk_difference_pp)} pp</b><span>absolute risk difference</span></div>
-        <div class="cell"><b>${esc(rc.nnt_abs??Math.abs(rc.nnt))}</b><span>${esc(rc.nnt_kind||"number needed to treat")}</span></div>
-        <div class="cell"><b>${esc(rc.rr)}</b><span>risk ratio (${esc((rc.rr_ci95||[]).join("–"))})</span></div>
+        <div class="cell"><b>${esc(num(rc.nnt_abs))}</b><span>${esc(rc.nnt_kind||"number needed to treat")}</span></div>
+        <div class="cell"><b>${esc(num(rc.rr))}</b><span>risk ratio${(rc.rr_ci95||[]).length?` (${esc(rc.rr_ci95.join("–"))})`:""}</span></div>
         ${(()=>{const ev=rc.e_value||null;
           return ev && ev.basis==="adjusted"
-            ? `<div class="cell ok"><b>${esc(ev.point)}</b><span>E-value on the paper's adjusted ${esc(ev.measure)} (CI ${esc(ev.ci)})</span></div>`
-            : `<div class="cell"><b>${esc(rc.e_value_point)}</b><span>E-value, crude (CI ${esc(rc.e_value_ci)})</span></div>`;})()}
+            ? `<div class="cell ok"><b>${esc(num(ev.point))}</b><span>E-value on the paper's adjusted ${esc(ev.measure)} (CI ${esc(num(ev.ci))})</span></div>`
+            : `<div class="cell"><b>${esc(num(rc.e_value_point))}</b><span>E-value, crude (CI ${esc(num(rc.e_value_ci))})</span></div>`;})()}
       </div>
       <p class="muted" style="margin:12px 0 0">
         ${agree(ag.absolute_risk_difference)} risk difference — the model wrote
         ${ms.absolute_risk_difference??"nothing"}, the function gets ${esc(rc.absolute_risk_difference_pp)}.
         ${agree(ag.nnt)} ${esc(rc.nnt_kind||"NNT")} — the model wrote
-        ${ms.nnt??"nothing"}, the function gets ${esc(rc.nnt_abs??Math.abs(rc.nnt))}.
+        ${esc(num(ms.nnt))==="—"?"nothing":esc(num(ms.nnt))}, the function gets ${esc(num(rc.nnt_abs))}.
       </p>
       ${rc.note?`<p class="muted" style="margin:8px 0 0"><b>${esc(rc.note)}</b></p>`:""}
+      ${(rc.undefined||[]).length?`<p class="muted" style="margin:8px 0 0">
+        <b>Not defined for this table:</b> ${esc(rc.undefined.join(", "))} — ${esc(rc.undefined_note||"")}.</p>`:""}
       ${(rc.e_value&&rc.e_value.note)?`<p class="muted" style="margin:8px 0 0">
         <b>E-value:</b> ${esc(rc.e_value.note)}${
           rc.e_value.basis==="adjusted"&&rc.e_value_point
