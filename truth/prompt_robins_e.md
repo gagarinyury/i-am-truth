@@ -30,6 +30,12 @@ Rules:
   worse than admitting the direction cannot be determined.
 - If a domain cannot be assessed from the given data, mark its risk as
   `no_information` and say exactly which data would settle it. Do not guess.
+- **Report the paper's own headline adjusted effect** in `adjusted_effect`: the measure
+  (`HR`, `OR`, `RR`), the point estimate and both confidence limits, copied from the
+  document. Do not convert, round or recompute it — it is checked against the source and
+  the E-value is computed from it by a function. If the paper reports several, take the
+  primary outcome's. If none is reported, set `adjusted_effect` to null rather than
+  supplying the crude ratio in its place.
 - Compute absolute measures (absolute risk difference, NNT) wherever the data allow, and
   show the arithmetic. **Also report the four raw counts of the 2×2 table you used**
   (events and totals in each arm), copied from the document. They are checked against the
@@ -69,6 +75,11 @@ Return ONLY a JSON object, no prose and no markdown fences:
     "counts": {
       "exposed_events": 0, "exposed_total": 0,
       "control_events": 0, "control_total": 0
+    },
+    "adjusted_effect": {
+      "measure": "HR | OR | RR",
+      "value": 0.0, "ci_low": 0.0, "ci_high": 0.0,
+      "outcome": "which outcome this estimate is for"
     },
     "absolute_risk_difference": "value with units, or null",
     "nnt": "value, or null",

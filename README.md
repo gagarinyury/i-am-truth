@@ -86,7 +86,10 @@ domains, what the function recomputed, and only then the prose.
 
 ![The recomputation block: 9.8919 pp and NNH 10.1 computed by a function from the 2×2 counts, the model's own figures beside them marked "model agrees", and the estimate flagged crude and unadjusted](docs/img/ui-recompute.jpg)
 
-![The lookup block: 566 numbers found in the paper, 0 not found, 110 whose description also matches, and a line stating that the group check ruled on 4 of 474 numbers so a count of zero inversions means nothing about the rest](docs/img/ui-verification.jpg)
+![The lookup block: 566 numbers found in the paper and 0 not found, with the caveat that a count of matches on its own says more about the size of the document than about the paper](docs/img/ui-verification.jpg)
+
+> The screenshot predates the evidence-weight layer described below; the live page now
+> leads with how many of those finds could not have been chance.
 
 ![The report on the record: a permanent audit id and a link to the one-page brief](docs/img/ui-record.jpg)
 
@@ -115,15 +118,38 @@ verdict came out `away_from_null` while four of its own domains pointed the othe
 only two pointed with it. The report says `contradicts` instead of quietly printing the
 verdict.
 
-**What that number does and does not mean.** "566 found" is a fact about the document: a
-value the model reported is present in the paper, and one that is not is never used in a
-calculation. Whether the *description* beside it is the same description is a weaker
-question, and the report answers it as a strength rather than a verdict — in this run 110
-numbers had at least half of the weighted words of their description standing next to
-them, median agreement 0.33. The wording is the model's, the paper's wording is its own,
-and measurement shows word overlap separates a right label from a swapped one only about
-threefold (F-63). The group check ruled on 4 of 474 numbers here and stayed silent on the
-rest rather than guessing; a count of zero inversions says nothing about the 470.
+**What that number does and does not mean — and why "all 566 found" is the wrong headline.**
+Finding a number in a paper sounds like proof and mostly is not. Measured on this very
+document (341,000 characters): an **invented** value shaped like `12.4` turns up in it
+about a third of the time, and an invented two-or-three-digit integer about half the time.
+On an abstract, 1% of the time. So the better the retrieval works, the less the bare fact
+of a match is worth — which is uncomfortable, because retrieval is this project's whole
+thesis.
+
+So each find is now weighed against the document's own numbers: how many distinct values
+of that shape it already contains gives the chance of a match, and `−log2` of it gives the
+find in bits. Re-verified with that layer, the same audit reads: **566 numbers searched,
+566 found, of which 87 carry six bits or more** — a value that a document this size would
+not hold by accident. The median find is worth 1.9 bits. The 87 are the evidence; the rest
+is arithmetic about the document. A number that "would have shown up anyway" now scores
+zero by measurement rather than by sitting on a hand-written list of trivial values, and
+the count of what was searched and what was found finally agree (they did not before:
+92 numbers were skipped silently and still counted in the total).
+
+**Where each number actually sits.** 32 of them were pinned to a specific table cell whose
+row and column agree with what the model said the number was — an address, not a
+resemblance. 527 more sit somewhere in a parsed table without being pinned to one cell,
+because the model's label for them is a whole sentence quoting several numbers at once,
+and no measure can say which cell each came from. 7 live only in running prose.
+
+**And what each conclusion rests on, separately.** One number for the whole audit hides the
+thing that matters, so the report now scores every part on its own. In this run **8 of 10
+parts** cite at least one distinctive number — and the two that do not are named:
+*Post-exposure interventions* and *Selection of the reported result*. They may still be
+right; they rest on general properties of the design, and that is a different kind of
+claim, so it is printed rather than averaged away. Twelve sentences of the audit's own
+prose are flagged the same way — found by walking the text and looking up every number in
+it, with no second model asked.
 
 These figures have been re-measured three times rather than rewritten, and every time the
 reason was a defect in the instrument, not in the audit. First the label of a number was
@@ -317,8 +343,20 @@ and an external one from 67 points to 4.5. The remaining five ROBINS-E domains h
 sub-agent, because no failure has been measured on them — and adding agents without a
 measurement is exactly what this project avoids.
 
-**Statistics are computed, never generated — and the claim is now enforced.** E-value,
-absolute risk reduction, NNT and confidence intervals come from `stats_tool.py`, which
+**Statistics are computed, never generated — and now they answer the right question.**
+An E-value asks how strong an unmeasured confounder would have to be to explain an
+association away. That question only makes sense about an *adjusted* estimate: a crude one
+has had no confounding removed, so there is no residue to bound. This project computed the
+E-value from the raw 2×2 counts and printed it beside the paper's adjusted hazard ratio —
+arithmetically correct, and an answer to a different question. The model is now asked for
+the paper's own adjusted effect as a separate field, that field is checked against the
+source like every other number, and the E-value is computed from it, converting to the
+risk-ratio scale by VanderWeele 2017/2020 when the outcome is common. On our reference
+paper the difference is not cosmetic: **1.56 instead of 1.74**, an 11% overstatement of
+robustness. Where the paper reports no usable adjusted estimate the crude figure is still
+shown — labelled as crude, and as not answering the question it is normally asked.
+
+E-value, absolute risk reduction, NNT and confidence intervals come from `stats_tool.py`, which
 self-tests when run directly (`python3 -m truth.stats_tool`). The model is asked only
 for the four raw counts of the 2×2 table,
 copied out of the paper; those four numbers go through the same source check as every
@@ -336,8 +374,12 @@ A tool built to catch unbacked claims has no business keeping one.
 plain code. `truth/adk_agent.py` expresses the same audit as a Google ADK
 `ParallelAgent`, where the three agents additionally get *tools* — the risk calculator and
 a source-checker they can call mid-reasoning, instead of learning about a bad number
-afterwards from layer 4. Measured over three runs each, both reach a **median of 5.5/6**;
-ADK's spread is tighter and its wall-clock is twice as long. So ADK is available via
+afterwards from layer 4. Measured on the stored runs in `eval/results/` — and the honest
+figure is **two runs per case for ADK, not three**: ADK scores 5.0 and 5.5 on our reference
+(median 5.25) against a median of 5.0 over ten direct runs, and 3.5 twice on the external
+one against a direct median of 3.5. Two runs do not establish a difference, and the earlier
+claim of "three runs each, median 5.5 for both" over-reported what the repository holds.
+What is visible is wall-clock: ADK takes about twice as long. So ADK is available via
 `engine: "adk"` and is **not** the default: making it the default for the sake of a line
 in a submission would sell as an improvement something we measured as a tie (F-46).
 
@@ -382,8 +424,18 @@ The harness scores model output against an expert ground truth
 what the model found *beyond* the reference as well. Method and its limitations:
 `eval/README.md`.
 
-**The honest limitation, now measured instead of guessed.** The calibration used to rest
-on a single reference written by this project's own author. A second reference was added
+**The judge is the same family as the defendant — and that has now been measured too.**
+Every score above comes from `gemini-3.7-flash` grading `gemini-3.7-flash`, which is the
+first objection any reviewer raises, and rightly. `eval/second_judge.py` re-grades the
+stored runs with a **different** model (`gemini-2.5-pro`); nothing is re-run, because the
+judge only ever sees the audit text. Six runs, 32 reference points: **29 of 32 scored
+identically (91%)**, mean difference 0.05 of a point. The direction matters more than the
+agreement — the second judge scores **higher**, median +0.25 and never lower. Our own
+judge turned out to be the stricter one, which is the opposite of what self-preference
+predicts.
+
+**The other honest limitation, also measured instead of guessed.** The calibration used to
+rest on a single reference written by this project's own author. A second reference was added
 from an outside source — a published letter to the editor (`10.1111/1753-0407.70202`)
 criticising a different GLP-1/cancer cohort study, with the authors' reply printed
 alongside it. Against our own reference the system scored **92%** (5.5/6). Against the
@@ -422,10 +474,10 @@ wider sample. Every run is stored in `eval/results/` and reproducible with one c
 | # | Requirement | How |
 |---|---|---|
 | R1 | Gemini 3.5+ | `gemini-3.7-flash` on Vertex AI (Pro line stops at 3.1 — F-01) |
-| R2 | Google agent framework | `google-genai` SDK 1.56.0; the same audit is also expressed as a **Google ADK** graph (`truth/adk_agent.py`) |
+| R2 | Google agent framework | `google-genai` SDK 2.20.0 + `google-adk` 2.8.0 (pinned in `requirements.txt`); the same audit is also expressed as a **Google ADK** graph (`truth/adk_agent.py`) |
 | R3 | Google Cloud service | Cloud Run + Cloud Run Jobs + GCS |
 | R4 | Backend running in the cloud | live `.run.app` URL above |
-| R5 | Background work over data | Cloud Run Job, 8/8 papers, 517 numbers checked, 3 unverified |
+| R5 | Background work over data | Cloud Run Job, 8/8 papers, 517 numbers checked, 3 unverified — measured 28.08, i.e. **before** layer 4 was rewritten; the run stands, the verification figures predate the current instrument |
 
 ---
 

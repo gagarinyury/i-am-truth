@@ -50,9 +50,29 @@ def render(report: dict) -> str:
     if v:
         total_n = v.get("total", 0)
         missing = v.get("unverified", 0)
-        found = total_n - missing
+        found = v.get("found", total_n - missing)
         L.append(f"- Numbers taken from the report and searched for in the paper: "
                  f"**{total_n}** — {found} found, **{missing} not found at all**.")
+        # Ведущее число — не «сколько найдено», а «сколько найденного что-то
+        # значит». В документе на триста тысяч знаков выдуманное число вида «12.4»
+        # находится примерно в трети случаев, поэтому «найдено всё» сообщает о
+        # размере документа, а не о статье.
+        if v.get("strong") is not None:
+            L.append(f"- Of those found, **{v['strong']}** could not have turned up by "
+                     f"chance: a value of that shape would be present in a document "
+                     f"this size less than once in "
+                     f"{2 ** int(v.get('strong_bits_threshold', 6)):.0f} times. "
+                     f"The median find is worth {v.get('evidence_bits_median')} bits — "
+                     f"the rest is arithmetic about the document, not evidence about "
+                     f"the paper.")
+        if v.get("in_cell") is not None:
+            L.append(f"- **{v['in_cell']}** of them were located in a specific table "
+                     f"cell whose row and column agree with what the model said the "
+                     f"number was — an address, not a resemblance. "
+                     f"{v.get('in_table_address_unmatched', 0)} more sit somewhere in a "
+                     f"parsed table but could not be pinned to one cell, because the "
+                     f"model's label for them is a whole sentence quoting several "
+                     f"numbers at once.")
         L.append(f"- Of those found, {v.get('verified', 0)} also had at least "
                  f"{int((v.get('label_threshold') or 0.5) * 100)}% of the words of "
                  f"their description standing beside them"
@@ -110,10 +130,24 @@ def render(report: dict) -> str:
                  f"{rc.get('nnt_abs', rc.get('nnt'))} | {ms.get('nnt')} | "
                  f"{ag.get('nnt')} |")
         L.append(f"| risk ratio | {rc.get('rr')} ({', '.join(str(x) for x in rc.get('rr_ci95', []))}) | — | — |")
-        L.append(f"| E-value | {rc.get('e_value_point')} (CI {rc.get('e_value_ci')}) | — | — |")
+        ev = rc.get("e_value") or {}
+        if ev.get("basis") == "adjusted":
+            L.append(f"| E-value (on the paper's adjusted {ev.get('measure')}"
+                     f" {ev.get('reported')}) | {ev.get('point')} (CI {ev.get('ci')}) | — | — |")
+        else:
+            L.append(f"| E-value | {rc.get('e_value_point')} "
+                     f"(CI {rc.get('e_value_ci')}) | — | — |")
         L.append("")
         if rc.get("note"):
             L.append(f"*{rc['note']}.*")
+            L.append("")
+        if ev.get("note"):
+            # На каком числе стоит E-value — не деталь. От сырой оценки он
+            # отвечает не на тот вопрос, ради которого его приводят.
+            L.append(f"*E-value: {ev['note']}"
+                     + (f"; the crude 2×2 would have given {rc.get('e_value_point')} "
+                        f"instead" if ev.get("basis") == "adjusted"
+                        and rc.get("e_value_point") else "") + ".*")
             L.append("")
         L.append("Independent of the model's arithmetic." if rc.get("independent") else
                  "The 2×2 counts were recovered from the model's own arithmetic, so this "
@@ -132,6 +166,38 @@ def render(report: dict) -> str:
         if f.get("classification"):
             L.append("")
             L.append(f"Classification: **{f['classification']}**.")
+        L.append("")
+
+    # 4b. Чем обеспечен каждый вывод по отдельности
+    gr = report.get("grounding") or {}
+    if gr:
+        backed = sum(1 for x in gr.values() if x.get("grounded"))
+        L.append("## What each conclusion rests on")
+        L.append("")
+        L.append(f"{backed} of {len(gr)} parts of this audit cite at least one number "
+                 f"distinctive enough that a document this size would not hold it by "
+                 f"chance. The rest may still be right — they rest on general properties "
+                 f"of the design, and that is a different kind of claim.")
+        L.append("")
+        L.append("| part | numbers | found | not found | carrying weight | |")
+        L.append("|---|---|---|---|---|---|")
+        for k, x in gr.items():
+            L.append(f"| {x.get('title', k)} | {x.get('numbers', 0)} | "
+                     f"{x.get('found', 0)} | {x.get('missing', 0)} | "
+                     f"{x.get('strong', 0)} | "
+                     f"{'grounded' if x.get('grounded') else '—'} |")
+        L.append("")
+
+    weak = report.get("weakly_grounded_statements") or []
+    if weak:
+        L.append("## Sentences whose numbers do not tell this paper apart")
+        L.append("")
+        L.append("Found by walking the audit's own prose and looking up every number in "
+                 "it — no second model was asked. A pointer, not a verdict.")
+        L.append("")
+        for w in weak[:6]:
+            L.append(f"- *{w.get('text', '')[:220]}*")
+            L.append(f"  — {w.get('where', '')}: {w.get('verdict', '')}")
         L.append("")
 
     # 5. Домены

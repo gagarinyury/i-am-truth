@@ -118,6 +118,34 @@ def _persist(report: dict) -> dict:
     return report
 
 
+# Ответ, когда разбирать нечего. Отдельный от 500 намеренно: 500 означает «у нас
+# сломалось», а здесь не сломалось ничего — не дали входа. Код выбирается по
+# журналу добычи: если отказал вышестоящий источник при выполненном условии
+# доступности, это 503 и повторять имеет смысл; если источник законно ничего не
+# должен, повторять бессмысленно, и это 422.
+UPSTREAM = {"upstream_error", "unreachable", "degraded"}
+
+
+def _nothing_retrieved(e) -> HTTPException:
+    lvl = (e.gathered.get("level") or {})
+    log = lvl.get("retrieval") or []
+    upstream = [r for r in log if r.get("status") in UPSTREAM]
+    hint = ("Приложите PDF статьи (и файл приложения, если он есть) — "
+            "POST /analyze/upload, путь B. Он не зависит от Europe PMC.")
+    return HTTPException(
+        503 if upstream else 422,
+        detail={
+            "message": ("Источник не отдал текст статьи, разбирать нечего."
+                        if upstream else
+                        "Текст статьи получить неоткуда, разбирать нечего."),
+            "hint": hint,
+            "level": lvl.get("level"),
+            # Журнал уходит пользователю целиком: «почему не получилось» — это
+            # ответ, а не диагностика для логов.
+            "retrieval": log,
+        })
+
+
 @app.post("/analyze")
 def analyze(req: AnalyzeRequest):
     if not req.doi and not req.text:
@@ -125,6 +153,8 @@ def analyze(req: AnalyzeRequest):
     try:
         return _persist(pipeline.run(doi=req.doi, text=req.text, prompt=PROMPT,
                                      engine=req.engine))
+    except pipeline.NothingRetrieved as e:
+        raise _nothing_retrieved(e)
     except Exception as e:                                   # noqa: BLE001
         raise HTTPException(500, f"{type(e).__name__}: {e}"[:500])
 
@@ -169,6 +199,8 @@ def analyze_upload(files: list[UploadFile] = File(...),
     try:
         return _persist(pipeline.run(doi=doi, prompt=PROMPT, uploads=uploads,
                                      engine=engine))
+    except pipeline.NothingRetrieved as e:
+        raise _nothing_retrieved(e)
     except Exception as e:                                   # noqa: BLE001
         raise HTTPException(500, f"{type(e).__name__}: {e}"[:500])
 

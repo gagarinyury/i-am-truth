@@ -1,0 +1,207 @@
+{
+  "judge": "gemini-2.5-pro",
+  "runs": [
+    {
+      "file": "bench-20260829-174201-cheng-2024.json",
+      "case": "cheng-2024",
+      "judge": "gemini-2.5-pro",
+      "first_total": 3.5,
+      "second_total": 4.0,
+      "of": 4,
+      "points": {
+        "C1": [
+          1.0,
+          1.0
+        ],
+        "C2": [
+          1.0,
+          1.0
+        ],
+        "C3": [
+          0.5,
+          1.0
+        ],
+        "C4": [
+          1.0,
+          1.0
+        ]
+      },
+      "agreed": 3,
+      "shared": 4
+    },
+    {
+      "file": "bench-20260829-174115-cheng-2024.json",
+      "case": "cheng-2024",
+      "judge": "gemini-2.5-pro",
+      "first_total": 3.5,
+      "second_total": 4.0,
+      "of": 4,
+      "points": {
+        "C1": [
+          1.0,
+          1.0
+        ],
+        "C2": [
+          1.0,
+          1.0
+        ],
+        "C3": [
+          0.5,
+          1.0
+        ],
+        "C4": [
+          1.0,
+          1.0
+        ]
+      },
+      "agreed": 3,
+      "shared": 4
+    },
+    {
+      "file": "bench-20260829-174036-mcdonald-2026.json",
+      "case": "mcdonald-2026",
+      "judge": "gemini-2.5-pro",
+      "first_total": 5.0,
+      "second_total": 5.0,
+      "of": 6,
+      "points": {
+        "P1": [
+          1.0,
+          1.0
+        ],
+        "P2": [
+          1.0,
+          1.0
+        ],
+        "P3": [
+          1.0,
+          1.0
+        ],
+        "P4": [
+          0.5,
+          0.5
+        ],
+        "P5": [
+          1.0,
+          1.0
+        ],
+        "P6": [
+          0.5,
+          0.5
+        ]
+      },
+      "agreed": 6,
+      "shared": 6
+    },
+    {
+      "file": "bench-20260829-173936-mcdonald-2026.json",
+      "case": "mcdonald-2026",
+      "judge": "gemini-2.5-pro",
+      "first_total": 5.0,
+      "second_total": 5.0,
+      "of": 6,
+      "points": {
+        "P1": [
+          1.0,
+          1.0
+        ],
+        "P2": [
+          1.0,
+          1.0
+        ],
+        "P3": [
+          1.0,
+          1.0
+        ],
+        "P4": [
+          0.5,
+          0.5
+        ],
+        "P5": [
+          1.0,
+          1.0
+        ],
+        "P6": [
+          0.5,
+          0.5
+        ]
+      },
+      "agreed": 6,
+      "shared": 6
+    },
+    {
+      "file": "bench-20260829-173802-mcdonald-2026.json",
+      "case": "mcdonald-2026",
+      "judge": "gemini-2.5-pro",
+      "first_total": 5.0,
+      "second_total": 5.5,
+      "of": 6,
+      "points": {
+        "P1": [
+          1.0,
+          1.0
+        ],
+        "P2": [
+          1.0,
+          1.0
+        ],
+        "P3": [
+          1.0,
+          1.0
+        ],
+        "P4": [
+          0.5,
+          0.5
+        ],
+        "P5": [
+          1.0,
+          1.0
+        ],
+        "P6": [
+          0.5,
+          1.0
+        ]
+      },
+      "agreed": 5,
+      "shared": 6
+    },
+    {
+      "file": "bench-20260829-173707-mcdonald-2026.json",
+      "case": "mcdonald-2026",
+      "judge": "gemini-2.5-pro",
+      "first_total": 5.0,
+      "second_total": 5.0,
+      "of": 6,
+      "points": {
+        "P1": [
+          1.0,
+          1.0
+        ],
+        "P2": [
+          1.0,
+          1.0
+        ],
+        "P3": [
+          1.0,
+          1.0
+        ],
+        "P4": [
+          0.5,
+          0.5
+        ],
+        "P5": [
+          1.0,
+          1.0
+        ],
+        "P6": [
+          0.5,
+          0.5
+        ]
+      },
+      "agreed": 6,
+      "shared": 6
+    }
+  ],
+  "point_agreement": 0.906,
+  "median_shift": 0.25
+}

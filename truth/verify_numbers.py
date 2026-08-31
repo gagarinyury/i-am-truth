@@ -13,6 +13,7 @@
 import argparse
 import collections
 import json
+import math
 import re
 import sys
 import unicodedata
@@ -20,8 +21,13 @@ import unicodedata
 CONTEXT_BEFORE = 260   # заголовок метки бывает далеко до числа
 CONTEXT_AFTER = 120
 
-# Числа, которые вообще не стоит проверять как «данные статьи»
-TRIVIAL = {"0", "1", "2", "5", "10", "100", "95"}
+# Списка «тривиальных чисел» здесь больше нет. Он был вкусовым: `{"0","1","2","5",
+# "10","100","95"}` — семь значений, выбранных на глаз, при этом «3» и «96»
+# считались данными статьи, а «95» не считалось никогда, даже когда это была доля
+# в процентах. Хуже того, пропущенные числа попадали в знаменатель сводки, и
+# отчёт объявлял найденными 566 чисел из 566, тогда как искали 474.
+# Теперь их обнуляет вес улики: число, которое нашлось бы в этом документе само
+# собой, весит ноль бит по измерению, а не по нашему решению.
 
 
 def normalise(text: str) -> str:
@@ -74,6 +80,95 @@ def number_variants(num: str) -> list:
     return sorted(("-" if neg else "") + v for v in out)
 
 
+# --------------------------------------------------------------- вес улики
+#
+# Зачем это вообще. «Число найдено в статье» — сигнал слабый, и слабеет он тем
+# сильнее, чем лучше сработала добыча: замер 29.08 на разборе
+# `10.1136/jitc-2025-014726` (341 тыс. знаков после `normalise`) показал, что
+# ВЫДУМАННОЕ число вида `x.y` находится в этом документе в 33% случаев, а целое из
+# двух-трёх цифр — в 46%. Значит «0 не найдено из 474» на полном тексте — исход,
+# ожидаемый и для чисел, которых модель никогда не видела. На абстракте (1.7 тыс.
+# знаков) та же доля 1%. Отсюда неприятный вывод, который стоит держать в голове:
+# **чем полнее retrieval, тем меньше значит сам факт нахождения** — а retrieval и
+# есть главный тезис проекта.
+#
+# Поэтому считается не факт, а его информативность. Нулевое распределение берётся
+# из самого документа — без сэмплинга, без подбора порогов, одним проходом. Для
+# формы числа S (столько-то цифр до точки, столько-то после):
+#
+#       p(случайно) = |различных значений формы S, встречающихся в документе|
+#                     ───────────────────────────────────────────────────────
+#                                     |мощность формы S|
+#
+#       вес улики = −log2 p, в битах
+#
+# «2» в статье, где встречаются все однозначные числа, весит 0 бит — и списка
+# тривиальных чисел для этого больше не нужно, их обнуляет измерение, а не наш
+# вкус. «15,264» весит около 12 бит: столько же, сколько стоит угадать его.
+#
+# ⚠️ Модель формы — допущение, и оно названо: она полагает значения внутри формы
+# равновероятными. В статьях это неверно — круглые числа и малые проценты
+# встречаются чаще прочих. Ошибка направлена в одну сторону: настоящих значений
+# формы «занято» больше, чем считает равномерная модель, поэтому вес получается
+# **заниженным**. Занижать информативность улики безопаснее, чем завышать.
+_NUM_IN_TEXT = re.compile(r"(?<![\d.,])(\d+)(?:\.(\d+))?(?![\d])")
+
+# Порог «сильной» улики. Не назначен, а взят из того же замера: формы, которые
+# при подстановке выдуманных чисел находились в 1-2% случаев (`x.yy`, целые из
+# четырёх цифр), дают около 6 бит; формы, находившиеся в 33-46% (`x.y`, целые из
+# двух-трёх цифр), — около 1-1.6 бита. Шесть бит и есть та граница, где кончается
+# то, что нашлось бы само.
+STRONG_BITS = 6.0
+
+
+def shape_of(num: str) -> tuple:
+    """Форма числа: сколько цифр до точки и сколько после."""
+    core = str(num).strip().lstrip("-")
+    whole, _, frac = core.partition(".")
+    return (len(whole), len(frac))
+
+
+def shape_space(shape: tuple) -> int:
+    """Сколько разных чисел этой формы существует вообще."""
+    i, d = shape
+    if i <= 0:
+        return 1
+    whole = 10 if i == 1 else 9 * 10 ** (i - 1)
+    return whole * 10 ** d
+
+
+def document_shapes(source: str) -> dict:
+    """Форма → множество различных значений этой формы, занятых документом."""
+    out = collections.defaultdict(set)
+    for m in _NUM_IN_TEXT.finditer(source):
+        whole, frac = m.group(1), m.group(2) or ""
+        out[(len(whole), len(frac))].add(f"{whole}.{frac}" if frac else whole)
+    return out
+
+
+def chance_rate(num: str, shapes: dict) -> float:
+    """Вероятность, что число этой формы нашлось бы в документе само собой.
+
+    Доля может выйти больше единицы: мощность формы считается без ведущих нулей
+    (двузначных чисел 90, от 10 до 99), а документ их содержит — «07» из дат.
+    Тогда берётся единица, то есть нулевой вес. Так честнее, чем расширять
+    пространство: сверка калибровалась на форме без ведущих нулей и на ней сошлась.
+
+    Калибровка 29.08 на `10.1136/jitc-2025-014726`: модель против подстановки
+    выдуманных чисел — 33% против 33% (`x.y`), 42% против 46% (целые 2-3 знака),
+    1% против 1% (`x.yy`), 2% против 2% (целые 4 знака).
+    """
+    sh = shape_of(num)
+    occupied = max(1, len(shapes.get(sh) or ()))
+    return min(1.0, occupied / shape_space(sh))
+
+
+def evidence_bits(num: str, shapes: dict) -> float:
+    """Вес улики в битах. 0 означает «нашлось бы и без всякой статьи»."""
+    p = chance_rate(num, shapes)
+    return 0.0 if p >= 1.0 else round(-math.log2(p), 1)
+
+
 # Сколько вхождений одного числа осматривать. Числа вроде «2.1» встречаются в
 # статье десятками раз; проверять все — дорого и бессмысленно, но проверять одно
 # первое — неверно (замер 29.08: 76% найденных чисел встречаются больше одного
@@ -93,7 +188,10 @@ def find_occurrences(num: str, source: str, limit: int = MAX_OCCURRENCES) -> lis
     out = []
     for v in number_variants(num):
         # границы: число не должно быть частью более длинного числа
-        pat = re.compile(r"(?<![\d.,])" + re.escape(v) + r"(?![\d])")
+        # Хвостовой запрет включает «точка и цифра»: без него «247» находилось
+        # внутри «247.83» и число-претендент подтверждалось чужой дробью. На
+        # мере веса улики это сказывается прямо — завышает долю найденного.
+        pat = re.compile(r"(?<![\d.,])" + re.escape(v) + r"(?![\d]|\.\d)")
         for m in pat.finditer(source):
             # окно широкое: заголовок строки таблицы или подраздела может стоять
             # заметно раньше самого числа (поймано на реальном файле 27.08)
@@ -336,6 +434,8 @@ def check_group(claim: dict, context: str, matched: str, groups=None) -> str:
 def verify(claims: list, source_text: str) -> dict:
     src = normalise(source_text)
     counts, src_len = word_counts(src), len(src)
+    # Нулевое распределение документа — один проход, до всякой сверки.
+    shapes = document_shapes(src)
     results, verified, unverified, unlabelled, inverted = [], 0, 0, 0, 0
     unjudged = 0        # числа, у которых силу метки измерить нечем
     # Покрытие проверки группы. Без него «0 инверсий» читается как «проверили —
@@ -348,17 +448,16 @@ def verify(claims: list, source_text: str) -> dict:
         label = c.get("label", "")
         if not num:
             continue
-        if num in TRIVIAL:
-            results.append({**c, "status": "SKIPPED_TRIVIAL"})
-            continue
         occ = find_occurrences(num, src)
+        bits = evidence_bits(num, shapes)
         grp = "unknown"
         if not occ:
             status = "UNVERIFIED"      # D-14 п.2: в расчёты не идёт
             unverified += 1
             results.append({**c, "status": status, "group_check": grp,
                             "matched_as": None, "context": None,
-                            "label_match": 0.0, "occurrences": 0})
+                            "label_match": 0.0, "occurrences": 0,
+                            "evidence_bits": 0.0})
             continue
 
         # Из всех вхождений числа берётся то, рядом с которым метка совпадает
@@ -388,15 +487,32 @@ def verify(claims: list, source_text: str) -> dict:
         results.append({**c, "status": status, "group_check": grp,
                         "matched_as": best["as"], "context": best["context"],
                         "label_match": None if match is None else round(match, 3),
-                        "occurrences": len(occ)})
-    checked = [r for r in results if r["status"] != "SKIPPED_TRIVIAL"]
-    matches = sorted(r["label_match"] for r in checked
+                        "occurrences": len(occ),
+                        # Сколько стоит само нахождение этого числа в этом
+                        # документе. Ноль означает «нашлось бы и без статьи».
+                        "evidence_bits": bits,
+                        "chance": round(chance_rate(num, shapes), 4)})
+    matches = sorted(r["label_match"] for r in results
                      if r["status"] != "UNVERIFIED" and r.get("label_match") is not None)
     decided = group_seen["ok"] + group_seen["mismatch"]
+    found_bits = sorted(r["evidence_bits"] for r in results
+                        if r["status"] != "UNVERIFIED")
+    strong = sum(1 for b in found_bits if b >= STRONG_BITS)
     return {
         "summary": {
-            "total": len(results), "verified": verified,
+            # `total` = сколько искали, и теперь это правда: пропускаемых заявок
+            # больше нет, поэтому `found + unverified == total` сходится.
+            "total": len(results),
+            "found": len(results) - unverified,
             "unverified": unverified,
+            # Из найденных — сколько несут вес улики. Ведущее число отчёта:
+            # «найдено» без него говорит о размере документа, а не о статье.
+            "strong": strong,
+            "strong_bits_threshold": STRONG_BITS,
+            "evidence_bits_total": round(sum(found_bits), 1),
+            "evidence_bits_median": (found_bits[len(found_bits) // 2]
+                                     if found_bits else None),
+            "verified": verified,
             "group_mismatch": inverted,
             "found_but_label_mismatch": unlabelled,
             # Сила совпадения метки, а не только её факт.
@@ -432,12 +548,13 @@ def main():
         json.dump(res, sys.stdout, ensure_ascii=False, indent=2)
         return
     s = res["summary"]
-    print(f"проверено: {s['total']} · подтверждено: {s['verified']} · "
+    print(f"искали: {s['total']} · найдено: {s['found']} "
+          f"(из них с весом улики: {s['strong']}) · подтверждено меткой: {s['verified']} · "
           f"НЕ НАЙДЕНО: {s['unverified']} · ИНВЕРСИЯ ГРУППЫ: {s['group_mismatch']} · "
           f"метка не совпала: {s['found_but_label_mismatch']}\n")
     for c in res["claims"]:
         mark = {"VERIFIED": "✅", "UNVERIFIED": "❌", "GROUP_MISMATCH": "🔄",
-                "FOUND_LABEL_MISMATCH": "⚠️ ", "SKIPPED_TRIVIAL": "·"}[c["status"]]
+                "FOUND_LABEL_MISMATCH": "⚠️ "}.get(c["status"], "·")
         print(f"{mark} {str(c.get('value')):>10}  {c.get('label','')[:40]:<42} {c['status']}")
         if c["status"] in ("FOUND_LABEL_MISMATCH", "GROUP_MISMATCH"):
             print(f"     контекст: …{(c['context'] or '')[:110]}…")

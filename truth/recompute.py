@@ -26,7 +26,7 @@ ADK-графа, где она — инструмент агента. То ест
 """
 import re
 
-from .stats_tool import TwoByTwo
+from .stats_tool import RARE_OUTCOME, TwoByTwo, e_value, rr_from
 
 # Число в тексте модели: «1,986», «3609», «0.09892».
 _NUM = r"\d[\d,\s]*(?:\.\d+)?"
@@ -76,6 +76,63 @@ def counts_from(computed: dict) -> tuple[dict, str] | tuple[None, None]:
     return None, None
 
 
+def adjusted_e_value(computed: dict, control_risk: float = None) -> dict | None:
+    """E-value от **скорректированной** оценки статьи, а не от сырой таблицы 2×2.
+
+    E-value спрашивает: насколько сильным должен быть неучтённый конфаундер, чтобы
+    объяснить наблюдаемую связь. Вопрос осмыслен только про оценку, из которой уже
+    убрали учтённые конфаундеры: у сырой оценки убирать ничего не пробовали, и
+    говорить об «остатке» нечего. До 29.08 проект считал E-value от сырого RR и
+    печатал его рядом со скорректированным HR статьи — арифметика верная, вопрос
+    не тот.
+
+    Числа берутся из поля `adjusted_effect`, которое модель выписывает отдельно и
+    которое проходит ту же сверку с источником, что и все прочие (D-14).
+    """
+    a = (computed or {}).get("adjusted_effect") or {}
+    val = _first_number(a.get("value"))
+    if not val or val <= 0:
+        return None
+    measure = (a.get("measure") or "HR").strip()
+    lo, hi = _first_number(a.get("ci_low")), _first_number(a.get("ci_high"))
+    rare = True if control_risk is None else control_risk < RARE_OUTCOME
+    try:
+        rr = rr_from(measure, val, rare)
+        point = round(e_value(rr), 3)
+    except (ValueError, ZeroDivisionError):
+        return None
+    ci = None
+    if lo and hi and lo > 0 and hi > 0:
+        if lo <= 1.0 <= hi:
+            # ДИ накрывает единицу: эффект не отделён от нуля, и E-value границы,
+            # ближайшей к нулю, равен единице. Та же логика, что в `stats_tool`.
+            ci = 1.0
+        else:
+            near = hi if val < 1 else lo      # граница, ближняя к единице
+            try:
+                ci = round(e_value(rr_from(measure, near, rare)), 3)
+            except (ValueError, ZeroDivisionError):
+                ci = None
+    return {
+        "basis": "adjusted",
+        "measure": measure,
+        "reported": val,
+        "reported_ci": [lo, hi] if (lo and hi) else None,
+        "rare_outcome_assumed": rare,
+        "rr_used": round(rr, 4),
+        "point": point,
+        "ci": ci,
+        "note": ("the paper's own adjusted estimate, converted to the risk-ratio scale "
+                 + ("directly (the outcome is rare enough that the two coincide)"
+                    if rare and control_risk is not None else
+                    "by the approximation of VanderWeele 2017/2020 for a common outcome"
+                    if not rare else
+                    "directly, ASSUMING the outcome is rare — the event rate is not "
+                    "known here, and this assumption inflates the E-value rather than "
+                    "shrinking it, so treat the figure as an upper bound")),
+    }
+
+
 def recompute(computed: dict) -> dict | None:
     """Пересчитанные значения и сравнение с тем, что заявила модель.
 
@@ -86,8 +143,16 @@ def recompute(computed: dict) -> dict | None:
         return None
     counts, basis = counts_from(computed)
     if not counts:
-        return {"basis": "none", "note": "the 2×2 table could not be assembled from "
-                                         "the model's output, so nothing was recomputed"}
+        out = {"basis": "none", "note": "the 2×2 table could not be assembled from "
+                                        "the model's output, so nothing was recomputed"}
+        # Скорректированная оценка может быть выписана и без таблицы 2×2 — тогда
+        # доля событий неизвестна и редкость исхода предполагается. Это допущение
+        # завышает E-value (см. `stats_tool.RARE_OUTCOME`), поэтому оно помечено
+        # флагом и названо словами в примечании, а не спрятано.
+        ev = adjusted_e_value(computed)
+        if ev:
+            out["e_value"] = ev
+        return out
     t = TwoByTwo(counts["exposed_events"], counts["exposed_total"],
                  counts["control_events"], counts["control_total"])
     rep = t.report()
@@ -124,8 +189,18 @@ def recompute(computed: dict) -> dict | None:
         "rr": rep["rr"],
         "rr_ci95": rep["rr_ci95"],
         "odds_ratio": rep["odds_ratio"],
+        # Сырые E-value остаются под прежними именами — их читают сохранённые
+        # отчёты, — но ведущим стал `e_value`, посчитанный от скорректированной
+        # оценки, когда она есть.
         "e_value_point": rep["e_value_point"],
         "e_value_ci": rep["e_value_ci"],
+        "e_value": (adjusted_e_value(computed, rep["risk_control"])
+                    or {"basis": "crude", "point": rep["e_value_point"],
+                        "ci": rep["e_value_ci"],
+                        "note": "computed from the raw 2×2 counts, because the paper's "
+                                "adjusted estimate was not reported in a usable form. "
+                                "An E-value on an unadjusted estimate does not answer "
+                                "the question it is normally asked"}),
         # Оценка сырая: она сложена из четырёх чисел таблицы 2×2 и никаких поправок
         # не знает. Без этой пометки читатель сравнит её с опубликованным
         # скорректированным эффектом и решит, что мы его подтвердили.

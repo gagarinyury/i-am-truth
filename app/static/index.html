@@ -97,6 +97,9 @@ details[open] summary::before{content:"▾"}
   background:var(--high-soft);color:var(--high);border:1px solid transparent}
 footer{margin-top:26px;color:var(--dim);font-size:12.5px;text-align:center}
 footer a{color:var(--accent)}
+.ret{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.ret td{padding:5px 8px;border-top:1px solid var(--line);vertical-align:top}
+.ret td:first-child{white-space:nowrap;width:1%}
 .err{background:var(--high-soft);color:var(--high);padding:14px;border-radius:9px;font-size:14px}
 </style>
 </head>
@@ -222,7 +225,7 @@ $("#f").onsubmit = async ev => {
         body: JSON.stringify({doi, engine})});
     }
     const d = await r.json();
-    if(!r.ok) throw new Error(d.detail || r.statusText);
+    if(!r.ok){ renderFailure(d.detail, r.status); return; }
     render(d);
   }catch(e){
     $("#out").innerHTML = `<div class="err">${esc(e.message)}</div>`;
@@ -230,6 +233,49 @@ $("#f").onsubmit = async ev => {
     runStatus(false); $("#go").disabled = false;
   }
 };
+
+
+/* ---------- retrieval log ----------
+   Журнал добычи показывается и в отчёте, и вместо него. Причина одна: уровень
+   доказательности без journal — утверждение без обеспечения, а это ровно то,
+   что продукт ищет у чужих работ. Отказ вышестоящего источника и законное
+   отсутствие данных выглядят по-разному, потому что это разные вещи. */
+const RET = {
+  ok:              ["ok",  "получено"],
+  not_found:       ["mid", "источник ответил: такой статьи у него нет"],
+  not_applicable:  ["mid", "не запрашивалось — условие доступа не выполнено"],
+  upstream_error:  ["high","источник отказал, хотя обязан был отдать"],
+  unreachable:     ["high","источник не ответил"],
+  degraded:        ["high","источник ответил не по существу"],
+  parse_error:     ["mid", "получено, но не разобралось"],
+  empty:           ["mid", "пусто"],
+  not_asked:       ["mid", "не запрашивалось"]
+};
+function retrievalLog(log){
+  if(!log || !log.length) return "";
+  return `<table class="ret"><tbody>${log.map(r=>{
+    const [k, words] = RET[r.status] || ["mid", r.status || "—"];
+    return `<tr><td><code>${esc(r.source)}</code></td>
+      <td><span class="pill p-${k}">${esc(r.status||"—")}</span></td>
+      <td class="muted">${esc(r.note || words)}</td></tr>`;
+  }).join("")}</tbody></table>`;
+}
+function renderFailure(detail, code){
+  if(typeof detail !== "object" || detail === null){
+    $("#out").innerHTML = `<div class="err">${esc(detail || ("HTTP " + code))}</div>`;
+    return;
+  }
+  $("#out").innerHTML = `<section>
+    <h2>Разбор не запускался</h2>
+    <div class="err" style="margin-bottom:14px">${esc(detail.message)}</div>
+    <p class="muted" style="margin:0 0 12px">${esc(detail.hint||"")}</p>
+    <h3 style="margin:18px 0 8px;font-size:14px">Что именно пробовали</h3>
+    ${retrievalLog(detail.retrieval)}
+    <p class="muted" style="margin-top:12px">Ни одного вызова модели сделано не было:
+      разбирать было нечего, и притворяться, что разбор состоялся, — та самая ошибка,
+      которую этот инструмент ищет в чужих работах.</p>
+  </section>`;
+}
 
 /* ---------- render ---------- */
 const riskPill = r => {
@@ -241,8 +287,12 @@ function render(d){
   const m = d.meta||{}, lv = d.level||{}, tb = d.tables||{}, f = d.findings||{},
         v = d.verification||{}, ov = f.overall||{};
   const confirmed = v.verified||0, checked = v.total||0,
-        located = v.found_but_label_mismatch||0, missing = v.unverified||0,
-        inverted = v.group_mismatch||0;
+        missing = v.unverified||0, inverted = v.group_mismatch||0,
+        // `found` приходит из сводки, а не вычитается: раньше здесь стояло
+        // `checked - missing`, и в знаменатель попадали числа, которые вообще
+        // не искали. На живом разборе это давало «566 найдено» при 474 искомых.
+        found = (v.found!==undefined) ? v.found : (checked - missing),
+        strong = v.strong, bits = v.evidence_bits_median;
 
   let h = "";
 
@@ -262,6 +312,9 @@ function render(d){
       <div class="cell"><b>${d.engine==="adk"?"ADK":"direct"}</b><span>engine</span></div>
     </div>
     ${d.caveat?`<p class="muted" style="margin-top:12px">${esc(d.caveat)}</p>`:""}
+    ${(lv.retrieval||[]).length?`<details style="margin-top:12px">
+      <summary class="muted" style="cursor:pointer">Where this level came from — every source tried</summary>
+      ${retrievalLog(lv.retrieval)}</details>`:""}
   </section>`;
 
   /* The tally of directions sits with the verdict, because it is the check on it:
@@ -323,7 +376,10 @@ function render(d){
         <div class="cell"><b>${esc(rc.absolute_risk_difference_pp)} pp</b><span>absolute risk difference</span></div>
         <div class="cell"><b>${esc(rc.nnt_abs??Math.abs(rc.nnt))}</b><span>${esc(rc.nnt_kind||"number needed to treat")}</span></div>
         <div class="cell"><b>${esc(rc.rr)}</b><span>risk ratio (${esc((rc.rr_ci95||[]).join("–"))})</span></div>
-        <div class="cell"><b>${esc(rc.e_value_point)}</b><span>E-value (CI ${esc(rc.e_value_ci)})</span></div>
+        ${(()=>{const ev=rc.e_value||null;
+          return ev && ev.basis==="adjusted"
+            ? `<div class="cell ok"><b>${esc(ev.point)}</b><span>E-value on the paper's adjusted ${esc(ev.measure)} (CI ${esc(ev.ci)})</span></div>`
+            : `<div class="cell"><b>${esc(rc.e_value_point)}</b><span>E-value, crude (CI ${esc(rc.e_value_ci)})</span></div>`;})()}
       </div>
       <p class="muted" style="margin:12px 0 0">
         ${agree(ag.absolute_risk_difference)} risk difference — the model wrote
@@ -332,6 +388,13 @@ function render(d){
         ${ms.nnt??"nothing"}, the function gets ${esc(rc.nnt_abs??Math.abs(rc.nnt))}.
       </p>
       ${rc.note?`<p class="muted" style="margin:8px 0 0"><b>${esc(rc.note)}</b></p>`:""}
+      ${(rc.e_value&&rc.e_value.note)?`<p class="muted" style="margin:8px 0 0">
+        <b>E-value:</b> ${esc(rc.e_value.note)}${
+          rc.e_value.basis==="adjusted"&&rc.e_value_point
+            ? ` — the crude 2×2 would have given ${esc(rc.e_value_point)} instead, which
+                answers a different question: an unadjusted estimate has no residual
+                confounding to bound.`
+            : ""}</p>`:""}
       <p class="muted" style="margin:8px 0 0">
         ${rc.independent
           ? `Computed from the four counts the model copied out of the paper — ${esc(rc.counts.exposed_events)}/${esc(rc.counts.exposed_total)} against ${esc(rc.counts.control_events)}/${esc(rc.counts.control_total)} — and those four numbers are checked against the source below. The recomputation is therefore independent of the model's arithmetic.`
@@ -366,15 +429,26 @@ function render(d){
   h += `<section>
     <h2>Every number searched for in the source</h2>
     <div class="grid">
-      <div class="cell ok"><b>${checked-missing}</b><span>found in the paper</span></div>
+      <div class="cell ok"><b>${found}</b><span>found in the paper</span></div>
       <div class="cell ${missing?"warn":"ok"}"><b>${missing}</b><span>not found at all</span></div>
-      <div class="cell"><b>${confirmed}</b><span>description also matches</span></div>
+      ${strong!==undefined
+        ? `<div class="cell ok"><b>${strong}</b><span>could not be chance</span></div>`
+        : `<div class="cell"><b>${confirmed}</b><span>description also matches</span></div>`}
       <div class="cell ${inverted?"bad":""}"><b>${gKnown&&!gDecided?"—":inverted}</b><span>${
         gKnown&&!gDecided?"group check did not apply":"attached to the wrong group"}</span></div>
     </div>
     <p class="muted" style="margin-top:10px">${checked} numbers were taken out of the report and
     searched for in the paper. A value that cannot be found is never used in a calculation — that
     part is a plain fact about the document.</p>
+    ${strong!==undefined?`<p class="muted" style="margin-top:8px">
+      <b>Finding a number is not, by itself, worth much, and this report says how much.</b>
+      In a document of this size an <i>invented</i> value shaped like <code>12.4</code> turns up
+      about a third of the time. So each find is weighed against the document's own numbers:
+      how many distinct values of that shape it already contains. <b>${strong}</b> of the
+      ${found} finds could not have come up by chance — less than one time in
+      ${Math.pow(2, v.strong_bits_threshold||6)} — while the median find is worth only
+      ${bits} bits. The strong ones are the evidence; the rest is arithmetic about the
+      document.</p>`:""}
     <p class="muted" style="margin-top:8px">The third figure is weaker and is labelled as such:
     it counts numbers where at least ${Math.round((v.label_threshold??0.5)*100)}% of the words of
     the model's own description also appear beside the number in the paper${
@@ -382,6 +456,13 @@ function render(d){
         ? `; the median across all found numbers is ${v.label_match_median}` : ""}.
     Wording is not identity: the same fact can be phrased two ways, so a low score here is a
     reason to look, not a verdict.</p>
+    ${v.in_cell!==undefined?`<p class="muted" style="margin-top:8px">
+      <b>${v.in_cell}</b> of the found numbers were pinned to a specific table cell whose
+      row and column agree with what the model said the number was — an address, not a
+      resemblance, and the strongest confirmation available here.
+      ${v.in_table_address_unmatched||0} more sit somewhere in a parsed table without
+      being pinned to one cell: the model's label for them is a whole sentence quoting
+      several numbers at once, and no measure can say which cell each came from.</p>`:""}
     ${gKnown?`<p class="muted" style="margin-top:8px">The group check ruled on
       <b>${gDecided}</b> of ${gDecided+gUndecided} numbers${gDecided?"":" — none"}.
       ${gDecided?"":"Its markers are written for the comparison arms of a particular field, and this paper names its arms differently, so it stayed silent rather than guessing. "}
@@ -390,6 +471,46 @@ function render(d){
       d.unverified_numbers.slice(0,14).map(n=>`<span class="num" title="${esc(n.label)}">${esc(n.value)}</span>`).join("")
     }</div>`:""}
   </section>`;
+
+  /* ---------- what each conclusion rests on ----------
+     Главный экран продукта. Сверка чисел давала одно число на весь разбор, и по
+     нему нельзя было сказать, какой домен стоит на данных, а какой на общих
+     словах. Здесь это видно строкой. Значок ставится не по «найдено», а по
+     «найдено отличительное»: число, которое документ такого размера содержит и
+     без этой статьи, обеспечением не является. */
+  const gr = d.grounding||null;
+  if(gr){
+    const rows = Object.entries(gr);
+    const backed = rows.filter(([,x])=>x.grounded).length;
+    h += `<section>
+      <h2>What each conclusion rests on</h2>
+      <p class="muted" style="margin:0 0 12px">${backed} of ${rows.length} parts of this
+      audit cite at least one number distinctive enough that a document this size would
+      not contain it by chance. The rest may still be right — but they rest on general
+      properties of the design, and that should be visible rather than averaged away.</p>
+      <table class="ret"><tbody>${rows.map(([k,x])=>`<tr>
+        <td>${x.grounded?'<span class="pill p-low">grounded</span>'
+                        :'<span class="pill p-mid">no distinctive number</span>'}</td>
+        <td><b>${esc(x.title||k)}</b></td>
+        <td class="muted">${x.numbers} numbers · ${x.found} found${
+          x.missing?` · <b>${x.missing} not found</b>`:""} · ${x.strong} carrying weight</td>
+      </tr>`).join("")}</tbody></table>
+    </section>`;
+  }
+
+  const weak = d.weakly_grounded_statements||[];
+  if(weak.length){
+    h += `<section>
+      <h2>Sentences whose numbers do not tell this paper apart</h2>
+      <p class="muted" style="margin:0 0 12px">Found by walking the audit's own prose and
+      looking up every number in it — no second model was asked. This is a pointer, not a
+      verdict: a number can be real and still be too ordinary to identify the source.</p>
+      ${weak.slice(0,8).map(w=>`<div class="quote" style="margin-bottom:10px">
+        <div>${esc(w.text)}</div>
+        <div class="muted" style="margin-top:6px;font-size:12px">
+          ${esc(w.where)} — ${esc(w.verdict)}</div></div>`).join("")}
+    </section>`;
+  }
 
   /* the two narrow agents — this is where the appendix pays off */
   const sa = f.subagents||{}, bc = sa.baseline_comparability, tr = sa.time_related_biases;

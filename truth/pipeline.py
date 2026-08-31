@@ -20,13 +20,14 @@ import re
 import tempfile
 import zipfile
 
-from . import critic, retrieval, subagents
+from . import cells, critic, retrieval, subagents
 from .docx_tables import extract as extract_docx
 from .jats_tables import parse_tables, to_claims
 from .pdf_tables import extract as extract_pdf
 from .pdf_tables import extract_text as pdf_text
 from .pdf_tables import has_text_layer, is_appendix
 from .direction import summarise as direction_summary
+from . import grounding
 from .recompute import recompute
 from .verify_numbers import verify
 
@@ -177,28 +178,65 @@ def _from_uploads(uploads: list) -> dict:
             "main": main, "appendix": appendix, "notes": notes, "pdfs": pdfs}
 
 
+class NothingRetrieved(RuntimeError):
+    """Разбирать нечего: источник пуст.
+
+    Отдельный класс, а не общее исключение, потому что ответ пользователю здесь
+    другой. Это не поломка нашего кода и не поломка модели — это отсутствие
+    входа, и сказать об этом надо теми словами, что случилось: какой источник
+    отказал и имел ли он на это право.
+
+    Чем было раньше. Пустой источник спокойно доезжал до Vertex, тот отвечал
+    `400 INVALID_ARGUMENT … Model input cannot be empty`, `critic.call` считал
+    400 неповторяемой ошибкой и поднимал её, а `/analyze` заворачивал в 500 с
+    чужим текстом. Пользователь узнавал про внутренности Vertex вместо того, что
+    Europe PMC не отдал статью. Наблюдалось живьём 29.08 на DOI из README.
+    """
+
+    def __init__(self, gathered: dict):
+        self.gathered = gathered
+        super().__init__("источник пуст — разбирать нечего")
+
+
 def gather(doi: str = None, text: str = None, uploads: list = None) -> dict:
     """Шаги 1-2: достать что можно и определить уровень.
 
     Три входа, один порядок: принесённые файлы (путь B) сильнее автоматической
     добычи, потому что дают то, что за платным доступом; DOI используется вместе
     с ними — ради метаданных и на случай, если приложения лежат в Europe PMC.
+
+    Каждый разбор несёт журнал добычи `level["retrieval"]`: по записи на каждый
+    источник, к которому обращались, со статусом и причиной. Без него уровень
+    доказательности — утверждение без обеспечения, а именно за такие утверждения
+    этот продукт и критикует чужие статьи. Статусы: `ok`, `not_found`,
+    `not_applicable` (предусловие эндпоинта не выполнено — законное отсутствие),
+    `upstream_error` (предусловие выполнено, а источник отказал — сбой сервиса),
+    `unreachable`, `degraded`, `parse_error`.
     """
     if uploads:
         got = _from_uploads(uploads)
-        meta = retrieval.lookup(doi) if doi else {"found": False, "doi": doi}
+        meta = retrieval.lookup(doi) if doi else {"found": False, "doi": doi,
+                                                  "status": "not_asked"}
+        journal = [{"source": "user_upload", "status": "ok" if got["text"] else "empty",
+                    "tables": len(got["main"]) + len(got["appendix"])}]
+        if doi:
+            journal.append({"source": "europepmc.search", "status": meta.get("status"),
+                            **({"note": meta["error"]} if meta.get("error") else {})})
         src = got["text"] or (meta.get("abstract") or "")
         # приложения могут прийти из Europe PMC, даже когда основной текст принесён
-        if doi and meta.get("in_epmc") and meta.get("pmcid") and meta.get("has_supplementary") \
-                and not got["appendix"]:
-            try:
-                blob = retrieval.fetch_supplementary(meta["pmcid"])
+        if doi and meta.get("pmcid") and not got["appendix"]:
+            blob, note = retrieval.attempt(
+                "europepmc.supplementaryFiles",
+                lambda: retrieval.fetch_supplementary(meta["pmcid"]),
+                expected=bool(meta.get("has_supplementary")),
+                why_not="hasSuppl=N — по метаданным приложений у статьи нет")
+            journal.append(note)
+            if blob:
                 got["appendix"] = _tables_from_supplementary(blob)
                 src += "\n\n" + _supplementary_text(blob)
-            except Exception:                                # noqa: BLE001
-                pass
         level = retrieval.assess_level(meta, bool(got["text"]), bool(got["appendix"]))
         level["source"] = "файлы пользователя (путь B)"
+        level["retrieval"] = journal
         if got["notes"]:
             level["upload_notes"] = got["notes"]
         return {"meta": meta, "source_text": src, "jats_tables": got["main"],
@@ -206,38 +244,67 @@ def gather(doi: str = None, text: str = None, uploads: list = None) -> dict:
                 "pdfs": got["pdfs"]}
 
     if text and not doi:
-        return {"meta": {"found": False, "doi": None}, "source_text": text,
-                "jats_tables": [], "appendix_tables": [],
+        return {"meta": {"found": False, "doi": None, "status": "not_asked"},
+                "source_text": text, "jats_tables": [], "appendix_tables": [],
                 "level": {"level": "L3", **retrieval.LEVELS["L3"],
+                          "retrieval": [{"source": "caller", "status": "ok"}],
                           "note": "text supplied directly; the evidence level cannot be "
                                   "established, so the lowest one is assumed until shown "
                                   "otherwise"}}
 
     meta = retrieval.lookup(doi)
+    journal = [{"source": "europepmc.search", "status": meta.get("status"),
+                **({"note": meta["error"]} if meta.get("error") else {})}]
     source_text, jats, appendix = meta.get("abstract") or "", [], []
+    full_text = ""
 
-    if meta.get("in_epmc") and meta.get("pmcid"):
-        xml = retrieval.fetch_fulltext(meta["pmcid"])
-        with tempfile.NamedTemporaryFile(suffix=".xml", delete=False) as fh:
-            fh.write(xml)
-            ft_path = fh.name
-        try:
-            jats = parse_tables(ft_path)
-        except Exception:                                    # noqa: BLE001
-            jats = []
-        finally:
-            os.unlink(ft_path)
-        source_text = re.sub(r"<[^>]+>", " ", xml.decode("utf-8", "replace"))
-        if meta.get("has_supplementary"):
+    if meta.get("pmcid"):
+        # Предусловие взято из справочника, а не из `inEPMC`: fullTextXML отдаётся
+        # только для OA-подмножества. См. шапку `retrieval`. Раньше здесь стоял
+        # голый вызов под проверкой `in_epmc`, и на 4 млн статей вне OA сервис
+        # отвечал 500 вместо честного «этой статьи нам не отдадут».
+        xml, note = retrieval.attempt(
+            "europepmc.fullTextXML",
+            lambda: retrieval.fetch_fulltext(meta["pmcid"]),
+            expected=bool(meta.get("open_access")),
+            why_not="isOpenAccess=N — статья есть в Europe PMC, но вне Open "
+                    "Access-подмножества, и по документации fullTextXML для неё не "
+                    "отдаётся. Это ограничение доступа, а не отсутствие текста: "
+                    "принесите файл (путь B)")
+        journal.append(note)
+        if xml:
+            full_text = re.sub(r"<[^>]+>", " ", xml.decode("utf-8", "replace"))
+            source_text = full_text
+            with tempfile.NamedTemporaryFile(suffix=".xml", delete=False) as fh:
+                fh.write(xml)
+                ft_path = fh.name
             try:
-                blob = retrieval.fetch_supplementary(meta["pmcid"])
-                appendix = _tables_from_supplementary(blob)
-                # текст приложений идёт в источник для сверки чисел (D-14)
-                source_text += "\n\n" + _supplementary_text(blob)
-            except Exception:                                # noqa: BLE001
-                appendix = []
+                jats = parse_tables(ft_path)
+                journal.append({"source": "jats.tables", "status": "ok",
+                                "tables": len(jats)})
+            except Exception as e:                           # noqa: BLE001
+                jats = []
+                journal.append({"source": "jats.tables", "status": "parse_error",
+                                "note": f"{type(e).__name__}: {e}"[:160]})
+            finally:
+                os.unlink(ft_path)
 
-    level = retrieval.assess_level(meta, bool(jats), bool(appendix))
+        blob, note = retrieval.attempt(
+            "europepmc.supplementaryFiles",
+            lambda: retrieval.fetch_supplementary(meta["pmcid"]),
+            expected=bool(meta.get("has_supplementary")),
+            why_not="hasSuppl=N — по метаданным приложений у статьи нет")
+        journal.append(note)
+        if blob:
+            appendix = _tables_from_supplementary(blob)
+            # текст приложений идёт в источник для сверки чисел (D-14)
+            source_text += "\n\n" + _supplementary_text(blob)
+
+    # `has_fulltext` — «тело статьи добыто», а не «разобрались таблицы». Раньше
+    # сюда шёл `bool(jats)`, и полнотекстовая статья без единой таблицы получала
+    # L3 с подписью «разбор шёл по одному абстракту» при полном теле в руках.
+    level = retrieval.assess_level(meta, bool(full_text), bool(appendix))
+    level["retrieval"] = journal
     return {"meta": meta, "source_text": source_text, "jats_tables": jats,
             "appendix_tables": appendix, "level": level}
 
@@ -256,7 +323,7 @@ def tables_as_text(gathered: dict, limit: int = 40) -> str:
     return "\n\n".join(out)
 
 
-def verify_findings(findings: dict, source_text: str) -> dict:
+def verify_findings(findings: dict, source_text: str, tables: list = None) -> dict:
     """Шаг 4 — D-14: каждое число из разбора сверяется с первоисточником.
 
     Меткой числа служит **самодостаточное утверждение**, а не путь в JSON.
@@ -333,6 +400,21 @@ def verify_findings(findings: dict, source_text: str) -> dict:
         "control_events": "2×2 table used for the absolute risk — events in the control arm",
         "control_total": "2×2 table used for the absolute risk — size of the control arm",
     }
+    # Скорректированная оценка статьи — тоже выписка из документа, а не результат
+    # арифметики, поэтому она проверяется наравне с прочими числами. Без этого
+    # E-value считался бы от значения, которое никто не сверял (D-14).
+    adj = ((findings or {}).get("computed") or {}).get("adjusted_effect") or {}
+    if isinstance(adj, dict):
+        meas = str(adj.get("measure") or "effect estimate")
+        what = str(adj.get("outcome") or "the primary outcome")[:120]
+        for key, part in (("value", "point estimate"),
+                          ("ci_low", "lower confidence limit"),
+                          ("ci_high", "upper confidence limit")):
+            v = adj.get(key)
+            if isinstance(v, (int, float)) and v > 0:
+                claims.append({"value": str(v),
+                               "label": f"adjusted {meas} for {what} — {part}"})
+
     cnt = ((findings or {}).get("computed") or {}).get("counts") or {}
     # Совпадающие размеры рук — норма для сопоставления 1:1, и метка «руки
     # экспозиции» на числе, которое принадлежит обеим, даёт ложную инверсию:
@@ -356,7 +438,61 @@ def verify_findings(findings: dict, source_text: str) -> dict:
         k = (c["value"], c["label"])
         if k not in seen:
             seen.add(k); uniq.append(c)
-    return verify(uniq, source_text)
+    res = verify(uniq, source_text)
+    return _attach_cells(res, tables)
+
+
+def _attach_cells(res: dict, tables: list) -> dict:
+    """Шаг 4б: у числа есть не окрестность, а адрес — если оно из таблицы.
+
+    Прежняя проверка метки сравнивала формулировку модели со словами в окне 380
+    знаков вокруг числа. Замер F-63 показал, чего это стоит: своё от подложного
+    такая мера отделяет втрое, распределения перекрываются. Иначе и быть не могло —
+    метка есть описание, а не строка из статьи.
+
+    У числа из таблицы описание не нужно: у него есть подпись строки и заголовок
+    колонки, то есть адрес. Сверка адреса — решение, а не шкала. Разбор таблиц для
+    этого написан давно и до сих пор не использовался ни разу.
+
+    Здесь же чинится проверка групп. Она стояла на выражениях, вшитых под первую
+    статью проекта, и на живом разборе выносила вердикт для 4 чисел из 474.
+    Заголовки колонок — это и есть названия рук, взятые из самого документа.
+    """
+    idx = cells.build_index(tables)
+    if not idx:
+        return res
+    in_cell = in_table = 0
+    for c in res["claims"]:
+        if c.get("status") == "UNVERIFIED":
+            c["located"] = "absent"
+            continue
+        cell = cells.locate(c["value"], c.get("label", ""), idx)
+        if not cell:
+            # Число есть в документе, но не в разобранной таблице: проза,
+            # приложение, разобранное как текст, или таблица не поддалась.
+            c["located"] = "text"
+            continue
+        # `cells.column_conflict` здесь НЕ вызывается: замерено — 6 срабатываний
+        # на живом разборе, ложных 6 из 6 (подробности в шапке `truth/cells.py`).
+        # Проверка без измеренной точности обвинений не выносит.
+        c["cell"] = {k: cell.get(k) for k in ("table", "row", "column", "agreement")}
+        if (cell.get("agreement") or 0) >= cells.CELL_THRESHOLD:
+            c["located"] = "cell"
+            in_cell += 1
+        else:
+            # Число стоит в таблице, но не там, где сказано в метке. Это не
+            # обвинение: адрес мог не сойтись из-за формулировки. Но и «сверено
+            # с ячейкой» тут писать нельзя.
+            c["located"] = "table"
+            in_table += 1
+    s = res["summary"]
+    # Три тира вместо булева «найдено». `cell` — число стоит в ячейке, чей адрес
+    # (подпись строки и заголовок колонки) согласуется с меткой модели: это
+    # решение, а не шкала. `table` — число в таблице есть, адрес не сошёлся.
+    # `text` — только в прозе. `absent` — нет вовсе.
+    s["in_cell"] = in_cell
+    s["in_table_address_unmatched"] = in_table
+    return res
 
 
 CAVEAT = {
@@ -371,6 +507,14 @@ CAVEAT = {
            "nothing to verify because there is nothing to quote. The direction of bias "
            "may still be named correctly — but a correct guess is not evidence, so "
            "CONFIRMED is unreachable here (F-44)."),
+    # L0 не должен встречаться в готовом отчёте: `run` до модели не доходит.
+    # Текст оставлен на случай, если отчёт всё же соберут — например, из
+    # сохранённой копии, — чтобы уровень не читался как «низкий», когда он «никакой».
+    "L0": ("Nothing was retrieved for this paper — not the full text, not the "
+           "appendix, not even the abstract. Whatever stands below rests on no "
+           "document at all. This is a statement about the retrieval, not about "
+           "the paper: the `retrieval` log says which source refused and whether "
+           "it was entitled to refuse."),
 }
 
 
@@ -391,13 +535,20 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
     # за проект (после F-41 и двух в приложениях) — и снова найден замером.
     src = gathered["source_text"]
     tbl_text = tables_as_text(gathered, limit=200)
-    ver = verify_findings(findings, f"{src}\n\n{tbl_text}") if findings else None
+    all_tables = list(gathered["appendix_tables"]) + list(gathered["jats_tables"])
+    ver = (verify_findings(findings, f"{src}\n\n{tbl_text}", all_tables)
+           if findings else None)
     # Пересчёт заявленной арифметики функцией. Раздел отчёта называется
     # «посчитано функцией, а не моделью» — до 29.08 это было неправдой на прямом
     # пути: `stats_tool` там не вызывался ни разу (F-55).
     recalc = recompute((findings or {}).get("computed"))
     # Свод направлений: общее направление модели сверяется с её же доменами.
     dirs = direction_summary(findings)
+    # Обеспеченность каждого вывода по отдельности. Одна цифра на весь разбор
+    # («566 найдено») не говорит, какой из семи доменов стоит на числах из
+    # документа, а какой на общих словах, — а вся идея продукта в этом различии.
+    ground = grounding.owners(findings, ver["claims"]) if ver else None
+    weak = grounding.statements(findings, ver["claims"]) if ver else None
 
     lvl = gathered["level"]["level"]
     out = {
@@ -408,6 +559,8 @@ def _assemble(gathered: dict, findings: dict, parse_error=None, usage=None,
         "findings": findings,
         "recomputed": recalc,
         "direction_summary": dirs,
+        "grounding": ground,
+        "weakly_grounded_statements": weak,
         "parse_error": parse_error,
         "verification": ver["summary"] if ver else None,
         "unverified_numbers": [c for c in (ver["claims"] if ver else [])
@@ -443,6 +596,12 @@ def run(doi: str = None, text: str = None, prompt: str = None,
     tbl = tables_as_text(gathered)
     if tbl:
         paper = f"{paper}\n\n## ТАБЛИЦЫ\n\n{tbl}"
+
+    # Пустой вход в модель — не разбор, а его имитация, и стоит он трёх вызовов
+    # Vertex. Проверка стоит здесь, а не в обработчике HTTP, потому что через
+    # `run` ходят все: сервис, батч и bench.
+    if not paper.strip():
+        raise NothingRetrieved(gathered)
 
     if engine == "adk":
         # Тот же аудит через граф ADK. Отличие не косметическое: там у агентов есть
